@@ -238,8 +238,8 @@ CREATE INDEX idx_shopping_snapshots_competition ON shopping_search_snapshots(com
 UNKNOWN: total_count가 없거나 item이 0개
 LOW: total_count < 3,000
 MEDIUM: 3,000 <= total_count < 10,000
-HIGH: 10,000 <= total_count < 50,000
-VERY_HIGH: total_count >= 50,000
+HIGH: total_count >= 10,000
+VERY_HIGH: DB compatibility reserved value. Not emitted by the P3-001 MVP calculator.
 ```
 
 위 기준은 임시 룰이며 P3에서 가격대와 리뷰/몰 집중도 등의 지표를 추가해 개선한다.
