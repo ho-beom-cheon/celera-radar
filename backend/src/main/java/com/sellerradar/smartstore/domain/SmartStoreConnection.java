@@ -101,6 +101,10 @@ public class SmartStoreConnection {
 		this.lastSyncedAt = checkedAt;
 	}
 
+	public void markSynced(OffsetDateTime syncedAt) {
+		this.lastSyncedAt = syncedAt;
+	}
+
 	public void disconnect() {
 		this.connectionStatus = SmartStoreConnectionStatus.DISCONNECTED;
 		this.accessTokenEncrypted = null;
