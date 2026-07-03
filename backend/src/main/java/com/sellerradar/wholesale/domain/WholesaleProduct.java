@@ -109,6 +109,7 @@ public class WholesaleProduct {
 			Integer supplyPrice,
 			Integer shippingFee,
 			String sourceCategory,
+			String imageUrl,
 			String productUrl,
 			WholesaleProductParseStatus parseStatus,
 			String errorMessage
@@ -122,6 +123,7 @@ public class WholesaleProduct {
 		this.supplyPrice = supplyPrice;
 		this.shippingFee = shippingFee;
 		this.sourceCategory = sourceCategory;
+		this.imageUrl = imageUrl;
 		this.productUrl = productUrl;
 		this.parseStatus = parseStatus;
 		this.errorMessage = errorMessage;
@@ -135,6 +137,7 @@ public class WholesaleProduct {
 			Integer supplyPrice,
 			Integer shippingFee,
 			String sourceCategory,
+			String imageUrl,
 			String productUrl
 	) {
 		return new WholesaleProduct(
@@ -145,6 +148,7 @@ public class WholesaleProduct {
 				supplyPrice,
 				shippingFee,
 				sourceCategory,
+				imageUrl,
 				productUrl,
 				WholesaleProductParseStatus.PARSED,
 				null
@@ -155,6 +159,7 @@ public class WholesaleProduct {
 		return new WholesaleProduct(
 				file,
 				rowNo,
+				null,
 				null,
 				null,
 				null,

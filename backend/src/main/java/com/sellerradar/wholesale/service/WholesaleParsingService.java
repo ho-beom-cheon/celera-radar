@@ -8,11 +8,14 @@ import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
 import com.sellerradar.wholesale.dto.WholesaleFileResponse;
 import com.sellerradar.wholesale.dto.WholesaleParseResponse;
 import com.sellerradar.wholesale.dto.WholesaleProductRowResponse;
+import com.sellerradar.wholesale.dto.WholesaleUploadConfirmRequest;
+import com.sellerradar.wholesale.dto.WholesaleUploadConfirmResponse;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
 import com.sellerradar.wholesale.repository.WholesaleProductRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,21 +28,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class WholesaleParsingService {
 	private final WholesaleFileRepository wholesaleFileRepository;
 	private final WholesaleProductRepository wholesaleProductRepository;
-	private final CsvEncodingDetector encodingDetector;
-	private final SimpleCsvParser csvParser;
+	private final WholesaleFileParser fileParser;
 	private final ProductNameNormalizer productNameNormalizer;
 
 	public WholesaleParsingService(
 			WholesaleFileRepository wholesaleFileRepository,
 			WholesaleProductRepository wholesaleProductRepository,
-			CsvEncodingDetector encodingDetector,
-			SimpleCsvParser csvParser,
+			WholesaleFileParser fileParser,
 			ProductNameNormalizer productNameNormalizer
 	) {
 		this.wholesaleFileRepository = wholesaleFileRepository;
 		this.wholesaleProductRepository = wholesaleProductRepository;
-		this.encodingDetector = encodingDetector;
-		this.csvParser = csvParser;
+		this.fileParser = fileParser;
 		this.productNameNormalizer = productNameNormalizer;
 	}
 
@@ -73,9 +73,38 @@ public class WholesaleParsingService {
 		validateMappingExists(file);
 		CsvDocument document = readDocument(file);
 		Map<String, Integer> columnIndex = columnIndex(document.header());
-		WholesaleParseResult result = parseRows(file, document.rows(), columnIndex);
+		WholesaleUploadConfirmResponse result = parseRows(file, document.rows(), columnIndex);
 		file.markParsed();
-		return new WholesaleParseResponse(file.getId(), result.parsedCount(), result.invalidCount());
+		return new WholesaleParseResponse(file.getId(), result.successCount(), result.failureCount());
+	}
+
+	@Transactional
+	public WholesaleUploadConfirmResponse confirm(
+			Long userId,
+			Long uploadId,
+			WholesaleUploadConfirmRequest request
+	) {
+		WholesaleFile file = getFile(userId, uploadId);
+		CsvDocument document = readDocument(file);
+		Map<String, Integer> columnIndex = columnIndex(document.header());
+		WholesaleUploadConfirmRequest.Mapping mapping = request.mapping();
+		validateColumn(columnIndex, mapping.productName(), "productName");
+		validateColumn(columnIndex, mapping.supplyPrice(), "supplyPrice");
+		validateOptionalColumn(columnIndex, mapping.shippingFee(), "shippingFee");
+		validateOptionalColumn(columnIndex, mapping.imageUrl(), "imageUrl");
+		validateOptionalColumn(columnIndex, mapping.productUrl(), "productUrl");
+		validateOptionalColumn(columnIndex, mapping.category(), "category");
+		file.updateMapping(
+				mapping.productName(),
+				mapping.supplyPrice(),
+				mapping.shippingFee(),
+				mapping.category(),
+				mapping.imageUrl(),
+				mapping.productUrl()
+		);
+		WholesaleUploadConfirmResponse result = parseRows(file, document.rows(), columnIndex);
+		file.markParsed();
+		return result;
 	}
 
 	@Transactional(readOnly = true)
@@ -85,24 +114,26 @@ public class WholesaleParsingService {
 				.map(WholesaleProductRowResponse::from);
 	}
 
-	private WholesaleParseResult parseRows(
+	private WholesaleUploadConfirmResponse parseRows(
 			WholesaleFile file,
 			List<CsvRow> rows,
 			Map<String, Integer> columnIndex
 	) {
 		wholesaleProductRepository.deleteByFile(file);
-		int parsedCount = 0;
-		int invalidCount = 0;
+		int successCount = 0;
+		int failureCount = 0;
+		List<WholesaleUploadConfirmResponse.FailureReason> failureReasons = new ArrayList<>();
 		for (CsvRow row : rows) {
 			WholesaleProduct product = toProduct(file, row, columnIndex);
 			if (product.getParseStatus().name().equals("PARSED")) {
-				parsedCount++;
+				successCount++;
 			} else {
-				invalidCount++;
+				failureCount++;
+				failureReasons.add(new WholesaleUploadConfirmResponse.FailureReason(row.rowNo(), product.getErrorMessage()));
 			}
 			wholesaleProductRepository.save(product);
 		}
-		return new WholesaleParseResult(parsedCount, invalidCount);
+		return new WholesaleUploadConfirmResponse(file.getId(), successCount, failureCount, failureReasons);
 	}
 
 	private WholesaleProduct toProduct(
@@ -114,6 +145,7 @@ public class WholesaleParsingService {
 		String supplyPriceRaw = value(row, columnIndex, file.getMappingSupplyPrice());
 		String shippingFeeRaw = value(row, columnIndex, file.getMappingShippingFee());
 		String category = value(row, columnIndex, file.getMappingCategory());
+		String imageUrl = value(row, columnIndex, file.getMappingImageUrl());
 		String productUrl = value(row, columnIndex, file.getMappingProductUrl());
 		if (productName.isBlank()) {
 			return WholesaleProduct.invalid(file, row.rowNo(), "productName is required.");
@@ -137,6 +169,7 @@ public class WholesaleParsingService {
 				supplyPrice,
 				shippingFee,
 				category.isBlank() ? null : category,
+				imageUrl.isBlank() ? null : imageUrl,
 				productUrl.isBlank() ? null : productUrl
 		);
 	}
@@ -149,10 +182,10 @@ public class WholesaleParsingService {
 	private CsvDocument readDocument(WholesaleFile file) {
 		try {
 			byte[] bytes = Files.readAllBytes(Path.of(file.getStoredPath()));
-			return csvParser.parse(encodingDetector.decode(bytes, file.getDetectedEncoding()));
+			return fileParser.parse(file.getOriginalFilename(), bytes, file.getDetectedEncoding()).document();
 		} catch (IOException exception) {
 			file.markFailed();
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "CSV file could not be read.", "file");
+			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "Upload file could not be read.", "file");
 		}
 	}
 

@@ -25,22 +25,23 @@ public class WholesaleFileParser {
 	public ParsedWholesaleFile parse(String originalFilename, byte[] bytes, CsvEncoding requestedEncoding) {
 		validateFile(bytes);
 		String extension = extension(originalFilename);
-		CsvDocument document = switch (extension) {
+		ParsedWholesaleFile parsedFile = switch (extension) {
 			case ".csv" -> parseCsv(bytes, requestedEncoding);
-			case ".xlsx" -> xlsxParser.parse(bytes);
+			case ".xlsx" -> new ParsedWholesaleFile("XLSX", CsvEncoding.UTF_8, xlsxParser.parse(bytes));
 			default -> throw new BusinessException(
 					ErrorCode.CSV_INVALID_FORMAT,
 					"Only .csv and .xlsx files are supported.",
 					"file"
 			);
 		};
-		validateHeader(document);
-		return new ParsedWholesaleFile(fileType(extension), document);
+		validateHeader(parsedFile.document());
+		return parsedFile;
 	}
 
-	private CsvDocument parseCsv(byte[] bytes, CsvEncoding requestedEncoding) {
+	private ParsedWholesaleFile parseCsv(byte[] bytes, CsvEncoding requestedEncoding) {
 		CsvEncoding encoding = encodingDetector.detect(bytes, requestedEncoding);
-		return csvParser.parse(encodingDetector.decode(bytes, encoding));
+		CsvDocument document = csvParser.parse(encodingDetector.decode(bytes, encoding));
+		return new ParsedWholesaleFile("CSV", encoding, document);
 	}
 
 	private void validateFile(byte[] bytes) {
@@ -62,7 +63,4 @@ public class WholesaleFileParser {
 		return originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase(Locale.ROOT);
 	}
 
-	private String fileType(String extension) {
-		return extension.substring(1).toUpperCase(Locale.ROOT);
-	}
 }
