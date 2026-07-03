@@ -361,6 +361,42 @@ docker compose DB 상태에서 keyword 등록/조회/수정/삭제 확인
 
 ---
 
+## 최신 진행: P5-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P5-002 CSV/XLSX 파일 파서 구현`을 완료했다.
+
+반영 내용:
+
+- 저장을 수행하지 않는 `WholesaleFilePreviewService` 추가
+- `.csv`, `.xlsx` 확장자 기반 파서 분기 추가
+- CSV는 기존 `SimpleCsvParser`와 인코딩 감지 로직 재사용
+- XLSX는 Apache POI 기반으로 첫 번째 시트의 첫 행을 header로 파싱
+- preview 응답 DTO에 header, row, cell raw value, `BigDecimal`, `Long` 변환값 포함
+- 콤마, 공백, 원화 기호를 제거하는 `WholesaleNumberParser` 추가
+- 기존 wholesale parse의 공급가/배송비 숫자 파싱을 공통 유틸로 교체
+- 잘못된 확장자, 빈 파일, header 없는 파일 오류 케이스 테스트 추가
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P5 도매 CSV/XLSX 업로드: 2/4 완료
+- P5-001 Wholesale Product DB/Domain 구현: 완료
+- P5-002 CSV/XLSX 파일 파서 구현: 완료
+- P5-003 컬럼 매핑/저장 API 구현: 다음
+- P5-004 Wholesale Upload Frontend 구현: 대기
+```
+
+다음: P5-003
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
