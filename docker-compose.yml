@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: seller-radar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-seller_radar}
+      POSTGRES_USER: ${DB_USERNAME:-seller}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-seller}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - seller-radar-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-seller} -d ${DB_NAME:-seller_radar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  seller-radar-db-data:

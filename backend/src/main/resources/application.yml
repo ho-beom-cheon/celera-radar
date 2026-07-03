@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: seller-radar
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/seller_radar}
+    username: ${DB_USERNAME:seller}
+    password: ${DB_PASSWORD:seller}
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+seller-radar:
+  naver:
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
+    datalab-daily-quota: ${NAVER_DATALAB_DAILY_QUOTA:1000}
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT30M}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:P14D}
