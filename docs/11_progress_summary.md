@@ -629,7 +629,7 @@ P7 알림/배치: 2/2 완료
 - P7-002 Notification 생성 Batch 구현: 완료
 ```
 
-다음: P8-001
+다음: P8-002
 
 ---
 
@@ -661,7 +661,43 @@ P7 알림/배치: 2/2 완료
 - P7-002 Notification 생성 Batch 구현: 완료
 ```
 
-다음: P8-001
+다음: P8-002
+
+---
+
+## 최신 진행: P8-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P8-001 Auth 최소 구현`의 남은 정합성 보강을 완료했다.
+
+반영 내용:
+
+- 기존 이메일/비밀번호 회원가입, 로그인, refresh token, JWT 인증 필터 구현 상태 확인
+- `users` 테이블에 인증용 `password_hash`, `role` 컬럼을 추가하는 Flyway migration 추가
+- `role` 값은 `USER`, `ADMIN`만 허용하도록 CHECK 제약 추가
+- `docs/10_database_design.md`의 users 상세 설계와 초기 DDL 초안을 인증 구조에 맞게 갱신
+- `docs/02_interface_design.md`의 Auth API 문서에 login 응답과 refresh endpoint 보강
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V008 applied successfully
+users columns: password_hash, role
+constraint: ck_users_role
+```
+
+진행률:
+
+```text
+P8 Web SaaS 하드닝: 1/2 완료
+- P8-001 Auth 최소 구현: 완료
+- P8-002 User Data Isolation 적용: 다음
+```
+
+다음: P8-002
 
 ---
 
