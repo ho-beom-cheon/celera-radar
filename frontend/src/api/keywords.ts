@@ -49,6 +49,33 @@ export interface ShoppingTopItem {
   category4: string | null;
 }
 
+export interface ShoppingSnapshot {
+  keywordId: number;
+  keyword: string;
+  searchDate: string;
+  sortType: string;
+  cached: boolean;
+  totalCount: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  avgPrice: number | null;
+  fetchedAt: string | null;
+  topItems: ShoppingSnapshotItem[];
+}
+
+export interface ShoppingSnapshotItem {
+  rankNo: number;
+  title: string;
+  productUrl: string | null;
+  imageUrl: string | null;
+  lowPrice: number | null;
+  mallName: string | null;
+  category1: string | null;
+  category2: string | null;
+  category3: string | null;
+  category4: string | null;
+}
+
 export interface PageResponse<T> {
   items: T[];
   page: number;
@@ -122,4 +149,14 @@ export function deleteKeyword(keywordId: number) {
 
 export function getKeywordAnalysis(keywordId: number) {
   return apiRequest<KeywordAnalysis>(`/keywords/${keywordId}/analysis`);
+}
+
+export function analyzeShopping(keywordId: number) {
+  return apiRequest<ShoppingSnapshot>(`/keywords/${keywordId}/analyze/shopping`, {
+    method: 'POST'
+  });
+}
+
+export function getLatestShoppingSnapshot(keywordId: number) {
+  return apiRequest<ShoppingSnapshot>(`/keywords/${keywordId}/shopping-snapshot/latest`);
 }
