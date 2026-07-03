@@ -697,7 +697,7 @@ P8 Web SaaS 하드닝: 2/2 진행 중
 - P8-002 User Data Isolation 적용: 완료 예정
 ```
 
-다음: P9-001
+다음: P8-002
 
 ---
 
@@ -732,6 +732,54 @@ P8 Web SaaS 하드닝: 2/2 완료
 ```
 
 다음: P9-001
+
+---
+
+## 최신 진행: P9-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P9-001 SmartStore API 설계 skeleton`을 구현했다.
+
+반영 내용:
+
+- `smartstore` package 추가
+- `SmartStoreConnection` entity와 `SmartStoreConnectionStatus` enum 추가
+- 사용자별 스마트스토어 연결 상태 저장/조회용 repository와 service skeleton 추가
+- 실제 네이버 커머스API 호출 없는 `SmartStoreClient` interface와 `MockSmartStoreClient` 추가
+- 토큰/secret 평문 저장 구현을 만들지 않고 `SmartStoreTokenCipher` port/TODO 구조만 추가
+- `naver_store_connections` Flyway migration 추가
+- repository/service 테스트 추가
+
+제외:
+
+- 실제 네이버 커머스API 호출
+- 스마트스토어 상품 자동 등록
+- 상품/주문/정산/수수료 동기화
+- 토큰 암호화 구현체
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V009 applied successfully
+table: naver_store_connections
+constraints: ck_naver_store_connections_status, fk_naver_store_connections_user
+
+rg "RestClient|WebClient|HttpClient|commerce" backend/src/main/java/com/sellerradar/smartstore
+no matches
+```
+
+진행률:
+
+```text
+P9 스마트스토어 API 1차 연동: 1/2 완료
+- P9-001 SmartStore API 설계 skeleton: 완료
+- P9-002 SmartStore Product Sync 1차: 다음
+```
+
+다음: P9-002
 
 ---
 
