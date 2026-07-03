@@ -76,6 +76,19 @@ class AdminBatchControllerIntegrationTest {
 	}
 
 	@Test
+	void adminCanRunDatalabTrendBatch() throws Exception {
+		mockMvc.perform(post("/api/v1/admin/batches/datalab/run")
+						.header("Authorization", bearerToken(UserRole.ADMIN)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.jobType").value("DATALAB_TREND_DAILY"))
+				.andExpect(jsonPath("$.data.triggerType").value("MANUAL"))
+				.andExpect(jsonPath("$.data.status").value("SUCCESS"))
+				.andExpect(jsonPath("$.data.targetCount").value(0))
+				.andExpect(jsonPath("$.data.failureCount").value(0));
+	}
+
+	@Test
 	void adminCanListBatchHistories() throws Exception {
 		mockMvc.perform(post("/api/v1/admin/batches/shopping-search/run")
 						.header("Authorization", bearerToken(UserRole.ADMIN)))
