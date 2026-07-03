@@ -78,7 +78,7 @@ class TrendSnapshotServiceTest {
 	void collectKeywordTrendStoresSnapshotsAndReturnsScore() {
 		when(naverDataLabClient.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
 				.thenReturn(keywordTrendResponse());
-		when(trendSnapshotRepository.findByKeyword_IdAndPeriodAndTimeUnit(any(), any(), any()))
+		when(trendSnapshotRepository.findByKeyword_IdAndSnapshotDateAndDataPeriodAndTimeUnit(any(), any(), any(), any()))
 				.thenReturn(Optional.empty());
 		when(trendSnapshotRepository.save(any(TrendSnapshot.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));
@@ -110,6 +110,15 @@ class TrendSnapshotServiceTest {
 		assertThat(snapshotCaptor.getAllValues())
 				.extracting(TrendSnapshot::getTimeUnit)
 				.containsOnly(TrendTimeUnit.DATE);
+		assertThat(snapshotCaptor.getAllValues())
+				.extracting(TrendSnapshot::getSnapshotDate)
+				.containsOnly(END_DATE);
+		assertThat(snapshotCaptor.getAllValues())
+				.extracting(TrendSnapshot::getPeriodStart)
+				.containsOnly(START_DATE);
+		assertThat(snapshotCaptor.getAllValues())
+				.extracting(TrendSnapshot::getPeriodEnd)
+				.containsOnly(END_DATE);
 
 		ArgumentCaptor<ApiCallLog> logCaptor = ArgumentCaptor.forClass(ApiCallLog.class);
 		verify(apiCallLogRepository).save(logCaptor.capture());
@@ -137,8 +146,9 @@ class TrendSnapshotServiceTest {
 								List.of(new NaverDataLabTrendPoint("2026-07-01", new BigDecimal("91.4000")))
 						))
 				));
-		when(trendSnapshotRepository.findByKeyword_IdAndPeriodAndTimeUnit(
+		when(trendSnapshotRepository.findByKeyword_IdAndSnapshotDateAndDataPeriodAndTimeUnit(
 				KEYWORD_ID,
+				LocalDate.of(2026, 7, 1),
 				LocalDate.of(2026, 7, 1),
 				TrendTimeUnit.DATE
 		)).thenReturn(Optional.of(existingSnapshot));

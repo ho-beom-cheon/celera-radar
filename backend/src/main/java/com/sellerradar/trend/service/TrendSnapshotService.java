@@ -68,16 +68,16 @@ public class TrendSnapshotService {
 				.map(this::toTrendPoint)
 				.sorted(Comparator.comparing(TrendPoint::period))
 				.toList();
-		int savedCount = upsertSnapshots(keyword, snapshotTimeUnit, points);
+		int savedCount = upsertSnapshots(keyword, startDate, endDate, snapshotTimeUnit, points);
 		TrendScoreResult score = trendScoreCalculator.calculate(points);
 		return new TrendSnapshotCollectResult(keyword.getId(), savedCount, score, points);
 	}
 
 	@Transactional(readOnly = true)
 	public TrendScoreResult calculateSavedTrendScore(Long keywordId, TrendTimeUnit timeUnit) {
-		List<TrendPoint> points = trendSnapshotRepository.findByKeyword_IdAndTimeUnitOrderByPeriodAsc(keywordId, timeUnit)
+		List<TrendPoint> points = trendSnapshotRepository.findByKeyword_IdAndTimeUnitOrderByDataPeriodAsc(keywordId, timeUnit)
 				.stream()
-				.map(snapshot -> new TrendPoint(snapshot.getPeriod(), snapshot.getRatio()))
+				.map(snapshot -> new TrendPoint(snapshot.getDataPeriod(), snapshot.getRatio()))
 				.toList();
 		return trendScoreCalculator.calculate(points);
 	}
@@ -127,16 +127,36 @@ public class TrendSnapshotService {
 		));
 	}
 
-	private int upsertSnapshots(Keyword keyword, TrendTimeUnit timeUnit, List<TrendPoint> points) {
+	private int upsertSnapshots(
+			Keyword keyword,
+			LocalDate startDate,
+			LocalDate endDate,
+			TrendTimeUnit timeUnit,
+			List<TrendPoint> points
+	) {
 		int savedCount = 0;
 		for (TrendPoint point : points) {
 			TrendSnapshot snapshot = trendSnapshotRepository
-					.findByKeyword_IdAndPeriodAndTimeUnit(keyword.getId(), point.period(), timeUnit)
+					.findByKeyword_IdAndSnapshotDateAndDataPeriodAndTimeUnit(
+							keyword.getId(),
+							endDate,
+							point.period(),
+							timeUnit
+					)
 					.map(existingSnapshot -> {
 						existingSnapshot.updateRatio(point.ratio());
 						return existingSnapshot;
 					})
-					.orElseGet(() -> TrendSnapshot.create(keyword, point.period(), timeUnit, point.ratio()));
+					.orElseGet(() -> TrendSnapshot.create(
+							keyword,
+							endDate,
+							startDate,
+							endDate,
+							point.period(),
+							timeUnit,
+							point.ratio(),
+							null
+					));
 			trendSnapshotRepository.save(snapshot);
 			savedCount++;
 		}
