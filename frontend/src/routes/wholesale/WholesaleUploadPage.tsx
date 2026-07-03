@@ -9,6 +9,7 @@ import {
   confirmWholesaleUpload,
   previewWholesaleUpload
 } from '../../api/wholesale';
+import { DataTable, EmptyState, ErrorState, LoadingState, MetricCard } from '../../components/ui';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
   { value: 'AUTO', label: '자동 감지' },
@@ -161,7 +162,7 @@ export function WholesaleUploadPage() {
       </section>
 
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       <section className="panel keywords-table-panel">
         <div className="panel-header table-header">
@@ -186,19 +187,12 @@ export function WholesaleUploadPage() {
               <p className="muted">정상 저장 row와 실패 row를 구분해 확인합니다.</p>
             </div>
             <div className="result-grid upload-result-grid">
-              <div className="metric-box">
-                <span>정상</span>
-                <strong>{confirmResult.successCount}</strong>
-              </div>
-              <div className="metric-box">
-                <span>오류</span>
-                <strong>{confirmResult.failureCount}</strong>
-              </div>
+              <MetricCard variant="box" label="정상" value={confirmResult.successCount} />
+              <MetricCard variant="box" label="오류" value={confirmResult.failureCount} />
             </div>
           </div>
           {confirmResult.failureReasons.length > 0 ? (
-            <div className="table-wrap">
-              <table className="data-table upload-failure-table">
+            <DataTable className="upload-failure-table">
                 <thead>
                   <tr>
                     <th>행</th>
@@ -213,16 +207,15 @@ export function WholesaleUploadPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </DataTable>
           ) : (
-            <div className="state-row">실패 row가 없습니다.</div>
+            <EmptyState>실패 row가 없습니다.</EmptyState>
           )}
         </section>
       ) : null}
 
-      {loading ? <div className="state-row">처리 중입니다.</div> : null}
-      {!loading && !getAccessToken() ? <div className="state-row">계정 연결 후 도매 파일을 업로드할 수 있습니다.</div> : null}
+      {loading ? <LoadingState>처리 중입니다.</LoadingState> : null}
+      {!loading && !getAccessToken() ? <EmptyState>계정 연결 후 도매 파일을 업로드할 수 있습니다.</EmptyState> : null}
     </div>
   );
 }
@@ -256,11 +249,10 @@ function ColumnSelect({ label, value, columns, required, onChange }: ColumnSelec
 
 function PreviewTable({ headers, rows }: { headers: string[]; rows: WholesaleFilePreviewRow[] }) {
   if (headers.length === 0) {
-    return <div className="state-row">Preview 데이터가 없습니다.</div>;
+    return <EmptyState>Preview 데이터가 없습니다.</EmptyState>;
   }
   return (
-    <div className="table-wrap">
-      <table className="data-table upload-preview-table">
+    <DataTable className="upload-preview-table">
         <thead>
           <tr>
             <th>행</th>
@@ -280,8 +272,7 @@ function PreviewTable({ headers, rows }: { headers: string[]; rows: WholesaleFil
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+    </DataTable>
   );
 }
 

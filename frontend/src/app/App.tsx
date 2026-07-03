@@ -10,6 +10,7 @@ import { MarginCalculatorPage } from '../routes/margin/MarginCalculatorPage';
 import { StoreMarginsPage } from '../routes/store/StoreMarginsPage';
 import { WholesalePage } from '../routes/wholesale/WholesalePage';
 import { WholesaleUploadPage } from '../routes/wholesale/WholesaleUploadPage';
+import { MetricCard } from '../components/ui';
 
 const navigationItems = [
   { label: '대시보드', href: '/' },
@@ -132,10 +133,7 @@ function Dashboard() {
 
       <section className="summary-grid" aria-label="분석 상태 요약">
         {statusItems.map((item) => (
-          <article key={item.label} className="summary-card">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </article>
+          <MetricCard key={item.label} label={item.label} value={item.value} />
         ))}
       </section>
 

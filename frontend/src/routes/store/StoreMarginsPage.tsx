@@ -6,6 +6,7 @@ import {
   StoreProductCost
 } from '../../api/smartstore';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { DataTable, EmptyState, ErrorState, LoadingState, MetricCard, StatusBadge } from '../../components/ui';
 
 type MarginRisk = 'RISK' | 'CAUTION' | 'SAFE' | 'UNSET';
 
@@ -92,7 +93,7 @@ export function StoreMarginsPage() {
         </button>
       </header>
 
-      {message ? <div className="notice notice-error">{message}</div> : null}
+      {message ? <ErrorState>{message}</ErrorState> : null}
 
       <section className="summary-grid" aria-label="마진 위험 요약">
         <MetricCard label="위험" value={String(counts.risk)} />
@@ -109,8 +110,7 @@ export function StoreMarginsPage() {
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table store-margin-data-table">
+        <DataTable className="store-margin-data-table">
             <thead>
               <tr>
                 <th>상품</th>
@@ -127,14 +127,14 @@ export function StoreMarginsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={8}>
-                    <div className="state-row">상품 마진 상태를 불러오는 중입니다.</div>
+                    <LoadingState>상품 마진 상태를 불러오는 중입니다.</LoadingState>
                   </td>
                 </tr>
               ) : null}
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={8}>
-                    <div className="state-row">동기화된 스마트스토어 상품이 없습니다.</div>
+                    <EmptyState>동기화된 스마트스토어 상품이 없습니다.</EmptyState>
                   </td>
                 </tr>
               ) : null}
@@ -152,7 +152,7 @@ export function StoreMarginsPage() {
                       <td>{row.cost ? formatPercent(row.cost.expectedMarginRate) : '-'}</td>
                       <td>{row.cost ? formatCurrency(row.cost.expectedProfit) : '-'}</td>
                       <td>
-                        <span className={`status-badge ${riskClassNames[row.risk]}`}>{riskLabels[row.risk]}</span>
+                        <StatusBadge className={riskClassNames[row.risk]}>{riskLabels[row.risk]}</StatusBadge>
                       </td>
                       <td>{row.cost?.wholesaleProductName ?? (row.cost ? '수동 입력' : '원가 매핑 필요')}</td>
                       <td>{formatDateTime(row.product.lastSyncedAt)}</td>
@@ -160,19 +160,9 @@ export function StoreMarginsPage() {
                   ))
                 : null}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
       </section>
     </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="summary-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
   );
 }
 

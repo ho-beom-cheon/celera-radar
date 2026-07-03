@@ -12,6 +12,7 @@ import {
 } from '../../api/candidates';
 import { categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { ErrorState, LoadingState } from '../../components/ui';
 
 interface CandidateDetailPageProps {
   candidateId: number;
@@ -84,9 +85,9 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
         후보 목록
       </a>
 
-      {loading ? <div className="notice">후보 상세를 불러오는 중입니다.</div> : null}
+      {loading ? <LoadingState>후보 상세를 불러오는 중입니다.</LoadingState> : null}
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       {candidate ? (
         <>

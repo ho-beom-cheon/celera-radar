@@ -9,7 +9,7 @@ import {
   statusLabels
 } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { ProductCard } from './ProductCard';
+import { EmptyState, ErrorState, LoadingState, MetricCard, ProductCard, StatusBadge } from '../../components/ui';
 
 interface KeywordDetailPageProps {
   keywordId: number;
@@ -106,9 +106,7 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
           <h1>{title}</h1>
           {keyword ? (
             <p className="muted">
-              <span className={`status-badge status-${keyword.analysisStatus.toLowerCase()}`}>
-                {statusLabels[keyword.analysisStatus]}
-              </span>
+              <StatusBadge tone={keyword.analysisStatus}>{statusLabels[keyword.analysisStatus]}</StatusBadge>
               <span className="inline-meta">마지막 분석 {formatDateTime(keyword.lastAnalyzedAt)}</span>
             </p>
           ) : null}
@@ -124,9 +122,9 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
         </div>
       </section>
 
-      {loading ? <div className="notice">키워드 상세 정보를 불러오는 중입니다.</div> : null}
+      {loading ? <LoadingState>키워드 상세 정보를 불러오는 중입니다.</LoadingState> : null}
       {notice ? <div className="notice notice-success">{notice}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       {!loading && !error && !snapshot ? (
         <section className="panel empty-analysis-panel">
@@ -138,30 +136,19 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
       {snapshot ? (
         <>
           <section className="summary-grid analysis-summary" aria-label="쇼핑 검색 요약">
-            <article className="summary-card">
-              <span>검색 결과 수</span>
-              <strong>{formatNumber(snapshot.totalCount)}</strong>
-            </article>
-            <article className="summary-card">
-              <span>최저가</span>
-              <strong>{formatCurrency(snapshot.minPrice)}</strong>
-            </article>
-            <article className="summary-card">
-              <span>평균가</span>
-              <strong>{formatCurrency(snapshot.avgPrice)}</strong>
-            </article>
-            <article className="summary-card">
-              <span>최고가</span>
-              <strong>{formatCurrency(snapshot.maxPrice)}</strong>
-            </article>
-            <article className="summary-card">
-              <span>경쟁강도</span>
-              <strong className="summary-badge-value">
+            <MetricCard label="검색 결과 수" value={formatNumber(snapshot.totalCount)} />
+            <MetricCard label="최저가" value={formatCurrency(snapshot.minPrice)} />
+            <MetricCard label="평균가" value={formatCurrency(snapshot.avgPrice)} />
+            <MetricCard label="최고가" value={formatCurrency(snapshot.maxPrice)} />
+            <MetricCard
+              label="경쟁강도"
+              value={
                 <span className={`competition-badge competition-${(snapshot.competitionLevel ?? 'UNKNOWN').toLowerCase()}`}>
                   {competitionLabels[snapshot.competitionLevel ?? 'UNKNOWN']}
                 </span>
-              </strong>
-            </article>
+              }
+              valueClassName="summary-badge-value"
+            />
           </section>
 
           <section className="panel keywords-table-panel">
@@ -181,7 +168,7 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
                 ))}
               </div>
             ) : (
-              <div className="state-row">저장된 상위 상품이 없습니다.</div>
+              <EmptyState>저장된 상위 상품이 없습니다.</EmptyState>
             )}
           </section>
         </>

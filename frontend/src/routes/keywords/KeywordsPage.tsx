@@ -19,6 +19,7 @@ import {
   setAccessToken,
   setStoredPlan
 } from '../../api/httpClient';
+import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
 
 const planLimits: Record<Plan, number> = {
   FREE: 3,
@@ -279,7 +280,7 @@ export function KeywordsPage() {
       </section>
 
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       <section className="panel keywords-table-panel">
         <div className="panel-header table-header">
@@ -321,8 +322,7 @@ export function KeywordsPage() {
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table keywords-data-table">
+        <DataTable className="keywords-data-table">
             <thead>
               <tr>
                 <th>키워드</th>
@@ -345,9 +345,7 @@ export function KeywordsPage() {
                   </td>
                   <td>{categoryLabel(item.category)}</td>
                   <td>
-                    <span className={`status-badge status-${item.analysisStatus.toLowerCase()}`}>
-                      {statusLabels[item.analysisStatus]}
-                    </span>
+                    <StatusBadge tone={item.analysisStatus}>{statusLabels[item.analysisStatus]}</StatusBadge>
                   </td>
                   <td>{formatCurrency(item.latestMinPrice)}</td>
                   <td>{formatCurrency(item.latestAvgPrice)}</td>
@@ -369,13 +367,12 @@ export function KeywordsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
-        {loading ? <div className="state-row">불러오는 중입니다.</div> : null}
-        {!loading && !accessToken ? <div className="state-row">계정 연결 후 키워드를 등록할 수 있습니다.</div> : null}
+        {loading ? <LoadingState>불러오는 중입니다.</LoadingState> : null}
+        {!loading && !accessToken ? <EmptyState>계정 연결 후 키워드를 등록할 수 있습니다.</EmptyState> : null}
         {!loading && accessToken && keywords.length === 0 ? (
-          <div className="state-row">아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</div>
+          <EmptyState>아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</EmptyState>
         ) : null}
       </section>
     </div>
