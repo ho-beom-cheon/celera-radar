@@ -215,8 +215,8 @@ candidate score 생성
 | shopping_top_item | 쇼핑 검색 상위 상품 |
 | trend_snapshot | 데이터랩 트렌드 스냅샷 |
 | keyword_analysis_summary | 키워드별 최신 분석 요약 |
-| wholesale_file | CSV 업로드 파일 |
-| wholesale_product | CSV 파싱 상품 |
+| wholesale_uploads | CSV 업로드 파일 |
+| wholesale_products | CSV 파싱 상품 |
 | product_candidate | 추천 후보 |
 | candidate_score | 추천점수와 이유 |
 | margin_calculation | 빠른 마진 계산 저장 |
@@ -325,7 +325,7 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 - 기준일에 정확한 ratio가 없으면 그 이전의 가장 가까운 period를 사용한다.
 - 데이터랩 ratio는 검색 클릭 추이 기반이며 실제 판매량이 아니라는 warning reason을 포함한다.
 
-### wholesale_file
+### wholesale_uploads
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -348,15 +348,15 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 | created_at | timestamp | 생성일 |
 | updated_at | timestamp | 수정일 |
 
-### wholesale_product
+### wholesale_products
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | id | bigint PK | 상품 ID |
-| file_id | bigint FK | 업로드 파일 |
+| upload_id | bigint FK | 업로드 파일 |
 | row_no | int | CSV 행 번호 |
 | product_name | varchar | 상품명 |
-| normalized_name | varchar | 정규화명 |
+| normalized_product_name | varchar | 정규화명 |
 | supply_price | int | 공급가 |
 | shipping_fee | int | 배송비 |
 | source_category | varchar | 원본 카테고리 |
