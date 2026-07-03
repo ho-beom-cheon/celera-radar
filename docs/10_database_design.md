@@ -691,10 +691,14 @@ Index: `(user_id, created_at DESC)`, `(connection_id, created_at DESC)`.
 | `purchase_cost` | `NUMERIC(14,2)` | 매입가 |
 | `shipping_fee` | `NUMERIC(14,2)` | 배송비 |
 | `packaging_fee` | `NUMERIC(14,2)` | 포장비 |
-| `target_margin_rate` | `NUMERIC(8,4)` | 목표 마진율 |
+| `extra_cost` | `NUMERIC(14,2)` | 기타 비용 |
+| `platform_fee_rate` | `NUMERIC(6,2)` | 예상 플랫폼 수수료율. percent 입력값 |
+| `target_margin_rate` | `NUMERIC(6,2)` | 목표 마진율. percent 입력값 |
 | `memo` | `TEXT` | 메모 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
 | `updated_at` | `TIMESTAMPTZ` | 수정일 |
+
+Unique: `(store_product_id)`.
 
 ---
 
@@ -828,7 +832,8 @@ V007__create_alert_tables.sql
 V008__add_auth_columns_to_users.sql
 V009__create_naver_store_tables.sql
 V010__create_naver_store_products.sql
-V011__create_toss_tables.sql
+V011__create_store_product_costs.sql
+V012__create_toss_tables.sql
 ```
 
 ## 12.2 작성 원칙
