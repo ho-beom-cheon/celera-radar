@@ -6,10 +6,24 @@ import java.time.OffsetDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ApiCallLogRepository extends JpaRepository<ApiCallLog, Long> {
-	long countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+	long countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
+			ExternalApiProvider provider,
+			String endpoint,
+			OffsetDateTime startInclusive,
+			OffsetDateTime endExclusive
+	);
+
+	default long countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
 			ExternalApiProvider provider,
 			String apiName,
 			OffsetDateTime startInclusive,
 			OffsetDateTime endExclusive
-	);
+	) {
+		return countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
+				provider,
+				apiName,
+				startInclusive,
+				endExclusive
+		);
+	}
 }

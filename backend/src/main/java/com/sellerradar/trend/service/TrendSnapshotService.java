@@ -100,9 +100,9 @@ public class TrendSnapshotService {
 					)
 			);
 			apiCallLogRepository.save(ApiCallLog.success(
-					ExternalApiProvider.NAVER,
+					ExternalApiProvider.NAVER_DATALAB,
 					NaverDataLabClient.KEYWORD_TREND_API_NAME,
-					keyword,
+					keyword.getId(),
 					endDate
 			));
 			return response;
@@ -117,9 +117,9 @@ public class TrendSnapshotService {
 				? businessException.errorCode()
 				: ErrorCode.EXTERNAL_API_UNAVAILABLE;
 		apiCallLogRepository.save(ApiCallLog.failure(
-				ExternalApiProvider.NAVER,
+				ExternalApiProvider.NAVER_DATALAB,
 				NaverDataLabClient.KEYWORD_TREND_API_NAME,
-				keyword,
+				keyword.getId(),
 				baseDate,
 				errorCode.status().value(),
 				errorCode.name(),

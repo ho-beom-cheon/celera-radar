@@ -110,7 +110,7 @@ class NaverDataLabClientTest {
 		assertThat(body.get("gender").asText()).isEmpty();
 		assertThat(body.get("ages").size()).isZero();
 		verify(apiQuotaService).assertDailyQuotaAvailable(
-				ExternalApiProvider.NAVER,
+				ExternalApiProvider.NAVER_DATALAB,
 				NaverDataLabClient.KEYWORD_TREND_API_NAME,
 				DAILY_QUOTA
 		);
@@ -133,7 +133,7 @@ class NaverDataLabClientTest {
 		org.mockito.Mockito.doThrow(new BusinessException(ErrorCode.EXTERNAL_API_RATE_LIMIT))
 				.when(apiQuotaService)
 				.assertDailyQuotaAvailable(
-						ExternalApiProvider.NAVER,
+						ExternalApiProvider.NAVER_DATALAB,
 						NaverDataLabClient.KEYWORD_TREND_API_NAME,
 						DAILY_QUOTA
 				);

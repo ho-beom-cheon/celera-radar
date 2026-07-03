@@ -25,27 +25,27 @@ public class ApiQuotaService {
 		this.clock = clock;
 	}
 
-	public void assertDailyQuotaAvailable(ExternalApiProvider provider, String apiName, int dailyLimit) {
-		if (remainingDailyQuota(provider, apiName, dailyLimit) <= 0) {
+	public void assertDailyQuotaAvailable(ExternalApiProvider provider, String endpoint, int dailyLimit) {
+		if (remainingDailyQuota(provider, endpoint, dailyLimit) <= 0) {
 			throw new BusinessException(ErrorCode.EXTERNAL_API_RATE_LIMIT);
 		}
 	}
 
-	public long remainingDailyQuota(ExternalApiProvider provider, String apiName, int dailyLimit) {
+	public long remainingDailyQuota(ExternalApiProvider provider, String endpoint, int dailyLimit) {
 		if (dailyLimit <= 0) {
 			return 0;
 		}
-		long usedCount = todayCallCount(provider, apiName);
+		long usedCount = todayCallCount(provider, endpoint);
 		return Math.max(0, dailyLimit - usedCount);
 	}
 
-	private long todayCallCount(ExternalApiProvider provider, String apiName) {
+	private long todayCallCount(ExternalApiProvider provider, String endpoint) {
 		LocalDate today = LocalDate.now(clock);
 		OffsetDateTime startInclusive = today.atStartOfDay(clock.getZone()).toOffsetDateTime();
 		OffsetDateTime endExclusive = today.plusDays(1).atStartOfDay(clock.getZone()).toOffsetDateTime();
-		return apiCallLogRepository.countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+		return apiCallLogRepository.countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
 				provider,
-				apiName,
+				endpoint,
 				startInclusive,
 				endExclusive
 		);

@@ -80,7 +80,11 @@ public class ShoppingSearchSnapshotService {
 	}
 
 	public ShoppingPriceSnapshot collect(Long keywordId, LocalDate baseDate) {
-		return snapshotRepository.findByKeyword_IdAndBaseDate(keywordId, baseDate)
+		return snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(
+						keywordId,
+						baseDate,
+						NaverShoppingSort.SIM.value()
+				)
 				.orElseGet(() -> collectFreshSnapshot(keywordId, baseDate));
 	}
 
@@ -97,7 +101,11 @@ public class ShoppingSearchSnapshotService {
 			keywordRepository.save(keyword);
 			return savedSnapshot;
 		} catch (DataIntegrityViolationException exception) {
-			return snapshotRepository.findByKeyword_IdAndBaseDate(keywordId, baseDate)
+			return snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(
+							keywordId,
+							baseDate,
+							NaverShoppingSort.SIM.value()
+					)
 					.orElseThrow(() -> exception);
 		}
 	}
@@ -112,9 +120,9 @@ public class ShoppingSearchSnapshotService {
 					DEFAULT_EXCLUDE
 			));
 			apiCallLogRepository.save(ApiCallLog.success(
-					ExternalApiProvider.NAVER,
+					ExternalApiProvider.NAVER_SEARCH,
 					API_NAME,
-					keyword,
+					keyword.getId(),
 					baseDate
 			));
 			return response;
@@ -131,9 +139,9 @@ public class ShoppingSearchSnapshotService {
 				? businessException.errorCode()
 				: ErrorCode.EXTERNAL_API_UNAVAILABLE;
 		apiCallLogRepository.save(ApiCallLog.failure(
-				ExternalApiProvider.NAVER,
+				ExternalApiProvider.NAVER_SEARCH,
 				API_NAME,
-				keyword,
+				keyword.getId(),
 				baseDate,
 				errorCode.status().value(),
 				errorCode.name(),
@@ -152,14 +160,20 @@ public class ShoppingSearchSnapshotService {
 				.map(this::parsePrice)
 				.filter(price -> price != null && price > 0)
 				.toList();
-		ShoppingPriceSnapshot snapshot = ShoppingPriceSnapshot.create(
+		ShoppingPriceSnapshot snapshot = ShoppingPriceSnapshot.createSuccess(
 				keyword,
 				baseDate,
-				response.total(),
+				keyword.getKeyword(),
+				NaverShoppingSort.SIM.value(),
+				DEFAULT_DISPLAY,
+				toInteger(response.total()),
 				min(prices),
 				max(prices),
 				average(prices),
-				rawJson(response)
+				median(prices),
+				rawJson(response),
+				OffsetDateTime.now(clock),
+				false
 		);
 		for (int index = 0; index < items.size(); index++) {
 			snapshot.addTopItem(toTopItem(index + 1, items.get(index)));
@@ -214,6 +228,25 @@ public class ShoppingSearchSnapshotService {
 				.mapToInt(Integer::intValue)
 				.average()
 				.orElse(0));
+	}
+
+	private Integer median(List<Integer> prices) {
+		if (prices.isEmpty()) {
+			return null;
+		}
+		List<Integer> sortedPrices = prices.stream().sorted().toList();
+		int middle = sortedPrices.size() / 2;
+		if (sortedPrices.size() % 2 == 1) {
+			return sortedPrices.get(middle);
+		}
+		return (sortedPrices.get(middle - 1) + sortedPrices.get(middle)) / 2;
+	}
+
+	private Integer toInteger(long value) {
+		if (value > Integer.MAX_VALUE) {
+			return Integer.MAX_VALUE;
+		}
+		return (int) value;
 	}
 
 	private String rawJson(NaverShoppingSearchResponse response) {

@@ -113,7 +113,7 @@ class TrendSnapshotServiceTest {
 
 		ArgumentCaptor<ApiCallLog> logCaptor = ArgumentCaptor.forClass(ApiCallLog.class);
 		verify(apiCallLogRepository).save(logCaptor.capture());
-		assertThat(logCaptor.getValue().getProvider()).isEqualTo(ExternalApiProvider.NAVER);
+		assertThat(logCaptor.getValue().getProvider()).isEqualTo(ExternalApiProvider.NAVER_DATALAB);
 		assertThat(logCaptor.getValue().getApiName()).isEqualTo(NaverDataLabClient.KEYWORD_TREND_API_NAME);
 		assertThat(logCaptor.getValue().getStatus()).isEqualTo(ApiCallStatus.SUCCESS);
 	}

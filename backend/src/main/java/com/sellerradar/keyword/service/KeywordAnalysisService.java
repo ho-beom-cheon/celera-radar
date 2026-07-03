@@ -32,7 +32,7 @@ public class KeywordAnalysisService {
 		Keyword keyword = keywordRepository.findByIdAndUserId(keywordId, userId)
 				.filter(foundKeyword -> foundKeyword.getStatus() == KeywordStatus.ACTIVE)
 				.orElseThrow(() -> new BusinessException(ErrorCode.KEYWORD_NOT_FOUND));
-		ShoppingAnalysisResponse shopping = snapshotRepository.findFirstByKeyword_IdOrderByBaseDateDesc(keywordId)
+		ShoppingAnalysisResponse shopping = snapshotRepository.findFirstByKeyword_IdOrderBySearchDateDesc(keywordId)
 				.map(this::toShoppingAnalysisResponse)
 				.orElse(null);
 		return new KeywordAnalysisResponse(
