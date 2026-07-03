@@ -591,7 +591,45 @@ P6 마진/상품 검토 점수: 3/3 완료
 - P6-003 Candidate 화면 구현: 완료
 ```
 
-다음: P7-001
+다음: P7-002
+
+---
+
+## 최신 진행: P7-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P7-001 Alert Rule/Notification DB 구현`을 완료했다.
+
+반영 내용:
+
+- `V007__create_alert_tables.sql` 추가
+- `alert_rule` 테이블 생성 migration 추가
+- `alert` 테이블 생성 migration 추가
+- 동일 조건/동일 후보/동일 유형 중복 알림 방지 unique key 추가
+- `alert`의 candidate FK는 기존 Flyway에 `product_candidate`가 아직 없을 수 있어 테이블 존재 시에만 조건부 추가
+- `AlertGenerationServiceTest` 추가
+- `docs/10_database_design.md` 알림 테이블 설계를 실제 구현 테이블명 기준으로 갱신
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary DB migration check
+tables: alert, alert_rule
+constraints: ck_alert_rule_frequency, ck_alert_status, uk_alert_rule_candidate_type
+success
+```
+
+진행률:
+
+```text
+P7 알림/배치: 1/2 완료
+- P7-001 Alert Rule/Notification DB 구현: 완료
+- P7-002 Notification 생성 Batch 구현: 다음
+```
+
+다음: P7-002
 
 ---
 
