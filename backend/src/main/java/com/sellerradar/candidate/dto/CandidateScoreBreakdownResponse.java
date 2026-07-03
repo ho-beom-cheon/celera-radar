@@ -7,6 +7,7 @@ public record CandidateScoreBreakdownResponse(
 		int competitionScore,
 		int marginScore,
 		int priceBandScore,
+		int priceScore,
 		int supplyScore,
 		int riskPenalty
 ) {
@@ -16,6 +17,7 @@ public record CandidateScoreBreakdownResponse(
 				breakdown.competitionScore(),
 				breakdown.marginScore(),
 				breakdown.priceBandScore(),
+				breakdown.priceScore(),
 				breakdown.supplyScore(),
 				breakdown.riskPenalty()
 		);

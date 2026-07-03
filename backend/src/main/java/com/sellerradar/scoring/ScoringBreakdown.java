@@ -8,4 +8,7 @@ public record ScoringBreakdown(
 		int supplyScore,
 		int riskPenalty
 ) {
+	public int priceScore() {
+		return priceBandScore;
+	}
 }

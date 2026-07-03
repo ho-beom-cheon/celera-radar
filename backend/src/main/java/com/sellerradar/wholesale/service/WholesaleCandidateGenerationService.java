@@ -13,7 +13,7 @@ import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.repository.KeywordRepository;
-import com.sellerradar.scoring.ScoringEngine;
+import com.sellerradar.scoring.CandidateScoreCalculator;
 import com.sellerradar.scoring.ScoringInput;
 import com.sellerradar.scoring.ScoringResult;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
@@ -38,7 +38,7 @@ public class WholesaleCandidateGenerationService {
 	private final KeywordRepository keywordRepository;
 	private final ShoppingPriceSnapshotRepository snapshotRepository;
 	private final RiskCategoryService riskCategoryService;
-	private final ScoringEngine scoringEngine;
+	private final CandidateScoreCalculator candidateScoreCalculator;
 	private final MarginCalculator marginCalculator;
 	private final CategoryCodeResolver categoryCodeResolver;
 
@@ -49,7 +49,7 @@ public class WholesaleCandidateGenerationService {
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			RiskCategoryService riskCategoryService,
-			ScoringEngine scoringEngine,
+			CandidateScoreCalculator candidateScoreCalculator,
 			MarginCalculator marginCalculator,
 			CategoryCodeResolver categoryCodeResolver
 	) {
@@ -59,7 +59,7 @@ public class WholesaleCandidateGenerationService {
 		this.keywordRepository = keywordRepository;
 		this.snapshotRepository = snapshotRepository;
 		this.riskCategoryService = riskCategoryService;
-		this.scoringEngine = scoringEngine;
+		this.candidateScoreCalculator = candidateScoreCalculator;
 		this.marginCalculator = marginCalculator;
 		this.categoryCodeResolver = categoryCodeResolver;
 	}
@@ -107,7 +107,7 @@ public class WholesaleCandidateGenerationService {
 				.map(Keyword::getCategoryCode)
 				.orElseGet(() -> categoryCodeResolver.resolve(product.getSourceCategory()));
 		RiskCategoryDecision riskDecision = riskCategoryService.evaluate(product.getSourceCategory());
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = candidateScoreCalculator.calculate(new ScoringInput(
 				0,
 				latestSnapshot.map(ShoppingPriceSnapshot::getTotalResults).orElse(0L),
 				latestSnapshot.map(ShoppingPriceSnapshot::getMinPrice).orElse(expectedSalePrice),

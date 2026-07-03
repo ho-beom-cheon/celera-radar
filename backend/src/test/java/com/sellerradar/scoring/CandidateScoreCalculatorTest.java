@@ -6,12 +6,12 @@ import com.sellerradar.category.domain.RiskHandlingType;
 import com.sellerradar.category.service.RiskCategoryDecision;
 import org.junit.jupiter.api.Test;
 
-class ScoringEngineTest {
-	private final ScoringEngine scoringEngine = new ScoringEngine();
+class CandidateScoreCalculatorTest {
+	private final CandidateScoreCalculator calculator = new CandidateScoreCalculator();
 
 	@Test
 	void calculateReturnsRecommendedForStrongCandidate() {
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = calculator.calculate(new ScoringInput(
 				30,
 				8_000L,
 				12_000,
@@ -27,6 +27,7 @@ class ScoringEngineTest {
 		assertThat(result.breakdown().competitionScore()).isEqualTo(25);
 		assertThat(result.breakdown().marginScore()).isEqualTo(30);
 		assertThat(result.breakdown().priceBandScore()).isEqualTo(10);
+		assertThat(result.breakdown().priceScore()).isEqualTo(10);
 		assertThat(result.breakdown().supplyScore()).isEqualTo(5);
 		assertThat(result.breakdown().riskPenalty()).isZero();
 		assertThat(result.overallScore()).isEqualTo(100);
@@ -44,7 +45,7 @@ class ScoringEngineTest {
 
 	@Test
 	void calculateClampsComponentScoresAndOverallScore() {
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = calculator.calculate(new ScoringInput(
 				99,
 				1L,
 				10_000,
@@ -62,7 +63,7 @@ class ScoringEngineTest {
 
 	@Test
 	void calculatePenalizesHighCompetitionAndWeakMargin() {
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = calculator.calculate(new ScoringInput(
 				5,
 				500_000L,
 				2_000,
@@ -77,6 +78,7 @@ class ScoringEngineTest {
 		assertThat(result.breakdown().competitionScore()).isZero();
 		assertThat(result.breakdown().marginScore()).isZero();
 		assertThat(result.breakdown().priceBandScore()).isZero();
+		assertThat(result.breakdown().priceScore()).isZero();
 		assertThat(result.overallScore()).isEqualTo(10);
 		assertThat(result.grade()).isEqualTo(CandidateGrade.HOLD);
 		assertThat(result.warnings()).contains(
@@ -88,7 +90,7 @@ class ScoringEngineTest {
 
 	@Test
 	void calculateAppliesCautionRiskPenalty() {
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = calculator.calculate(new ScoringInput(
 				25,
 				9_000L,
 				12_000,
@@ -107,7 +109,7 @@ class ScoringEngineTest {
 
 	@Test
 	void calculateForcesExcludedGradeForExcludedRiskCategory() {
-		ScoringResult result = scoringEngine.calculate(new ScoringInput(
+		ScoringResult result = calculator.calculate(new ScoringInput(
 				30,
 				5_000L,
 				12_000,
