@@ -1,0 +1,226 @@
+package com.sellerradar.shopping.service;
+
+import com.sellerradar.common.error.BusinessException;
+import com.sellerradar.common.error.ErrorCode;
+import com.sellerradar.common.external.domain.ApiCallLog;
+import com.sellerradar.common.external.domain.ExternalApiProvider;
+import com.sellerradar.common.external.repository.ApiCallLogRepository;
+import com.sellerradar.keyword.domain.Keyword;
+import com.sellerradar.keyword.domain.KeywordStatus;
+import com.sellerradar.keyword.repository.KeywordRepository;
+import com.sellerradar.shopping.client.NaverShoppingClient;
+import com.sellerradar.shopping.client.NaverShoppingSearchItem;
+import com.sellerradar.shopping.client.NaverShoppingSearchRequest;
+import com.sellerradar.shopping.client.NaverShoppingSearchResponse;
+import com.sellerradar.shopping.client.NaverShoppingSort;
+import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
+import com.sellerradar.shopping.domain.ShoppingTopItem;
+import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+@Service
+public class ShoppingSearchSnapshotService {
+	private static final String API_NAME = "NAVER_SHOPPING_SEARCH";
+	private static final int DEFAULT_DISPLAY = 100;
+	private static final int DEFAULT_START = 1;
+	private static final String DEFAULT_EXCLUDE = "used:rental:cbshop";
+
+	private final KeywordRepository keywordRepository;
+	private final ShoppingPriceSnapshotRepository snapshotRepository;
+	private final ApiCallLogRepository apiCallLogRepository;
+	private final NaverShoppingClient naverShoppingClient;
+	private final ObjectMapper objectMapper;
+	private final Clock clock;
+
+	@Autowired
+	public ShoppingSearchSnapshotService(
+			KeywordRepository keywordRepository,
+			ShoppingPriceSnapshotRepository snapshotRepository,
+			ApiCallLogRepository apiCallLogRepository,
+			NaverShoppingClient naverShoppingClient,
+			ObjectMapper objectMapper
+	) {
+		this(
+				keywordRepository,
+				snapshotRepository,
+				apiCallLogRepository,
+				naverShoppingClient,
+				objectMapper,
+				Clock.systemDefaultZone()
+		);
+	}
+
+	ShoppingSearchSnapshotService(
+			KeywordRepository keywordRepository,
+			ShoppingPriceSnapshotRepository snapshotRepository,
+			ApiCallLogRepository apiCallLogRepository,
+			NaverShoppingClient naverShoppingClient,
+			ObjectMapper objectMapper,
+			Clock clock
+	) {
+		this.keywordRepository = keywordRepository;
+		this.snapshotRepository = snapshotRepository;
+		this.apiCallLogRepository = apiCallLogRepository;
+		this.naverShoppingClient = naverShoppingClient;
+		this.objectMapper = objectMapper;
+		this.clock = clock;
+	}
+
+	public ShoppingPriceSnapshot collect(Long keywordId) {
+		return collect(keywordId, LocalDate.now(clock));
+	}
+
+	public ShoppingPriceSnapshot collect(Long keywordId, LocalDate baseDate) {
+		return snapshotRepository.findByKeyword_IdAndBaseDate(keywordId, baseDate)
+				.orElseGet(() -> collectFreshSnapshot(keywordId, baseDate));
+	}
+
+	private ShoppingPriceSnapshot collectFreshSnapshot(Long keywordId, LocalDate baseDate) {
+		Keyword keyword = keywordRepository.findById(keywordId)
+				.filter(foundKeyword -> foundKeyword.getStatus() == KeywordStatus.ACTIVE)
+				.orElseThrow(() -> new BusinessException(ErrorCode.KEYWORD_NOT_FOUND));
+
+		NaverShoppingSearchResponse response = searchNaver(keyword, baseDate);
+		ShoppingPriceSnapshot snapshot = buildSnapshot(keyword, baseDate, response);
+		try {
+			ShoppingPriceSnapshot savedSnapshot = snapshotRepository.saveAndFlush(snapshot);
+			keyword.markAnalyzed(OffsetDateTime.now(clock));
+			keywordRepository.save(keyword);
+			return savedSnapshot;
+		} catch (DataIntegrityViolationException exception) {
+			return snapshotRepository.findByKeyword_IdAndBaseDate(keywordId, baseDate)
+					.orElseThrow(() -> exception);
+		}
+	}
+
+	private NaverShoppingSearchResponse searchNaver(Keyword keyword, LocalDate baseDate) {
+		try {
+			NaverShoppingSearchResponse response = naverShoppingClient.search(new NaverShoppingSearchRequest(
+					keyword.getKeyword(),
+					DEFAULT_DISPLAY,
+					DEFAULT_START,
+					NaverShoppingSort.SIM,
+					DEFAULT_EXCLUDE
+			));
+			apiCallLogRepository.save(ApiCallLog.success(
+					ExternalApiProvider.NAVER,
+					API_NAME,
+					keyword,
+					baseDate
+			));
+			return response;
+		} catch (RuntimeException exception) {
+			recordApiFailure(keyword, baseDate, exception);
+			keyword.markAnalysisFailed(OffsetDateTime.now(clock));
+			keywordRepository.save(keyword);
+			throw exception;
+		}
+	}
+
+	private void recordApiFailure(Keyword keyword, LocalDate baseDate, RuntimeException exception) {
+		ErrorCode errorCode = exception instanceof BusinessException businessException
+				? businessException.errorCode()
+				: ErrorCode.EXTERNAL_API_UNAVAILABLE;
+		apiCallLogRepository.save(ApiCallLog.failure(
+				ExternalApiProvider.NAVER,
+				API_NAME,
+				keyword,
+				baseDate,
+				errorCode.status().value(),
+				errorCode.name(),
+				exception.getMessage()
+		));
+	}
+
+	private ShoppingPriceSnapshot buildSnapshot(
+			Keyword keyword,
+			LocalDate baseDate,
+			NaverShoppingSearchResponse response
+	) {
+		List<NaverShoppingSearchItem> items = response.items() == null ? List.of() : response.items();
+		List<Integer> prices = items.stream()
+				.map(NaverShoppingSearchItem::lprice)
+				.map(this::parsePrice)
+				.filter(price -> price != null && price > 0)
+				.toList();
+		ShoppingPriceSnapshot snapshot = ShoppingPriceSnapshot.create(
+				keyword,
+				baseDate,
+				response.total(),
+				min(prices),
+				max(prices),
+				average(prices),
+				rawJson(response)
+		);
+		for (int index = 0; index < items.size(); index++) {
+			snapshot.addTopItem(toTopItem(index + 1, items.get(index)));
+		}
+		return snapshot;
+	}
+
+	private ShoppingTopItem toTopItem(int itemRank, NaverShoppingSearchItem item) {
+		return ShoppingTopItem.create(
+				itemRank,
+				item.title(),
+				item.link(),
+				item.image(),
+				parsePrice(item.lprice()),
+				parsePrice(item.hprice()),
+				item.mallName(),
+				item.productId(),
+				item.productType(),
+				item.brand(),
+				item.maker(),
+				item.category1(),
+				item.category2(),
+				item.category3(),
+				item.category4()
+		);
+	}
+
+	private Integer parsePrice(String value) {
+		if (!StringUtils.hasText(value)) {
+			return null;
+		}
+		try {
+			return Integer.valueOf(value);
+		} catch (NumberFormatException exception) {
+			return null;
+		}
+	}
+
+	private Integer min(List<Integer> prices) {
+		return prices.stream().min(Integer::compareTo).orElse(null);
+	}
+
+	private Integer max(List<Integer> prices) {
+		return prices.stream().max(Integer::compareTo).orElse(null);
+	}
+
+	private Integer average(List<Integer> prices) {
+		if (prices.isEmpty()) {
+			return null;
+		}
+		return (int) Math.round(prices.stream()
+				.mapToInt(Integer::intValue)
+				.average()
+				.orElse(0));
+	}
+
+	private String rawJson(NaverShoppingSearchResponse response) {
+		try {
+			return objectMapper.writeValueAsString(response);
+		} catch (JacksonException exception) {
+			throw new IllegalStateException("네이버 쇼핑 검색 응답 직렬화에 실패했습니다.", exception);
+		}
+	}
+}
