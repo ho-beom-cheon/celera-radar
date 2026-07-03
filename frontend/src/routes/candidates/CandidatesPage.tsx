@@ -190,7 +190,7 @@ export function CandidatesPage() {
           <button type="submit" className="primary-button" disabled={!getAccessToken() || loading}>
             조회
           </button>
-          <a className="secondary-button" href="/wholesale">
+          <a className="secondary-button" href="/wholesale/uploads">
             CSV 후보 생성
           </a>
         </div>
