@@ -952,6 +952,56 @@ P10 스마트스토어 내 상품 마진 감시: 2/2 완료
 
 ---
 
+## 최신 진행: P11-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P11-001 Settlement Skeleton`을 구현했다.
+
+반영 내용:
+
+- `naver_order_snapshots` Flyway migration 추가
+- `naver_settlement_snapshots` Flyway migration 추가
+- `naver_commission_snapshots` Flyway migration 추가
+- order/settlement/commission snapshot entity와 repository skeleton 추가
+- 실제 네이버 커머스API 호출 없는 `SmartStoreSettlementClient` interface 추가
+- 외부 호출 없는 `MockSmartStoreSettlementClient` 추가
+- 예상 손익과 실제 손익 비교를 위한 `StoreProfitComparisonService` interface 추가
+- 단순 비교 구현체 `SimpleStoreProfitComparisonService` 추가
+- repository 저장/조회, mock client, 손익 비교 service 테스트 추가
+- `docs/10_database_design.md` migration 목록 갱신
+
+제외:
+
+- 실제 네이버 커머스API 호출
+- 실제 주문/정산/수수료 동기화 batch
+- 화면 구현
+- 스마트스토어 상품 자동 등록
+- 토큰 암호화 구현체
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V012 applied successfully
+tables:
+- naver_order_snapshots
+- naver_settlement_snapshots
+- naver_commission_snapshots
+```
+
+진행률:
+
+```text
+P11 주문/정산/수수료 연동: 1/1 완료
+- P11-001 Settlement Skeleton: 완료
+```
+
+다음: P12-001
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
