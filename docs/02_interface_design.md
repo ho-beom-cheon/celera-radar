@@ -639,6 +639,27 @@ Response:
 }
 ```
 
+### POST /admin/batches/datalab/run
+
+관리자 권한이 필요하다. ACTIVE keyword를 대상으로 데이터랩 트렌드 스냅샷 수집 batch를 즉시 실행한다. 처리 대상 수는 `DATALAB_DAILY_TARGET_LIMIT` 설정값으로 제한한다.
+
+Response:
+
+```json
+{
+  "id": 2,
+  "jobType": "DATALAB_TREND_DAILY",
+  "triggerType": "MANUAL",
+  "status": "SUCCESS",
+  "targetCount": 10,
+  "successCount": 10,
+  "failureCount": 0,
+  "startedAt": "2026-07-02T07:00:00+09:00",
+  "finishedAt": "2026-07-02T07:00:05+09:00",
+  "errorMessage": null
+}
+```
+
 ### GET /admin/batches
 
 관리자 권한이 필요하다. 최신 실행 이력부터 페이지 단위로 조회한다.
