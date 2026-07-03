@@ -194,6 +194,13 @@ h2 {
   line-height: 1;
 }
 
+.summary-card .summary-badge-value {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  font-size: 14px;
+}
+
 .work-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
@@ -520,6 +527,10 @@ h2 {
   font-size: 14px;
 }
 
+.keywords-data-table {
+  min-width: 980px;
+}
+
 .data-table th,
 .data-table td {
   padding: 12px 10px;
@@ -579,6 +590,40 @@ h2 {
 .status-skipped {
   color: #615238;
   background: #f2eadc;
+}
+
+.competition-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.competition-unknown {
+  color: #657982;
+  background: #edf2f5;
+}
+
+.competition-low {
+  color: #176b55;
+  background: #dff5e9;
+}
+
+.competition-medium {
+  color: #795200;
+  background: #fff1c2;
+}
+
+.competition-high,
+.competition-very_high {
+  color: #9f1d1d;
+  background: #ffe1e1;
 }
 
 .state-row {

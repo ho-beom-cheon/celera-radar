@@ -69,7 +69,7 @@ public class NaverDataLabClient {
 				request.endDate().toString(),
 				request.timeUnit().value(),
 				request.category(),
-				List.of(new NaverDataLabKeywordGroup(request.keyword(), List.of(request.keyword()))),
+				request.keywordGroups(),
 				"",
 				"",
 				List.of()

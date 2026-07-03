@@ -519,6 +519,44 @@ docs/10_database_design.md 14.1 기준 7/7 완료
 다음 구현 작업은 `P3-001 Competition Analyzer 구현`이 적절하다.
 
 ---
+## 최신 진행: P3-002 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P3-002 가격/경쟁강도 화면 표시`를 완료했다.
+
+반영 내용:
+
+- Keyword list/detail 응답에 최신 쇼핑 스냅샷 요약 필드 추가
+  - `latestMinPrice`
+  - `latestAvgPrice`
+  - `latestCompetitionLevel`
+- 쇼핑 스냅샷 조회 응답에 `competitionLevel` 추가
+- 키워드 목록에 최신 최저가, 평균가, 경쟁강도, 마지막 분석 시각 표시
+- 키워드 상세 가격 요약에 경쟁강도 badge 표시
+- frontend keyword API 타입을 backend 응답과 정합화
+- `docs/02_interface_design.md`에 변경된 응답 필드 반영
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P3 기준 2/2 완료
+완료: P3-001, P3-002
+다음: P4-001
+```
+
+다음 구현 작업은 `P4-001 Trend Snapshot DB/Domain 구현`이 적절하다.
+
+---
+
 ## 최신 진행: P3-001 구현 완료
 
 `docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P3-001 Competition Analyzer 구현`을 완료했다.
@@ -551,5 +589,73 @@ P3 기준 1/2 완료
 ```
 
 다음 구현 작업은 `P3-002 가격/경쟁강도 화면 표시`가 적절하다.
+
+---
+
+## 최신 진행: P4-001 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P4-001 Trend Snapshot DB/Domain 구현`을 완료했다.
+
+반영 내용:
+
+- `trend_snapshots` Flyway migration 추가
+- `batch_job_history` Flyway migration 추가
+- 기존 `TrendSnapshot` domain을 `trend_snapshots` 테이블과 snapshot/filter 컬럼 구조에 맞게 보정
+- trend snapshot 저장/조회 repository 메서드를 `snapshotDate`, `dataPeriod`, `timeUnit` 기준으로 정리
+- TrendSnapshot service/test 정합성 보강
+- PostgreSQL 임시 DB에서 V001~V004 migration 적용 확인
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V004 applied successfully
+```
+
+진행률:
+
+```text
+P4 데이터랩 트렌드 분석: 1/3 완료
+- P4-001 Trend Snapshot DB/Domain 구현: 완료
+- P4-002 NaverDataLabClient 구현: 다음
+- P4-003 Daily Trend Batch 구현: 대기
+```
+
+다음: P4-002
+
+---
+## 최신 진행: P4-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P4-002 NaverDataLabClient 구현` 정합성 보강을 완료했다.
+
+반영 내용:
+
+- 기존 단일 키워드 DataLab 요청 호환 유지
+- 한 요청에 최대 5개 `keywordGroups`를 보낼 수 있도록 요청 모델 보강
+- DataLab 요청 payload가 `keywordGroups`를 공식 `keyword` 배열로 전송하도록 정리
+- 5개 초과 keyword group validation 추가
+- MockWebServer client test 보강
+- 429 rate limit 응답과 500 server error 응답 매핑 확인
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P4 데이터랩 트렌드 분석: 2/3 완료
+- P4-001 Trend Snapshot DB/Domain 구현: 완료
+- P4-002 NaverDataLabClient 구현: 완료
+- P4-003 Daily Trend Batch 구현: 다음
+```
+
+다음: P4-003
 
 ---

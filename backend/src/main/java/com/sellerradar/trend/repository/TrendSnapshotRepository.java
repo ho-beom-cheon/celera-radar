@@ -8,7 +8,12 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TrendSnapshotRepository extends JpaRepository<TrendSnapshot, Long> {
-	Optional<TrendSnapshot> findByKeyword_IdAndPeriodAndTimeUnit(Long keywordId, LocalDate period, TrendTimeUnit timeUnit);
+	Optional<TrendSnapshot> findByKeyword_IdAndSnapshotDateAndDataPeriodAndTimeUnit(
+			Long keywordId,
+			LocalDate snapshotDate,
+			LocalDate dataPeriod,
+			TrendTimeUnit timeUnit
+	);
 
-	List<TrendSnapshot> findByKeyword_IdAndTimeUnitOrderByPeriodAsc(Long keywordId, TrendTimeUnit timeUnit);
+	List<TrendSnapshot> findByKeyword_IdAndTimeUnitOrderByDataPeriodAsc(Long keywordId, TrendTimeUnit timeUnit);
 }

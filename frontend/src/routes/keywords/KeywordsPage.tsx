@@ -5,6 +5,7 @@ import {
   KeywordItem,
   KeywordCategory,
   categoryOptions,
+  competitionLabels,
   createKeyword,
   deleteKeyword,
   listKeywords,
@@ -321,12 +322,15 @@ export function KeywordsPage() {
         </div>
 
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table keywords-data-table">
             <thead>
               <tr>
                 <th>키워드</th>
                 <th>카테고리</th>
                 <th>상태</th>
+                <th>최저가</th>
+                <th>평균가</th>
+                <th>경쟁강도</th>
                 <th>마지막 분석</th>
                 <th>액션</th>
               </tr>
@@ -343,6 +347,13 @@ export function KeywordsPage() {
                   <td>
                     <span className={`status-badge status-${item.analysisStatus.toLowerCase()}`}>
                       {statusLabels[item.analysisStatus]}
+                    </span>
+                  </td>
+                  <td>{formatCurrency(item.latestMinPrice)}</td>
+                  <td>{formatCurrency(item.latestAvgPrice)}</td>
+                  <td>
+                    <span className={`competition-badge competition-${(item.latestCompetitionLevel ?? 'UNKNOWN').toLowerCase()}`}>
+                      {competitionLabels[item.latestCompetitionLevel ?? 'UNKNOWN']}
                     </span>
                   </td>
                   <td>{formatDateTime(item.lastAnalyzedAt)}</td>
@@ -386,6 +397,17 @@ function formatDateTime(value: string | null) {
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(new Date(value));
+}
+
+function formatCurrency(value: number | null) {
+  if (value === null) {
+    return '-';
+  }
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'KRW',
+    maximumFractionDigits: 0
+  }).format(value);
 }
 
 function errorMessage(error: unknown) {

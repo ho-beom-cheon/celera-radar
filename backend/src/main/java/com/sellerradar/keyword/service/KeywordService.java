@@ -8,6 +8,7 @@ import com.sellerradar.keyword.dto.KeywordCreateRequest;
 import com.sellerradar.keyword.dto.KeywordResponse;
 import com.sellerradar.keyword.dto.KeywordUpdateRequest;
 import com.sellerradar.keyword.repository.KeywordRepository;
+import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -20,15 +21,18 @@ public class KeywordService {
 	private final KeywordRepository keywordRepository;
 	private final UserRepository userRepository;
 	private final KeywordNormalizer keywordNormalizer;
+	private final ShoppingPriceSnapshotRepository snapshotRepository;
 
 	public KeywordService(
 			KeywordRepository keywordRepository,
 			UserRepository userRepository,
-			KeywordNormalizer keywordNormalizer
+			KeywordNormalizer keywordNormalizer,
+			ShoppingPriceSnapshotRepository snapshotRepository
 	) {
 		this.keywordRepository = keywordRepository;
 		this.userRepository = userRepository;
 		this.keywordNormalizer = keywordNormalizer;
+		this.snapshotRepository = snapshotRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -39,12 +43,12 @@ public class KeywordService {
 			Pageable pageable
 	) {
 		Page<Keyword> keywords = findActiveKeywords(userId, normalizeCategory(category), analysisStatus, pageable);
-		return keywords.map(KeywordResponse::from);
+		return keywords.map(this::toResponse);
 	}
 
 	@Transactional(readOnly = true)
 	public KeywordResponse get(Long userId, Long keywordId) {
-		return KeywordResponse.from(getActiveKeyword(userId, keywordId));
+		return toResponse(getActiveKeyword(userId, keywordId));
 	}
 
 	@Transactional
@@ -148,5 +152,12 @@ public class KeywordService {
 		}
 		String trimmedCategory = category.trim();
 		return trimmedCategory.isEmpty() ? null : trimmedCategory;
+	}
+
+	private KeywordResponse toResponse(Keyword keyword) {
+		return KeywordResponse.from(
+				keyword,
+				snapshotRepository.findFirstByKeyword_IdOrderBySearchDateDesc(keyword.getId()).orElse(null)
+		);
 	}
 }

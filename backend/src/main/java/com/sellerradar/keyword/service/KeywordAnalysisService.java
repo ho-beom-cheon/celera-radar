@@ -113,6 +113,7 @@ public class KeywordAnalysisService {
 				snapshot.getMinPrice(),
 				snapshot.getMaxPrice(),
 				snapshot.getAvgPrice(),
+				snapshot.getCompetitionLevel(),
 				snapshot.getFetchedAt(),
 				snapshot.getTopItems().stream()
 						.limit(10)
