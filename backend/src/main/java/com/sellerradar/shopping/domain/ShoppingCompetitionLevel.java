@@ -11,15 +11,12 @@ public enum ShoppingCompetitionLevel {
 		if (totalCount == null || itemCount <= 0) {
 			return UNKNOWN;
 		}
-		if (totalCount < 3_000) {
-			return LOW;
-		}
-		if (totalCount < 10_000) {
-			return MEDIUM;
-		}
-		if (totalCount < 50_000) {
+		if (totalCount >= 10_000) {
 			return HIGH;
 		}
-		return VERY_HIGH;
+		if (totalCount >= 3_000) {
+			return MEDIUM;
+		}
+		return LOW;
 	}
 }

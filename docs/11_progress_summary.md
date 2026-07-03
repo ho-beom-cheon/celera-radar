@@ -487,3 +487,69 @@ docs/10_database_design.md 14.1 기준 6/7 완료
 - imageUrl 누락/로드 실패 placeholder 처리
 - frontend keyword API 타입을 P2-003 backend 응답과 정합화
 - `npm run build`와 브라우저 화면 확인
+## 최신 진행: P2-004 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P2-004 상품 카드 화면` 구현을 완료했다.
+
+반영 내용:
+
+- 키워드 상세 화면에서 `GET /api/v1/keywords/{keywordId}/shopping-snapshot/latest`를 조회하도록 정리
+- 키워드 상세 화면에 `POST /api/v1/keywords/{keywordId}/analyze/shopping` 분석 실행 버튼 추가
+- 최신 shopping snapshot의 `totalCount`, `minPrice`, `avgPrice`, `maxPrice`, `searchDate`, `fetchedAt` 표시
+- 상위 상품 10개를 `ProductCard` 컴포넌트로 분리해 카드 형태로 표시
+- 상품 카드에 이미지, 상품명, 최저가, 몰명, 카테고리, 원본 링크 표시
+- 이미지 URL이 없거나 로드 실패 시 placeholder 표시
+- frontend keyword API 타입을 P2-003 backend 응답 필드와 정합화
+
+검증:
+
+```text
+cd frontend && npm run build
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+docs/10_database_design.md 14.1 기준 7/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002, P2-003, P2-004
+다음: P3-001
+```
+
+다음 구현 작업은 `P3-001 Competition Analyzer 구현`이 적절하다.
+
+---
+## 최신 진행: P3-001 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P3-001 Competition Analyzer 구현`을 완료했다.
+
+반영 내용:
+
+- `CompetitionAnalyzer` 추가
+- 검색 결과 수 기준 경쟁 강도 계산 적용
+  - `totalCount >= 10000`: `HIGH`
+  - `totalCount >= 3000`: `MEDIUM`
+  - 그 외: `LOW`
+- totalCount가 없거나 저장된 item이 없으면 `UNKNOWN`으로 유지
+- DB 호환을 위해 enum의 `UNKNOWN`, `VERY_HIGH` 값은 유지하되 P3-001 계산 결과는 `LOW/MEDIUM/HIGH`로 제한
+- shopping snapshot 생성 시 계산된 `competitionLevel`을 명시적으로 저장
+- 가격 평균/중앙값 계산에서 0원 또는 빈 가격을 제외하는 테스트 보강
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P3 기준 1/2 완료
+완료: P3-001
+다음: P3-002
+```
+
+다음 구현 작업은 `P3-002 가격/경쟁강도 화면 표시`가 적절하다.
+
+---
