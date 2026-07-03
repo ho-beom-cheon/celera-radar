@@ -519,6 +519,44 @@ docs/10_database_design.md 14.1 기준 7/7 완료
 다음 구현 작업은 `P3-001 Competition Analyzer 구현`이 적절하다.
 
 ---
+## 최신 진행: P3-002 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P3-002 가격/경쟁강도 화면 표시`를 완료했다.
+
+반영 내용:
+
+- Keyword list/detail 응답에 최신 쇼핑 스냅샷 요약 필드 추가
+  - `latestMinPrice`
+  - `latestAvgPrice`
+  - `latestCompetitionLevel`
+- 쇼핑 스냅샷 조회 응답에 `competitionLevel` 추가
+- 키워드 목록에 최신 최저가, 평균가, 경쟁강도, 마지막 분석 시각 표시
+- 키워드 상세 가격 요약에 경쟁강도 badge 표시
+- frontend keyword API 타입을 backend 응답과 정합화
+- `docs/02_interface_design.md`에 변경된 응답 필드 반영
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P3 기준 2/2 완료
+완료: P3-001, P3-002
+다음: P4-001
+```
+
+다음 구현 작업은 `P4-001 Trend Snapshot DB/Domain 구현`이 적절하다.
+
+---
+
 ## 최신 진행: P3-001 구현 완료
 
 `docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P3-001 Competition Analyzer 구현`을 완료했다.
