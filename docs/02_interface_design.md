@@ -229,7 +229,7 @@ Request는 `POST /keywords`와 동일하다. normalized keyword가 변경되면 
 
 ### GET /keywords/{keywordId}/analysis
 
-키워드 상세 분석 조회.
+키워드 상세 분석 조회. 기존 호환 endpoint이며, 화면에서 통합 분석 상태를 조회할 때 사용한다.
 
 Response:
 
@@ -278,19 +278,46 @@ Response:
 
 분석 스냅샷이 아직 없으면 `shopping`, `trend`, `score`는 `null`로 응답한다.
 
-### POST /keywords/{keywordId}/analysis/request
+### POST /keywords/{keywordId}/analyze/shopping
 
-즉시 분석 요청이 아니라 다음 배치 대상에 등록한다.
+네이버 쇼핑 검색 snapshot 분석을 즉시 실행한다. 같은 `keyword_id + search_date + sort_type` 성공 snapshot이 이미 있으면 외부 API를 다시 호출하지 않고 캐시 결과를 반환한다.
 
 Response:
 
 ```json
 {
   "keywordId": 101,
-  "queued": true,
-  "nextBatchWindow": "2026-07-03T07:00:00+09:00"
+  "keyword": "차량용 먼지 브러쉬",
+  "searchDate": "2026-07-03",
+  "sortType": "sim",
+  "cached": false,
+  "totalCount": 18230,
+  "minPrice": 4900,
+  "maxPrice": 29900,
+  "avgPrice": 12300,
+  "fetchedAt": "2026-07-03T07:12:00+09:00",
+  "topItems": [
+    {
+      "rankNo": 1,
+      "title": "차량용 먼지 제거 브러쉬",
+      "productUrl": "https://example.com/item",
+      "imageUrl": "https://example.com/item.jpg",
+      "lowPrice": 4900,
+      "mallName": "sample mall",
+      "category1": "생활/건강",
+      "category2": "자동차용품",
+      "category3": "",
+      "category4": ""
+    }
+  ]
 }
 ```
+
+### GET /keywords/{keywordId}/shopping-snapshot/latest
+
+최신 네이버 쇼핑 snapshot을 조회한다. snapshot이 없으면 `ANALYSIS_NOT_READY`를 반환한다.
+
+Response는 `POST /keywords/{keywordId}/analyze/shopping`과 동일하다.
 
 ---
 
@@ -667,9 +694,9 @@ X-Naver-Client-Secret: {clientSecret}
 
 ### 저장 테이블
 
-- shopping_price_snapshot
-- shopping_top_item
-- api_call_log
+- shopping_search_snapshots
+- shopping_item_snapshots
+- api_call_logs
 
 ---
 
