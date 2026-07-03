@@ -16,6 +16,7 @@ import com.sellerradar.keyword.dto.KeywordCreateRequest;
 import com.sellerradar.keyword.dto.KeywordResponse;
 import com.sellerradar.keyword.dto.KeywordUpdateRequest;
 import com.sellerradar.keyword.repository.KeywordRepository;
+import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
 import java.util.Optional;
@@ -30,6 +31,7 @@ class KeywordServiceTest {
 
 	private KeywordRepository keywordRepository;
 	private UserRepository userRepository;
+	private ShoppingPriceSnapshotRepository snapshotRepository;
 	private KeywordService keywordService;
 	private User user;
 
@@ -37,10 +39,12 @@ class KeywordServiceTest {
 	void setUp() {
 		keywordRepository = mock(KeywordRepository.class);
 		userRepository = mock(UserRepository.class);
-		keywordService = new KeywordService(keywordRepository, userRepository, new KeywordNormalizer());
+		snapshotRepository = mock(ShoppingPriceSnapshotRepository.class);
+		keywordService = new KeywordService(keywordRepository, userRepository, new KeywordNormalizer(), snapshotRepository);
 		user = User.create("seller@example.com", "{bcrypt}hash");
 		ReflectionTestUtils.setField(user, "id", USER_ID);
 		when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+		when(snapshotRepository.findFirstByKeyword_IdOrderBySearchDateDesc(any())).thenReturn(Optional.empty());
 	}
 
 	@Test

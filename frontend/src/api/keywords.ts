@@ -3,6 +3,7 @@ import { apiRequest } from './httpClient';
 export type KeywordCategory = string;
 export type CategoryCode = KeywordCategory;
 export type AnalysisStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
+export type ShoppingCompetitionLevel = 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
 
 export interface KeywordItem {
   id: number;
@@ -12,6 +13,9 @@ export interface KeywordItem {
   analysisStatus: AnalysisStatus;
   lastAnalyzedAt: string | null;
   lastSnapshotDate: string | null;
+  latestMinPrice: number | null;
+  latestAvgPrice: number | null;
+  latestCompetitionLevel: ShoppingCompetitionLevel | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,6 +63,7 @@ export interface ShoppingSnapshot {
   minPrice: number | null;
   maxPrice: number | null;
   avgPrice: number | null;
+  competitionLevel: ShoppingCompetitionLevel | null;
   fetchedAt: string | null;
   topItems: ShoppingSnapshotItem[];
 }
@@ -115,6 +120,14 @@ export const statusLabels: Record<AnalysisStatus, string> = {
   SUCCESS: '완료',
   FAILED: '실패',
   SKIPPED: '건너뜀'
+};
+
+export const competitionLabels: Record<ShoppingCompetitionLevel, string> = {
+  UNKNOWN: '미분석',
+  LOW: '낮음',
+  MEDIUM: '보통',
+  HIGH: '높음',
+  VERY_HIGH: '매우 높음'
 };
 
 export function listKeywords(filters: KeywordFilters = {}) {

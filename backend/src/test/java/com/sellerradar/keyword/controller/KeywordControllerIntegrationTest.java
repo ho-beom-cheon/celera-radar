@@ -315,6 +315,54 @@ class KeywordControllerIntegrationTest {
 	}
 
 	@Test
+	void keywordListAndDetailIncludeLatestPriceAndCompetitionSummary() throws Exception {
+		AuthResponse auth = signup();
+		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
+		var keyword = keywordRepository.findById(keywordId).orElseThrow();
+		ShoppingPriceSnapshot snapshot = ShoppingPriceSnapshot.create(
+				keyword,
+				LocalDate.of(2026, 7, 2),
+				18230L,
+				4900,
+				29900,
+				12300,
+				"{}"
+		);
+		snapshot.addTopItem(ShoppingTopItem.create(
+				1,
+				"car dust brush",
+				"https://example.com/item",
+				"https://example.com/item.jpg",
+				4900,
+				5900,
+				"sample mall",
+				"1000001",
+				"1",
+				"sample brand",
+				"sample maker",
+				"living",
+				"car supplies",
+				"",
+				""
+		));
+		snapshotRepository.saveAndFlush(snapshot);
+
+		mockMvc.perform(get("/api/v1/keywords")
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.items[0].latestMinPrice").value(4900))
+				.andExpect(jsonPath("$.data.items[0].latestAvgPrice").value(12300))
+				.andExpect(jsonPath("$.data.items[0].latestCompetitionLevel").value("HIGH"));
+
+		mockMvc.perform(get("/api/v1/keywords/{keywordId}", keywordId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.latestMinPrice").value(4900))
+				.andExpect(jsonPath("$.data.latestAvgPrice").value(12300))
+				.andExpect(jsonPath("$.data.latestCompetitionLevel").value("HIGH"));
+	}
+
+	@Test
 	void analyzeShoppingStoresSnapshotAndReusesSameDateCache() throws Exception {
 		AuthResponse auth = signup();
 		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
@@ -332,6 +380,7 @@ class KeywordControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.minPrice").value(1000))
 				.andExpect(jsonPath("$.data.maxPrice").value(11000))
 				.andExpect(jsonPath("$.data.avgPrice").value(6000))
+				.andExpect(jsonPath("$.data.competitionLevel").value("LOW"))
 				.andExpect(jsonPath("$.data.fetchedAt").exists())
 				.andExpect(jsonPath("$.data.topItems.length()").value(10))
 				.andExpect(jsonPath("$.data.topItems[0].rankNo").value(1))
@@ -413,6 +462,7 @@ class KeywordControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.minPrice").value(4900))
 				.andExpect(jsonPath("$.data.maxPrice").value(29900))
 				.andExpect(jsonPath("$.data.avgPrice").value(12300))
+				.andExpect(jsonPath("$.data.competitionLevel").value("HIGH"))
 				.andExpect(jsonPath("$.data.topItems.length()").value(1))
 				.andExpect(jsonPath("$.data.topItems[0].rankNo").value(1))
 				.andExpect(jsonPath("$.data.topItems[0].title").value("car dust brush"))

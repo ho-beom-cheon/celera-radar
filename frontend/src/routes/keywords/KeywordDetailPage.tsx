@@ -3,6 +3,7 @@ import {
   KeywordItem,
   ShoppingSnapshot,
   analyzeShopping,
+  competitionLabels,
   getKeyword,
   getLatestShoppingSnapshot,
   statusLabels
@@ -78,7 +79,10 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
               ...current,
               analysisStatus: 'SUCCESS',
               lastAnalyzedAt: response.fetchedAt ?? current.lastAnalyzedAt,
-              lastSnapshotDate: response.searchDate
+              lastSnapshotDate: response.searchDate,
+              latestMinPrice: response.minPrice,
+              latestAvgPrice: response.avgPrice,
+              latestCompetitionLevel: response.competitionLevel
             }
           : current
       );
@@ -149,6 +153,14 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
             <article className="summary-card">
               <span>최고가</span>
               <strong>{formatCurrency(snapshot.maxPrice)}</strong>
+            </article>
+            <article className="summary-card">
+              <span>경쟁강도</span>
+              <strong className="summary-badge-value">
+                <span className={`competition-badge competition-${(snapshot.competitionLevel ?? 'UNKNOWN').toLowerCase()}`}>
+                  {competitionLabels[snapshot.competitionLevel ?? 'UNKNOWN']}
+                </span>
+              </strong>
             </article>
           </section>
 
