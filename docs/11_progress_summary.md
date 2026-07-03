@@ -504,13 +504,13 @@ BUILD SUCCESSFUL
 진행률:
 
 ```text
-P6 마진/상품 검토 점수: 2/3 완료
+P6 마진/상품 검토 점수: 3/3 완료
 - P6-001 Margin Calculator 구현: 완료
 - P6-002 Candidate Scoring 구현: 완료
-- P6-003 Candidate 화면 구현: 다음
+- P6-003 Candidate 화면 구현: 완료
 ```
 
-다음: P6-003
+다음: P7-001
 
 ---
 
@@ -541,13 +541,57 @@ success
 진행률:
 
 ```text
-P6 마진/상품 검토 점수: 2/3 완료
+P6 마진/상품 검토 점수: 3/3 완료
 - P6-001 Margin Calculator 구현: 완료
 - P6-002 Candidate Scoring 구현: 완료
-- P6-003 Candidate 화면 구현: 다음
+- P6-003 Candidate 화면 구현: 완료
 ```
 
-다음: P6-003
+다음: P7-001
+
+---
+
+## 최신 진행: P6-003 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P6-003 Candidate 화면 구현`을 완료했다.
+
+반영 내용:
+
+- `/candidates` 후보 목록 화면 문구와 표시 항목 정리
+- 상품 이미지가 없는 현재 응답 구조를 고려해 후보 대체 배지 표시
+- 상품명, 예상 판매가, 공급가, 예상 마진율, 상품 검토 점수, 상태, 위험 수준 표시
+- 후보 목록에서 `점수 보기`로 score breakdown, 검토 이유, 주의사항을 펼쳐볼 수 있게 구현
+- `/candidates/{candidateId}` 상세 화면 문구, 메트릭, 점수 구성, 검토 이유/주의사항 정리
+- 화면 문구는 `검토 후보`, `데이터 기반 후보` 중심으로 정리
+- `판매 성공`, `수익 보장` 표현은 추가하지 않음
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+success
+
+GET http://127.0.0.1:5173/candidates
+200
+
+in-app browser smoke
+title: 상품 검토 후보
+hasCandidateHeading: true
+hasFilter: true
+hasTableHeading: true
+hasMojibakeMarker: false
+```
+
+진행률:
+
+```text
+P6 마진/상품 검토 점수: 3/3 완료
+- P6-001 Margin Calculator 구현: 완료
+- P6-002 Candidate Scoring 구현: 완료
+- P6-003 Candidate 화면 구현: 완료
+```
+
+다음: P7-001
 
 ---
 
