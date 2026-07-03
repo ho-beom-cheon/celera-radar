@@ -397,6 +397,52 @@ P5 도매 CSV/XLSX 업로드: 2/4 완료
 
 ---
 
+## 최신 진행: P5-003 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P5-003 컬럼 매핑/저장 API 구현`을 완료했다.
+
+반영 내용:
+
+- `POST /api/v1/wholesale-uploads/preview` API 추가
+- `POST /api/v1/wholesale-uploads/{uploadId}/confirm` API 추가
+- preview API에서 CSV/XLSX 파일 크기, 확장자, row limit 검증 후 upload metadata 저장
+- confirm API에서 `productName`, `supplyPrice`, `shippingFee`, `imageUrl`, `productUrl`, `category` 컬럼 매핑 적용
+- confirm 결과로 `successCount`, `failureCount`, `failureReasons` 반환
+- `mapping_image_url` Flyway migration 추가
+- `docs/02_interface_design.md`에 신규 wholesale upload API 계약 반영
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+Docker PostgreSQL temporary migration check
+V001~V006 applied successfully
+mapping_image_url column exists
+```
+
+주의:
+
+```text
+임시 DB bootRun은 Flyway V006 적용 후 category seed 단계에서 category_master 테이블 부재로 실패했다.
+이번 변경의 migration 적용 여부는 flyway_schema_history와 mapping_image_url 컬럼 조회로 확인했다.
+```
+
+진행률:
+
+```text
+P5 도매 CSV/XLSX 업로드: 3/4 완료
+- P5-001 Wholesale Product DB/Domain 구현: 완료
+- P5-002 CSV/XLSX 파일 파서 구현: 완료
+- P5-003 컬럼 매핑/저장 API 구현: 완료
+- P5-004 Wholesale Upload Frontend 구현: 다음
+```
+
+다음: P5-004
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
