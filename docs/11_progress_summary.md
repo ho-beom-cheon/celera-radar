@@ -908,6 +908,50 @@ P10 스마트스토어 내 상품 마진 감시: 1/2 완료
 
 ---
 
+## 최신 진행: P10-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P10-002 Store Margin Risk Dashboard`를 구현했다.
+
+반영 내용:
+
+- `/store/margins` frontend route 추가
+- sidebar에 `내 상품 마진` 메뉴 추가
+- `GET /api/v1/smartstore/products` 기반 스마트스토어 상품 목록 조회 타입 추가
+- `GET /api/v1/smartstore/products/{productId}/cost` 기반 원가 매핑 조회 타입 추가
+- 상품별 판매가, 총 원가, 예상 마진율, 예상 이익, 위험 상태, 원가 출처 표시
+- 위험/주의/안전/원가 미설정 카운트 표시
+- 원가 매핑이 없는 상품은 화면에서 `미설정`으로 표시하고 전체 로딩 실패로 처리하지 않음
+- 목표 마진율과 예상 마진율을 비교해 `위험`, `주의`, `안전`, `미설정` 상태를 계산
+
+제외:
+
+- 원가 매핑 입력/수정 UI
+- 실제 네이버 커머스API 호출
+- 주문/정산/수수료 동기화
+- 백엔드 schema/API 추가 변경
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+GET http://127.0.0.1:5173/store/margins
+HTTP 200
+```
+
+진행률:
+
+```text
+P10 스마트스토어 내 상품 마진 감시: 2/2 완료
+- P10-001 Store Product Cost Mapping: 완료
+- P10-002 Store Margin Risk Dashboard: 완료
+```
+
+다음: P11-001
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
