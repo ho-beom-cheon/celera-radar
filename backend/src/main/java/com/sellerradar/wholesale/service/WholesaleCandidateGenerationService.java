@@ -98,7 +98,7 @@ public class WholesaleCandidateGenerationService {
 	) {
 		Optional<Keyword> matchedKeyword = matchKeyword(product, keywords);
 		Optional<ShoppingPriceSnapshot> latestSnapshot = matchedKeyword
-				.flatMap(keyword -> snapshotRepository.findFirstByKeyword_IdOrderByBaseDateDesc(keyword.getId()));
+				.flatMap(keyword -> snapshotRepository.findFirstByKeyword_IdOrderBySearchDateDesc(keyword.getId()));
 		int expectedSalePrice = latestSnapshot
 				.map(this::snapshotSalePrice)
 				.filter(price -> price > 0)

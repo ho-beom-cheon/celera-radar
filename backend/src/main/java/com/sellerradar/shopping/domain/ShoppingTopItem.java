@@ -1,5 +1,6 @@
 package com.sellerradar.shopping.domain;
 
+import com.sellerradar.keyword.domain.Keyword;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,11 +11,24 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "shopping_top_item")
+@Table(
+		name = "shopping_item_snapshots",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_shopping_item_snapshot_rank",
+				columnNames = {"snapshot_id", "rank_no"}
+		)
+)
 public class ShoppingTopItem {
+	private static final String SOURCE_NAVER_SHOPPING = "NAVER_SHOPPING";
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -23,37 +37,44 @@ public class ShoppingTopItem {
 	@JoinColumn(name = "snapshot_id", nullable = false)
 	private ShoppingPriceSnapshot snapshot;
 
-	@Column(name = "item_rank", nullable = false)
-	private int itemRank;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "keyword_id", nullable = false)
+	private Keyword keyword;
 
-	@Column(nullable = false, length = 500)
-	private String title;
+	@Column(nullable = false, length = 30)
+	private String source;
 
-	@Column(length = 1000)
-	private String link;
+	@Column(name = "source_product_id", length = 100)
+	private String sourceProductId;
 
-	@Column(length = 1000)
-	private String image;
+	@Column(name = "rank_no", nullable = false)
+	private int rankNo;
 
-	@Column
-	private Integer lprice;
+	@Column(name = "title_raw", nullable = false)
+	private String titleRaw;
 
-	@Column
-	private Integer hprice;
+	@Column(name = "title_clean")
+	private String titleClean;
 
-	@Column(name = "mall_name", length = 255)
+	@Column(name = "product_url", nullable = false)
+	private String productUrl;
+
+	@Column(name = "image_url")
+	private String imageUrl;
+
+	@Column(name = "low_price")
+	private BigDecimal lowPrice;
+
+	@Column(name = "high_price")
+	private BigDecimal highPrice;
+
+	@Column(name = "mall_name", length = 200)
 	private String mallName;
 
-	@Column(name = "product_id", length = 100)
-	private String productId;
-
-	@Column(name = "product_type", length = 20)
-	private String productType;
-
-	@Column(length = 255)
+	@Column(length = 200)
 	private String brand;
 
-	@Column(length = 255)
+	@Column(length = 200)
 	private String maker;
 
 	@Column(length = 100)
@@ -68,6 +89,13 @@ public class ShoppingTopItem {
 	@Column(length = 100)
 	private String category4;
 
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "raw_item")
+	private String rawItem;
+
+	@Column(name = "fetched_at", nullable = false)
+	private OffsetDateTime fetchedAt;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
 
@@ -75,15 +103,14 @@ public class ShoppingTopItem {
 	}
 
 	private ShoppingTopItem(
-			int itemRank,
+			int rankNo,
 			String title,
-			String link,
-			String image,
-			Integer lprice,
-			Integer hprice,
+			String productUrl,
+			String imageUrl,
+			Integer lowPrice,
+			Integer highPrice,
 			String mallName,
-			String productId,
-			String productType,
+			String sourceProductId,
 			String brand,
 			String maker,
 			String category1,
@@ -91,15 +118,16 @@ public class ShoppingTopItem {
 			String category3,
 			String category4
 	) {
-		this.itemRank = itemRank;
-		this.title = title;
-		this.link = link;
-		this.image = image;
-		this.lprice = lprice;
-		this.hprice = hprice;
+		this.source = SOURCE_NAVER_SHOPPING;
+		this.sourceProductId = sourceProductId;
+		this.rankNo = rankNo;
+		this.titleRaw = title;
+		this.titleClean = cleanTitle(title);
+		this.productUrl = productUrl;
+		this.imageUrl = imageUrl;
+		this.lowPrice = amount(lowPrice);
+		this.highPrice = amount(highPrice);
 		this.mallName = mallName;
-		this.productId = productId;
-		this.productType = productType;
 		this.brand = brand;
 		this.maker = maker;
 		this.category1 = category1;
@@ -109,14 +137,14 @@ public class ShoppingTopItem {
 	}
 
 	public static ShoppingTopItem create(
-			int itemRank,
+			int rankNo,
 			String title,
-			String link,
-			String image,
-			Integer lprice,
-			Integer hprice,
+			String productUrl,
+			String imageUrl,
+			Integer lowPrice,
+			Integer highPrice,
 			String mallName,
-			String productId,
+			String sourceProductId,
 			String productType,
 			String brand,
 			String maker,
@@ -126,15 +154,14 @@ public class ShoppingTopItem {
 			String category4
 	) {
 		return new ShoppingTopItem(
-				itemRank,
+				rankNo,
 				title,
-				link,
-				image,
-				lprice,
-				hprice,
+				productUrl,
+				imageUrl,
+				lowPrice,
+				highPrice,
 				mallName,
-				productId,
-				productType,
+				sourceProductId,
 				brand,
 				maker,
 				category1,
@@ -146,11 +173,16 @@ public class ShoppingTopItem {
 
 	void attachTo(ShoppingPriceSnapshot snapshot) {
 		this.snapshot = snapshot;
+		this.keyword = snapshot.getKeyword();
 	}
 
 	@PrePersist
 	void onCreate() {
-		this.createdAt = OffsetDateTime.now();
+		OffsetDateTime now = OffsetDateTime.now();
+		if (this.fetchedAt == null) {
+			this.fetchedAt = now;
+		}
+		this.createdAt = now;
 	}
 
 	public Long getId() {
@@ -161,28 +193,68 @@ public class ShoppingTopItem {
 		return snapshot;
 	}
 
+	public Keyword getKeyword() {
+		return keyword;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public String getSourceProductId() {
+		return sourceProductId;
+	}
+
 	public int getItemRank() {
-		return itemRank;
+		return rankNo;
+	}
+
+	public int getRankNo() {
+		return rankNo;
 	}
 
 	public String getTitle() {
-		return title;
+		return titleRaw;
+	}
+
+	public String getTitleRaw() {
+		return titleRaw;
+	}
+
+	public String getTitleClean() {
+		return titleClean;
 	}
 
 	public String getLink() {
-		return link;
+		return productUrl;
+	}
+
+	public String getProductUrl() {
+		return productUrl;
 	}
 
 	public String getImage() {
-		return image;
+		return imageUrl;
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
 	}
 
 	public Integer getLprice() {
-		return lprice;
+		return toInteger(lowPrice);
+	}
+
+	public Integer getLowPrice() {
+		return toInteger(lowPrice);
 	}
 
 	public Integer getHprice() {
-		return hprice;
+		return toInteger(highPrice);
+	}
+
+	public Integer getHighPrice() {
+		return toInteger(highPrice);
 	}
 
 	public String getMallName() {
@@ -190,11 +262,11 @@ public class ShoppingTopItem {
 	}
 
 	public String getProductId() {
-		return productId;
+		return sourceProductId;
 	}
 
 	public String getProductType() {
-		return productType;
+		return null;
 	}
 
 	public String getBrand() {
@@ -221,7 +293,30 @@ public class ShoppingTopItem {
 		return category4;
 	}
 
+	public String getRawItem() {
+		return rawItem;
+	}
+
+	public OffsetDateTime getFetchedAt() {
+		return fetchedAt;
+	}
+
 	public OffsetDateTime getCreatedAt() {
 		return createdAt;
+	}
+
+	private static BigDecimal amount(Integer value) {
+		return value == null ? null : BigDecimal.valueOf(value);
+	}
+
+	private static Integer toInteger(BigDecimal value) {
+		return value == null ? null : value.setScale(0, RoundingMode.HALF_UP).intValue();
+	}
+
+	private static String cleanTitle(String value) {
+		if (value == null) {
+			return null;
+		}
+		return value.replaceAll("<[^>]*>", "").trim();
 	}
 }

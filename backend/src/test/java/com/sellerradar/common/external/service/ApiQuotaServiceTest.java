@@ -33,18 +33,18 @@ class ApiQuotaServiceTest {
 
 	@Test
 	void remainingDailyQuotaCountsTodayApiCallLogs() {
-		when(apiCallLogRepository.countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-				eq(ExternalApiProvider.NAVER),
+		when(apiCallLogRepository.countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
+				eq(ExternalApiProvider.NAVER_DATALAB),
 				eq(API_NAME),
 				eq(OffsetDateTime.parse("2026-07-02T00:00:00Z")),
 				eq(OffsetDateTime.parse("2026-07-03T00:00:00Z"))
 		)).thenReturn(999L);
 
-		long remaining = apiQuotaService.remainingDailyQuota(ExternalApiProvider.NAVER, API_NAME, 1000);
+		long remaining = apiQuotaService.remainingDailyQuota(ExternalApiProvider.NAVER_DATALAB, API_NAME, 1000);
 
 		assertThat(remaining).isEqualTo(1);
-		verify(apiCallLogRepository).countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-				ExternalApiProvider.NAVER,
+		verify(apiCallLogRepository).countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
+				ExternalApiProvider.NAVER_DATALAB,
 				API_NAME,
 				OffsetDateTime.parse("2026-07-02T00:00:00Z"),
 				OffsetDateTime.parse("2026-07-03T00:00:00Z")
@@ -53,15 +53,15 @@ class ApiQuotaServiceTest {
 
 	@Test
 	void assertDailyQuotaAvailableRejectsWhenQuotaIsExhausted() {
-		when(apiCallLogRepository.countByProviderAndApiNameAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-				eq(ExternalApiProvider.NAVER),
+		when(apiCallLogRepository.countByProviderAndEndpointAndCalledAtGreaterThanEqualAndCalledAtLessThan(
+				eq(ExternalApiProvider.NAVER_DATALAB),
 				eq(API_NAME),
 				eq(OffsetDateTime.parse("2026-07-02T00:00:00Z")),
 				eq(OffsetDateTime.parse("2026-07-03T00:00:00Z"))
 		)).thenReturn(1000L);
 
 		assertThatThrownBy(() ->
-				apiQuotaService.assertDailyQuotaAvailable(ExternalApiProvider.NAVER, API_NAME, 1000))
+				apiQuotaService.assertDailyQuotaAvailable(ExternalApiProvider.NAVER_DATALAB, API_NAME, 1000))
 				.isInstanceOfSatisfying(BusinessException.class, exception ->
 						assertThat(exception.errorCode()).isEqualTo(ErrorCode.EXTERNAL_API_RATE_LIMIT));
 	}

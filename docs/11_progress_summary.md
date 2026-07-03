@@ -336,49 +336,154 @@ keywords: 2
 
 ---
 
-## 8. 현재 주의사항
+## 8. P1-002 구현 완료
 
-현재 저장소는 초기 구축 과정 때문에 untracked 파일이 많다.
+`docs/10_database_design.md` 기준으로 Keyword REST API 정합성 정리를 완료했다.
 
-대표 상태:
+반영 내용:
 
-```text
-A  AGENTS.md
-M  README.md
-?? backend/
-?? frontend/
-?? docs/
-?? docx/
-?? docker-compose.yml
-?? infra/
-?? .github/
-?? .env.example
-?? .gitignore
-```
+- keyword create/list/detail/update/delete 요청/응답 DTO 정리
+- list 기본 조회 조건을 `active=true`, `deleted_at is null` 기준으로 정리
+- `analysisStatus` 필터를 `PENDING/RUNNING/SUCCESS/FAILED/SKIPPED` 기준으로 제한
+- category는 문자열 필드로 유지
+- 동일 사용자 내 `normalizedKeyword` 중복 등록 방지
+- delete는 physical delete가 아니라 soft delete로 처리
+- frontend keyword API 타입을 backend 응답과 정합화
+- `docs/02_interface_design.md` 최소 갱신
 
-`backend/`와 `frontend/`가 아직 전체 untracked 상태라 `git diff --stat`에는 실제 구현 변경이 충분히 드러나지 않는다.
-
-커밋 전에는 다음 단위로 나눠 정리하는 것이 좋다.
+검증:
 
 ```text
-1. 기반 구조/실행 설정
-2. 설계 문서 반영
-3. P1-001 DB/domain 구현
-4. 프론트 상태값 정합성 보정
+backend test 성공
+frontend build 성공
+docker compose DB 상태에서 keyword 등록/조회/수정/삭제 확인
 ```
 
 ---
 
-## 9. 다음 작업 제안
+## 9. P2-001 구현 완료
 
-다음 구현 작업은 `P1-002 Keyword REST API 정합성 정리`가 적절하다.
+`docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
+
+반영 내용:
+
+- `V003__create_shopping_snapshots.sql` 추가
+- `shopping_search_snapshots` 테이블 추가
+- `shopping_item_snapshots` 테이블 추가
+- `api_call_logs` 테이블 추가
+- 기존 shopping snapshot domain을 설계서의 `search_date`, `sort_type`, `competition_level`, `status` 기준으로 정리
+- item snapshot domain을 `rank_no`, `title_raw`, `product_url`, `image_url`, `low_price`, `high_price` 기준으로 정리
+- API call log domain을 `provider`, `endpoint`, `request_key`, `success`, `called_at` 기준으로 정리
+- shopping/trend API log provider를 `NAVER_SEARCH`, `NAVER_DATALAB`로 분리
+- repository와 관련 테스트 보강
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+
+docker compose up -d db
+seller-radar-db running
+
+backend bootRun
+Flyway v003 적용 성공
+```
+
+DB 확인:
+
+```text
+flyway_schema_history: 003 create shopping snapshots success
+tables: shopping_search_snapshots, shopping_item_snapshots, api_call_logs
+indexes: uk_shopping_snapshot_keyword_date_sort, uk_shopping_item_snapshot_rank, idx_api_call_logs_request_key
+```
+
+진행율:
+
+```text
+docs/10_database_design.md 14.1 기준 4/7 완료
+완료: P0-001, P1-001, P1-002, P2-001
+다음: P2-002
+```
+
+---
+
+## 10. P2-002 구현 완료
+
+`docs/10_database_design.md` 기준으로 `P2-002 NaverShoppingClient mock test` 정합성 정리를 완료했다.
+
+반영 내용:
+
+- Naver Shopping Search client 테스트 fixture를 읽기 쉬운 ASCII 샘플로 정리
+- MockWebServer 기반 정상 응답 DTO 매핑 검증
+- 요청 header 검증
+- `query`, `display`, `start`, `sort`, `exclude` query parameter 검증
+- `sort` 기본값 `sim` 검증
+- 빈 `exclude`는 요청에서 생략되는지 검증
+- 429 응답을 `EXTERNAL_API_RATE_LIMIT`로 매핑하는지 검증
+- 400/500 응답을 `EXTERNAL_API_UNAVAILABLE`로 매핑하는지 검증
+- credential 누락 시 외부 요청 전 실패하는지 검증
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행율:
+
+```text
+docs/10_database_design.md 14.1 기준 5/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002
+다음: P2-003
+```
+
+---
+
+## 11. P2-003 구현 완료
+
+`docs/10_database_design.md` 기준으로 `P2-003 분석 API 및 snapshot 저장` 정합성 정리를 완료했다.
+
+반영 내용:
+
+- `POST /api/v1/keywords/{keywordId}/analyze/shopping` 추가
+- `GET /api/v1/keywords/{keywordId}/shopping-snapshot/latest` 추가
+- 분석 실행 응답에 `cached`, `searchDate`, `sortType`, `totalCount`, `minPrice`, `maxPrice`, `avgPrice`, `fetchedAt` 포함
+- 상위 item 응답에 `rankNo`, `title`, `productUrl`, `imageUrl`, `lowPrice`, `mallName`, `category1~4` 포함
+- 같은 `keyword_id + search_date + sort_type` snapshot이 있으면 외부 API를 재호출하지 않고 캐시 응답 반환
+- 분석 성공 시 keyword `analysisStatus`, `lastAnalyzedAt`, `lastSnapshotDate` 갱신
+- 분석 실패 시 keyword `analysisStatus=FAILED` 및 `api_call_logs` 실패 이력 저장 유지
+- snapshot 미존재 시 최신 snapshot 조회 API는 `ANALYSIS_NOT_READY` 반환
+- controller integration test와 service test 보강
+- `docs/02_interface_design.md` 최소 갱신
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행율:
+
+```text
+docs/10_database_design.md 14.1 기준 6/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002, P2-003
+다음: P2-004
+```
+
+---
+
+## 12. 다음 작업 제안
+
+다음 구현 작업은 `P2-004 상품 카드 화면`이 적절하다.
 
 작업 범위:
 
-- `docs/10_database_design.md` 기준으로 Keyword API 요청/응답 필드 정리
-- 분석 상태 필터를 `PENDING/RUNNING/SUCCESS/FAILED/SKIPPED` 기준으로 정리
-- category 필드와 기존 `CategoryCode` 사용 방식 결정
-- keyword list/create/update/delete 통합 테스트 보강
-- API 문서가 필요하면 `docs/02_interface_design.md` 최소 갱신
-
-실제 구현은 다음 작업에서 진행한다.
+- frontend keyword 상세 화면에서 분석 실행 버튼 추가
+- 최신 shopping snapshot 조회 및 가격 요약 표시
+- 상위 상품 카드 10개 표시
+- imageUrl 누락/로드 실패 placeholder 처리
+- frontend keyword API 타입을 P2-003 backend 응답과 정합화
+- `npm run build`와 브라우저 화면 확인

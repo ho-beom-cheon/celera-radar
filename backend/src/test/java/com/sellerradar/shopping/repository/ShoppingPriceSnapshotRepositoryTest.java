@@ -1,5 +1,6 @@
 package com.sellerradar.shopping.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sellerradar.category.domain.CategoryCode;
@@ -59,5 +60,54 @@ class ShoppingPriceSnapshotRepositoryTest {
 				2500,
 				"{}"
 		))).isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	@Test
+	void allowsSameKeywordAndSearchDateWhenSortTypeDiffers() {
+		User user = userRepository.save(User.create("snapshot-sort-owner@example.com", "{bcrypt}hash"));
+		Keyword keyword = keywordRepository.save(Keyword.create(
+				user,
+				"차량용 수납함",
+				"차량용 수납함",
+				CategoryCode.CAR_ACCESSORY,
+				KeywordPriority.MEDIUM
+		));
+		LocalDate searchDate = LocalDate.of(2026, 7, 2);
+
+		snapshotRepository.saveAndFlush(ShoppingPriceSnapshot.createSuccess(
+				keyword,
+				searchDate,
+				keyword.getKeyword(),
+				"sim",
+				100,
+				100,
+				1000,
+				2000,
+				1500,
+				1500,
+				"{}",
+				null,
+				false
+		));
+		snapshotRepository.saveAndFlush(ShoppingPriceSnapshot.createSuccess(
+				keyword,
+				searchDate,
+				keyword.getKeyword(),
+				"date",
+				100,
+				100,
+				1000,
+				2000,
+				1500,
+				1500,
+				"{}",
+				null,
+				false
+		));
+
+		assertThat(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(keyword.getId(), searchDate, "sim"))
+				.isPresent();
+		assertThat(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(keyword.getId(), searchDate, "date"))
+				.isPresent();
 	}
 }

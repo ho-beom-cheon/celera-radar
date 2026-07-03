@@ -41,7 +41,7 @@ public class NaverDataLabClient {
 	public NaverDataLabKeywordTrendResponse searchKeywordTrend(NaverDataLabKeywordTrendRequest request) {
 		validateCredentials();
 		apiQuotaService.assertDailyQuotaAvailable(
-				ExternalApiProvider.NAVER,
+				ExternalApiProvider.NAVER_DATALAB,
 				KEYWORD_TREND_API_NAME,
 				properties.datalabDailyQuota()
 		);
