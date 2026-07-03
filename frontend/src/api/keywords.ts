@@ -1,28 +1,19 @@
 import { apiRequest } from './httpClient';
 
-export type CategoryCode =
-  | 'CAR_ACCESSORY'
-  | 'DESK_OFFICE'
-  | 'HOME_STORAGE'
-  | 'BATH_CLEANING'
-  | 'TRAVEL_ORGANIZER'
-  | 'PET_WALK_HYGIENE'
-  | 'KITCHEN_STORAGE'
-  | 'CAMPING_PICNIC'
-  | 'HOME_TRAINING'
-  | 'SEASONAL_LIVING';
-
-export type KeywordPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type KeywordCategory = string;
+export type CategoryCode = KeywordCategory;
 export type AnalysisStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
 
 export interface KeywordItem {
   id: number;
   keyword: string;
-  categoryCode: CategoryCode;
-  priority: KeywordPriority;
+  category: KeywordCategory | null;
+  active: boolean;
   analysisStatus: AnalysisStatus;
   lastAnalyzedAt: string | null;
+  lastSnapshotDate: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface KeywordAnalysis {
@@ -67,19 +58,18 @@ export interface PageResponse<T> {
 }
 
 export interface KeywordFilters {
-  category?: CategoryCode | '';
-  status?: AnalysisStatus | '';
+  category?: KeywordCategory | '';
+  analysisStatus?: AnalysisStatus | '';
   page?: number;
   size?: number;
 }
 
 export interface KeywordPayload {
   keyword: string;
-  categoryCode: CategoryCode;
-  priority?: KeywordPriority;
+  category?: KeywordCategory | null;
 }
 
-export const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
+export const categoryOptions: Array<{ value: KeywordCategory; label: string }> = [
   { value: 'CAR_ACCESSORY', label: '차량용품' },
   { value: 'DESK_OFFICE', label: '데스크/오피스' },
   { value: 'HOME_STORAGE', label: '홈수납' },
@@ -91,12 +81,6 @@ export const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
   { value: 'HOME_TRAINING', label: '홈트레이닝' },
   { value: 'SEASONAL_LIVING', label: '시즌생활' }
 ];
-
-export const priorityLabels: Record<KeywordPriority, string> = {
-  HIGH: '높음',
-  MEDIUM: '보통',
-  LOW: '낮음'
-};
 
 export const statusLabels: Record<AnalysisStatus, string> = {
   PENDING: '대기',
@@ -113,10 +97,14 @@ export function listKeywords(filters: KeywordFilters = {}) {
   if (filters.category) {
     params.set('category', filters.category);
   }
-  if (filters.status) {
-    params.set('status', filters.status);
+  if (filters.analysisStatus) {
+    params.set('analysisStatus', filters.analysisStatus);
   }
   return apiRequest<PageResponse<KeywordItem>>(`/keywords?${params.toString()}`);
+}
+
+export function getKeyword(keywordId: number) {
+  return apiRequest<KeywordItem>(`/keywords/${keywordId}`);
 }
 
 export function createKeyword(payload: KeywordPayload) {

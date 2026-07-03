@@ -1,12 +1,9 @@
 package com.sellerradar.keyword.service;
 
-import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.common.error.BusinessException;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.Keyword;
-import com.sellerradar.keyword.domain.KeywordPriority;
-import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.dto.KeywordCreateRequest;
 import com.sellerradar.keyword.dto.KeywordResponse;
 import com.sellerradar.keyword.dto.KeywordUpdateRequest;
@@ -37,12 +34,17 @@ public class KeywordService {
 	@Transactional(readOnly = true)
 	public Page<KeywordResponse> list(
 			Long userId,
-			CategoryCode categoryCode,
+			String category,
 			AnalysisStatus analysisStatus,
 			Pageable pageable
 	) {
-		Page<Keyword> keywords = findActiveKeywords(userId, categoryCode, analysisStatus, pageable);
+		Page<Keyword> keywords = findActiveKeywords(userId, normalizeCategory(category), analysisStatus, pageable);
 		return keywords.map(KeywordResponse::from);
+	}
+
+	@Transactional(readOnly = true)
+	public KeywordResponse get(Long userId, Long keywordId) {
+		return KeywordResponse.from(getActiveKeyword(userId, keywordId));
 	}
 
 	@Transactional
@@ -56,8 +58,7 @@ public class KeywordService {
 				user,
 				displayKeyword,
 				normalizedKeyword,
-				request.categoryCode(),
-				request.resolvedPriority()
+				request.resolvedCategory()
 		);
 		return KeywordResponse.from(keywordRepository.save(keyword));
 	}
@@ -70,8 +71,7 @@ public class KeywordService {
 		if (!keyword.getNormalizedKeyword().equals(normalizedKeyword)) {
 			validateDuplicatedKeyword(userId, normalizedKeyword);
 		}
-		KeywordPriority priority = request.resolvedPriority();
-		keyword.update(displayKeyword, normalizedKeyword, request.categoryCode(), priority);
+		keyword.update(displayKeyword, normalizedKeyword, request.resolvedCategory());
 		return KeywordResponse.from(keyword);
 	}
 
@@ -88,59 +88,51 @@ public class KeywordService {
 
 	private Page<Keyword> findActiveKeywords(
 			Long userId,
-			CategoryCode categoryCode,
+			String category,
 			AnalysisStatus analysisStatus,
 			Pageable pageable
 	) {
-		if (categoryCode != null && analysisStatus != null) {
-			return keywordRepository.findByUserIdAndStatusAndCategoryCodeAndAnalysisStatus(
+		if (category != null && analysisStatus != null) {
+			return keywordRepository.findByUserIdAndActiveTrueAndCategoryAndAnalysisStatusAndDeletedAtIsNull(
 					userId,
-					KeywordStatus.ACTIVE,
-					categoryCode,
+					category,
 					analysisStatus,
 					pageable
 			);
 		}
-		if (categoryCode != null) {
-			return keywordRepository.findByUserIdAndStatusAndCategoryCode(
+		if (category != null) {
+			return keywordRepository.findByUserIdAndActiveTrueAndCategoryAndDeletedAtIsNull(
 					userId,
-					KeywordStatus.ACTIVE,
-					categoryCode,
+					category,
 					pageable
 			);
 		}
 		if (analysisStatus != null) {
-			return keywordRepository.findByUserIdAndStatusAndAnalysisStatus(
+			return keywordRepository.findByUserIdAndActiveTrueAndAnalysisStatusAndDeletedAtIsNull(
 					userId,
-					KeywordStatus.ACTIVE,
 					analysisStatus,
 					pageable
 			);
 		}
-		return keywordRepository.findByUserIdAndStatus(userId, KeywordStatus.ACTIVE, pageable);
+		return keywordRepository.findByUserIdAndActiveTrueAndDeletedAtIsNull(userId, pageable);
 	}
 
 	private Keyword getActiveKeyword(Long userId, Long keywordId) {
-		Keyword keyword = keywordRepository.findByIdAndUserId(keywordId, userId)
+		return keywordRepository.findByIdAndUserIdAndActiveTrueAndDeletedAtIsNull(keywordId, userId)
 				.orElseThrow(() -> new BusinessException(ErrorCode.KEYWORD_NOT_FOUND));
-		if (keyword.getStatus() == KeywordStatus.DELETED) {
-			throw new BusinessException(ErrorCode.KEYWORD_NOT_FOUND);
-		}
-		return keyword;
 	}
 
 	private void validateDuplicatedKeyword(Long userId, String normalizedKeyword) {
-		if (keywordRepository.existsByUserIdAndNormalizedKeywordAndStatus(
+		if (keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
 				userId,
-				normalizedKeyword,
-				KeywordStatus.ACTIVE
+				normalizedKeyword
 		)) {
 			throw new BusinessException(ErrorCode.DUPLICATED_KEYWORD, ErrorCode.DUPLICATED_KEYWORD.defaultMessage(), "keyword");
 		}
 	}
 
 	private void validateKeywordLimit(User user) {
-		long activeKeywordCount = keywordRepository.countByUserIdAndStatus(user.getId(), KeywordStatus.ACTIVE);
+		long activeKeywordCount = keywordRepository.countByUserIdAndActiveTrueAndDeletedAtIsNull(user.getId());
 		if (activeKeywordCount >= user.getPlanCode().keywordLimit()) {
 			throw new BusinessException(
 					ErrorCode.KEYWORD_LIMIT_EXCEEDED,
@@ -148,5 +140,13 @@ public class KeywordService {
 					"keyword"
 			);
 		}
+	}
+
+	private String normalizeCategory(String category) {
+		if (category == null) {
+			return null;
+		}
+		String trimmedCategory = category.trim();
+		return trimmedCategory.isEmpty() ? null : trimmedCategory;
 	}
 }

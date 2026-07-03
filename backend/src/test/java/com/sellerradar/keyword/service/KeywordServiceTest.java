@@ -8,13 +8,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.common.error.BusinessException;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.Keyword;
-import com.sellerradar.keyword.domain.KeywordPriority;
-import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.dto.KeywordCreateRequest;
 import com.sellerradar.keyword.dto.KeywordResponse;
 import com.sellerradar.keyword.dto.KeywordUpdateRequest;
@@ -22,10 +19,10 @@ import com.sellerradar.keyword.repository.KeywordRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
 import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class KeywordServiceTest {
@@ -47,31 +44,52 @@ class KeywordServiceTest {
 	}
 
 	@Test
-	void createKeywordUsesFreePlanDefaults() {
-		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndStatus(USER_ID, "차량용 수납함", KeywordStatus.ACTIVE))
-				.thenReturn(false);
-		when(keywordRepository.countByUserIdAndStatus(USER_ID, KeywordStatus.ACTIVE)).thenReturn(0L);
+	void createKeywordUsesStringCategoryAndPendingStatus() {
+		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
+				USER_ID,
+				"car storage box"
+		)).thenReturn(false);
+		when(keywordRepository.countByUserIdAndActiveTrueAndDeletedAtIsNull(USER_ID)).thenReturn(0L);
 		when(keywordRepository.save(any(Keyword.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		KeywordResponse response = keywordService.create(
 				USER_ID,
-				new KeywordCreateRequest("  차량용   수납함  ", CategoryCode.CAR_ACCESSORY, null)
+				new KeywordCreateRequest("  car   storage box  ", " Car Gear ")
 		);
 
-		assertThat(response.keyword()).isEqualTo("차량용 수납함");
-		assertThat(response.categoryCode()).isEqualTo(CategoryCode.CAR_ACCESSORY);
-		assertThat(response.priority()).isEqualTo(KeywordPriority.MEDIUM);
+		assertThat(response.keyword()).isEqualTo("car storage box");
+		assertThat(response.category()).isEqualTo("Car Gear");
+		assertThat(response.active()).isTrue();
 		assertThat(response.analysisStatus()).isEqualTo(AnalysisStatus.PENDING);
 	}
 
 	@Test
+	void createKeywordStoresBlankCategoryAsNull() {
+		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
+				USER_ID,
+				"car storage box"
+		)).thenReturn(false);
+		when(keywordRepository.countByUserIdAndActiveTrueAndDeletedAtIsNull(USER_ID)).thenReturn(0L);
+		when(keywordRepository.save(any(Keyword.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		KeywordResponse response = keywordService.create(
+				USER_ID,
+				new KeywordCreateRequest("car storage box", "   ")
+		);
+
+		assertThat(response.category()).isNull();
+	}
+
+	@Test
 	void createKeywordRejectsDuplicatedActiveKeyword() {
-		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndStatus(USER_ID, "차량용 수납함", KeywordStatus.ACTIVE))
-				.thenReturn(true);
+		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
+				USER_ID,
+				"car storage box"
+		)).thenReturn(true);
 
 		assertThatThrownBy(() -> keywordService.create(
 				USER_ID,
-				new KeywordCreateRequest("차량용 수납함", CategoryCode.CAR_ACCESSORY, KeywordPriority.HIGH)
+				new KeywordCreateRequest("car storage box", "Car Gear")
 		))
 				.isInstanceOfSatisfying(BusinessException.class, exception ->
 						assertThat(exception.errorCode()).isEqualTo(ErrorCode.DUPLICATED_KEYWORD));
@@ -81,13 +99,15 @@ class KeywordServiceTest {
 
 	@Test
 	void createKeywordRejectsFreePlanLimitExceeded() {
-		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndStatus(USER_ID, "차량용 수납함", KeywordStatus.ACTIVE))
-				.thenReturn(false);
-		when(keywordRepository.countByUserIdAndStatus(USER_ID, KeywordStatus.ACTIVE)).thenReturn(3L);
+		when(keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
+				USER_ID,
+				"car storage box"
+		)).thenReturn(false);
+		when(keywordRepository.countByUserIdAndActiveTrueAndDeletedAtIsNull(USER_ID)).thenReturn(3L);
 
 		assertThatThrownBy(() -> keywordService.create(
 				USER_ID,
-				new KeywordCreateRequest("차량용 수납함", CategoryCode.CAR_ACCESSORY, KeywordPriority.HIGH)
+				new KeywordCreateRequest("car storage box", "Car Gear")
 		))
 				.isInstanceOfSatisfying(BusinessException.class, exception ->
 						assertThat(exception.errorCode()).isEqualTo(ErrorCode.KEYWORD_LIMIT_EXCEEDED));
@@ -95,62 +115,50 @@ class KeywordServiceTest {
 
 	@Test
 	void updateKeywordKeepsSameNormalizedKeywordWithoutDuplicateCheck() {
-		Keyword keyword = Keyword.create(
-				user,
-				"차량용 수납함",
-				"차량용 수납함",
-				CategoryCode.CAR_ACCESSORY,
-				KeywordPriority.MEDIUM
-		);
+		Keyword keyword = Keyword.create(user, "car storage box", "car storage box", "Car Gear");
 		ReflectionTestUtils.setField(keyword, "id", 10L);
-		when(keywordRepository.findByIdAndUserId(10L, USER_ID)).thenReturn(Optional.of(keyword));
+		when(keywordRepository.findByIdAndUserIdAndActiveTrueAndDeletedAtIsNull(10L, USER_ID))
+				.thenReturn(Optional.of(keyword));
 
 		KeywordResponse response = keywordService.update(
 				USER_ID,
 				10L,
-				new KeywordUpdateRequest(" 차량용  수납함 ", CategoryCode.HOME_STORAGE, KeywordPriority.HIGH)
+				new KeywordUpdateRequest(" car  storage box ", " Storage ")
 		);
 
-		assertThat(response.keyword()).isEqualTo("차량용 수납함");
-		assertThat(response.categoryCode()).isEqualTo(CategoryCode.HOME_STORAGE);
-		assertThat(response.priority()).isEqualTo(KeywordPriority.HIGH);
+		assertThat(response.keyword()).isEqualTo("car storage box");
+		assertThat(response.category()).isEqualTo("Storage");
 		verify(keywordRepository, never())
-				.existsByUserIdAndNormalizedKeywordAndStatus(any(), any(), any());
+				.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(any(), any());
 	}
 
 	@Test
 	void deleteKeywordSoftDeletesKeyword() {
-		Keyword keyword = Keyword.create(
-				user,
-				"차량용 수납함",
-				"차량용 수납함",
-				CategoryCode.CAR_ACCESSORY,
-				KeywordPriority.MEDIUM
-		);
-		when(keywordRepository.findByIdAndUserId(10L, USER_ID)).thenReturn(Optional.of(keyword));
+		Keyword keyword = Keyword.create(user, "car storage box", "car storage box", "Car Gear");
+		when(keywordRepository.findByIdAndUserIdAndActiveTrueAndDeletedAtIsNull(10L, USER_ID))
+				.thenReturn(Optional.of(keyword));
 
 		keywordService.delete(USER_ID, 10L);
 
-		assertThat(keyword.getStatus()).isEqualTo(KeywordStatus.DELETED);
+		assertThat(keyword.isActive()).isFalse();
+		assertThat(keyword.getDeletedAt()).isNotNull();
 	}
 
 	@Test
 	void listFiltersByCategoryAndAnalysisStatus() {
 		PageRequest pageable = PageRequest.of(0, 20);
-		when(keywordRepository.findByUserIdAndStatusAndCategoryCodeAndAnalysisStatus(
+		when(keywordRepository.findByUserIdAndActiveTrueAndCategoryAndAnalysisStatusAndDeletedAtIsNull(
 				USER_ID,
-				KeywordStatus.ACTIVE,
-				CategoryCode.CAR_ACCESSORY,
+				"Car Gear",
 				AnalysisStatus.PENDING,
 				pageable
 		)).thenReturn(Page.empty(pageable));
 
-		keywordService.list(USER_ID, CategoryCode.CAR_ACCESSORY, AnalysisStatus.PENDING, pageable);
+		keywordService.list(USER_ID, " Car Gear ", AnalysisStatus.PENDING, pageable);
 
-		verify(keywordRepository).findByUserIdAndStatusAndCategoryCodeAndAnalysisStatus(
+		verify(keywordRepository).findByUserIdAndActiveTrueAndCategoryAndAnalysisStatusAndDeletedAtIsNull(
 				USER_ID,
-				KeywordStatus.ACTIVE,
-				CategoryCode.CAR_ACCESSORY,
+				"Car Gear",
 				AnalysisStatus.PENDING,
 				pageable
 		);

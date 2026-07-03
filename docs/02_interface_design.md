@@ -154,6 +154,11 @@ Request:
 
 ## 4.2 Keyword API
 
+> P1-002 기준: Keyword REST API는 `categoryCode`/`priority`가 아니라 문자열 `category`를 사용한다.
+> 목록 필터는 `analysisStatus=PENDING|RUNNING|SUCCESS|FAILED|SKIPPED`만 허용하며,
+> 기본 조회는 `active=true` 및 `deleted_at is null`인 키워드만 반환한다.
+> 삭제는 physical delete가 아니라 `active=false`, `deleted_at=now()` soft delete로 처리한다.
+
 ### GET /keywords
 
 관심 키워드 목록 조회.
@@ -165,7 +170,7 @@ Query Parameters:
 | page | number | N | 기본 0 |
 | size | number | N | 기본 20 |
 | category | string | N | 내부 카테고리 코드 |
-| status | string | N | PENDING/ANALYZED/FAILED |
+| analysisStatus | string | N | PENDING/RUNNING/SUCCESS/FAILED/SKIPPED |
 
 Response item:
 
@@ -173,15 +178,19 @@ Response item:
 {
   "id": 101,
   "keyword": "차량용 먼지 브러쉬",
-  "categoryCode": "CAR_ACCESSORY",
-  "priority": "HIGH",
-  "analysisStatus": "ANALYZED",
+  "category": "CAR_ACCESSORY",
+  "active": true,
+  "analysisStatus": "SUCCESS",
   "lastAnalyzedAt": "2026-07-02T07:12:00+09:00",
-  "trendScore": 22,
-  "competitionScore": 16,
-  "overallScore": 74
+  "lastSnapshotDate": "2026-07-02",
+  "createdAt": "2026-07-01T10:00:00+09:00",
+  "updatedAt": "2026-07-02T07:12:00+09:00"
 }
 ```
+
+### GET /keywords/{keywordId}
+
+키워드 단건 조회. 삭제된 키워드 또는 다른 사용자의 키워드는 `KEYWORD_NOT_FOUND`로 응답한다.
 
 ### POST /keywords
 
@@ -192,8 +201,7 @@ Request:
 ```json
 {
   "keyword": "케이블 정리 트레이",
-  "categoryCode": "DESK_OFFICE",
-  "priority": "MEDIUM"
+  "category": "DESK_OFFICE"
 }
 ```
 
@@ -202,17 +210,18 @@ Validation:
 | 항목 | 규칙 |
 |---|---|
 | keyword | 2~50자 |
-| categoryCode | 허용 카테고리 코드 |
-| 중복 | 사용자별 동일 키워드 중복 불가 |
+| category | 100자 이하. null/빈 문자열/공백은 null 저장 |
+| 중복 | 사용자별 active 키워드 중 normalized keyword 중복 불가 |
 | 무료 제한 | FREE는 3개까지 |
 
 ### PUT /keywords/{keywordId}
 
 키워드 수정.
+Request는 `POST /keywords`와 동일하다. normalized keyword가 변경되면 같은 사용자 active 키워드와 중복되는지 확인한다.
 
 ### DELETE /keywords/{keywordId}
 
-키워드 삭제. 실제 삭제 또는 soft delete를 선택한다. MVP는 soft delete 권장.
+키워드 삭제. physical delete가 아니라 `active=false`, `deleted_at=now()`로 soft delete 처리한다.
 
 ---
 
@@ -228,7 +237,7 @@ Response:
 {
   "keywordId": 101,
   "keyword": "차량용 먼지 브러쉬",
-  "status": "ANALYZED",
+  "status": "SUCCESS",
   "lastAnalyzedAt": "2026-07-02T07:12:00+09:00",
   "shopping": {
     "baseDate": "2026-07-02",

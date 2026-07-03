@@ -2,10 +2,8 @@ package com.sellerradar.keyword.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.Keyword;
-import com.sellerradar.keyword.domain.KeywordPriority;
 import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
@@ -30,17 +28,15 @@ class KeywordRepositoryTest {
 		User user = userRepository.save(User.create("keyword-domain@example.com", "{bcrypt}hash"));
 		Keyword keyword = Keyword.create(
 				user,
-				"차량용 수납함",
-				"차량용 수납함",
-				CategoryCode.CAR_ACCESSORY,
-				KeywordPriority.HIGH
+				"car storage box",
+				"car storage box",
+				"Car Gear"
 		);
 
 		Keyword savedKeyword = keywordRepository.saveAndFlush(keyword);
 
 		assertThat(savedKeyword.getId()).isNotNull();
-		assertThat(savedKeyword.getCategory()).isEqualTo(CategoryCode.CAR_ACCESSORY.name());
-		assertThat(savedKeyword.getCategoryCode()).isEqualTo(CategoryCode.CAR_ACCESSORY);
+		assertThat(savedKeyword.getCategory()).isEqualTo("Car Gear");
 		assertThat(savedKeyword.isActive()).isTrue();
 		assertThat(savedKeyword.getStatus()).isEqualTo(KeywordStatus.ACTIVE);
 		assertThat(savedKeyword.getAnalysisStatus()).isEqualTo(AnalysisStatus.PENDING);
@@ -54,10 +50,9 @@ class KeywordRepositoryTest {
 		User user = userRepository.save(User.create("keyword-delete@example.com", "{bcrypt}hash"));
 		Keyword keyword = keywordRepository.saveAndFlush(Keyword.create(
 				user,
-				"차량용 수납함",
-				"차량용 수납함",
-				CategoryCode.CAR_ACCESSORY,
-				KeywordPriority.MEDIUM
+				"car storage box",
+				"car storage box",
+				"Car Gear"
 		));
 
 		keyword.delete();
@@ -66,12 +61,11 @@ class KeywordRepositoryTest {
 		assertThat(keyword.getStatus()).isEqualTo(KeywordStatus.DELETED);
 		assertThat(keyword.isActive()).isFalse();
 		assertThat(keyword.getDeletedAt()).isNotNull();
-		assertThat(keywordRepository.existsByUserIdAndNormalizedKeywordAndStatus(
+		assertThat(keywordRepository.existsByUserIdAndNormalizedKeywordAndActiveTrueAndDeletedAtIsNull(
 				user.getId(),
-				"차량용 수납함",
-				KeywordStatus.ACTIVE
+				"car storage box"
 		)).isFalse();
-		assertThat(keywordRepository.countByUserIdAndStatus(user.getId(), KeywordStatus.ACTIVE)).isZero();
+		assertThat(keywordRepository.countByUserIdAndActiveTrueAndDeletedAtIsNull(user.getId())).isZero();
 	}
 
 	@Test
@@ -79,10 +73,9 @@ class KeywordRepositoryTest {
 		User user = userRepository.save(User.create("keyword-analysis@example.com", "{bcrypt}hash"));
 		Keyword keyword = Keyword.create(
 				user,
-				"차량용 수납함",
-				"차량용 수납함",
-				CategoryCode.CAR_ACCESSORY,
-				KeywordPriority.MEDIUM
+				"car storage box",
+				"car storage box",
+				"Car Gear"
 		);
 
 		OffsetDateTime analyzedAt = OffsetDateTime.parse("2026-07-03T10:15:00+09:00");

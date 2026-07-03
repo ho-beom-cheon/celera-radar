@@ -2,14 +2,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { login, signup, Plan } from '../../api/auth';
 import {
   AnalysisStatus,
-  CategoryCode,
   KeywordItem,
-  KeywordPriority,
+  KeywordCategory,
   categoryOptions,
   createKeyword,
   deleteKeyword,
   listKeywords,
-  priorityLabels,
   statusLabels
 } from '../../api/keywords';
 import {
@@ -35,12 +33,6 @@ const statusOptions: Array<{ value: AnalysisStatus; label: string }> = [
   { value: 'SKIPPED', label: '건너뜀' }
 ];
 
-const priorityOptions: Array<{ value: KeywordPriority; label: string }> = [
-  { value: 'HIGH', label: '높음' },
-  { value: 'MEDIUM', label: '보통' },
-  { value: 'LOW', label: '낮음' }
-];
-
 export function KeywordsPage() {
   const [accessToken, setTokenState] = useState(() => getAccessToken());
   const [plan, setPlan] = useState<Plan>(() => {
@@ -52,11 +44,10 @@ export function KeywordsPage() {
   const [termsAgreed, setTermsAgreed] = useState(true);
   const [keywords, setKeywords] = useState<KeywordItem[]>([]);
   const [usageCount, setUsageCount] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryCode | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState<KeywordCategory | ''>('');
   const [statusFilter, setStatusFilter] = useState<AnalysisStatus | ''>('');
   const [keyword, setKeyword] = useState('');
-  const [categoryCode, setCategoryCode] = useState<CategoryCode>('CAR_ACCESSORY');
-  const [priority, setPriority] = useState<KeywordPriority>('MEDIUM');
+  const [category, setCategory] = useState<KeywordCategory>('CAR_ACCESSORY');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
@@ -83,7 +74,7 @@ export function KeywordsPage() {
       const [filteredPage, usagePage] = await Promise.all([
         listKeywords({
           category: categoryFilter,
-          status: statusFilter,
+          analysisStatus: statusFilter,
           page: 0,
           size: 20
         }),
@@ -142,8 +133,7 @@ export function KeywordsPage() {
     try {
       await createKeyword({
         keyword,
-        categoryCode,
-        priority
+        category
       });
       setKeyword('');
       setMessage('키워드가 등록되었습니다.');
@@ -263,25 +253,11 @@ export function KeywordsPage() {
             <label className="field">
               <span>카테고리</span>
               <select
-                value={categoryCode}
-                onChange={(event) => setCategoryCode(event.target.value as CategoryCode)}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
                 disabled={!accessToken || limitReached}
               >
                 {categoryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>우선순위</span>
-              <select
-                value={priority}
-                onChange={(event) => setPriority(event.target.value as KeywordPriority)}
-                disabled={!accessToken || limitReached}
-              >
-                {priorityOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -315,7 +291,7 @@ export function KeywordsPage() {
               <span>카테고리</span>
               <select
                 value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value as CategoryCode | '')}
+                onChange={(event) => setCategoryFilter(event.target.value)}
                 disabled={!accessToken}
               >
                 <option value="">전체</option>
@@ -350,7 +326,6 @@ export function KeywordsPage() {
               <tr>
                 <th>키워드</th>
                 <th>카테고리</th>
-                <th>우선순위</th>
                 <th>상태</th>
                 <th>마지막 분석</th>
                 <th>액션</th>
@@ -364,8 +339,7 @@ export function KeywordsPage() {
                       {item.keyword}
                     </a>
                   </td>
-                  <td>{categoryLabel(item.categoryCode)}</td>
-                  <td>{priorityLabels[item.priority]}</td>
+                  <td>{categoryLabel(item.category)}</td>
                   <td>
                     <span className={`status-badge status-${item.analysisStatus.toLowerCase()}`}>
                       {statusLabels[item.analysisStatus]}
@@ -397,8 +371,11 @@ export function KeywordsPage() {
   );
 }
 
-function categoryLabel(categoryCode: CategoryCode) {
-  return categoryOptions.find((option) => option.value === categoryCode)?.label ?? categoryCode;
+function categoryLabel(category: KeywordCategory | null) {
+  if (!category) {
+    return '-';
+  }
+  return categoryOptions.find((option) => option.value === category)?.label ?? category;
 }
 
 function formatDateTime(value: string | null) {
