@@ -118,13 +118,13 @@ public class WholesaleParsingService {
 		if (productName.isBlank()) {
 			return WholesaleProduct.invalid(file, row.rowNo(), "productName is required.");
 		}
-		Integer supplyPrice = parsePositiveInteger(supplyPriceRaw);
+		Integer supplyPrice = WholesaleNumberParser.parsePositiveInteger(supplyPriceRaw);
 		if (supplyPrice == null) {
 			return WholesaleProduct.invalid(file, row.rowNo(), "supplyPrice must be a positive number.");
 		}
 		Integer shippingFee = 0;
 		if (!shippingFeeRaw.isBlank()) {
-			shippingFee = parseNonNegativeInteger(shippingFeeRaw);
+			shippingFee = WholesaleNumberParser.parseNonNegativeInteger(shippingFeeRaw);
 			if (shippingFee == null) {
 				return WholesaleProduct.invalid(file, row.rowNo(), "shippingFee must be zero or a positive number.");
 			}
@@ -199,25 +199,5 @@ public class WholesaleParsingService {
 			return "";
 		}
 		return row.values().get(index);
-	}
-
-	private Integer parsePositiveInteger(String value) {
-		Integer parsed = parseNonNegativeInteger(value);
-		if (parsed == null || parsed <= 0) {
-			return null;
-		}
-		return parsed;
-	}
-
-	private Integer parseNonNegativeInteger(String value) {
-		if (value == null || value.isBlank()) {
-			return null;
-		}
-		try {
-			int parsed = Integer.parseInt(value.replaceAll("[,\\s원₩]", ""));
-			return parsed < 0 ? null : parsed;
-		} catch (NumberFormatException exception) {
-			return null;
-		}
 	}
 }
