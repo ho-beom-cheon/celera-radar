@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:seller_radar_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+seller-radar:
+  jwt:
+    secret: test-only-jwt-secret-for-seller-radar-auth-tests-32-bytes
+    access-token-ttl: PT30M
+    refresh-token-ttl: P14D
