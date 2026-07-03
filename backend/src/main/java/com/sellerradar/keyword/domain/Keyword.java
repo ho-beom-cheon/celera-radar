@@ -67,11 +67,11 @@ public class Keyword {
 	protected Keyword() {
 	}
 
-	private Keyword(User user, String keyword, String normalizedKeyword, CategoryCode categoryCode, KeywordPriority priority) {
+	private Keyword(User user, String keyword, String normalizedKeyword, String category, KeywordPriority priority) {
 		this.user = user;
 		this.keyword = keyword;
 		this.normalizedKeyword = normalizedKeyword;
-		this.category = categoryCode == null ? null : categoryCode.name();
+		this.category = normalizeCategory(category);
 		this.priority = priority;
 		this.active = true;
 		this.analysisStatus = AnalysisStatus.PENDING;
@@ -81,16 +81,35 @@ public class Keyword {
 			User user,
 			String keyword,
 			String normalizedKeyword,
+			String category
+	) {
+		return new Keyword(user, keyword, normalizedKeyword, category, KeywordPriority.MEDIUM);
+	}
+
+	public static Keyword create(
+			User user,
+			String keyword,
+			String normalizedKeyword,
 			CategoryCode categoryCode,
 			KeywordPriority priority
 	) {
-		return new Keyword(user, keyword, normalizedKeyword, categoryCode, priority);
+		return new Keyword(
+				user,
+				keyword,
+				normalizedKeyword,
+				categoryCode == null ? null : categoryCode.name(),
+				priority
+		);
+	}
+
+	public void update(String keyword, String normalizedKeyword, String category) {
+		this.keyword = keyword;
+		this.normalizedKeyword = normalizedKeyword;
+		this.category = normalizeCategory(category);
 	}
 
 	public void update(String keyword, String normalizedKeyword, CategoryCode categoryCode, KeywordPriority priority) {
-		this.keyword = keyword;
-		this.normalizedKeyword = normalizedKeyword;
-		this.category = categoryCode == null ? null : categoryCode.name();
+		update(keyword, normalizedKeyword, categoryCode == null ? null : categoryCode.name());
 		this.priority = priority;
 	}
 
@@ -195,5 +214,13 @@ public class Keyword {
 
 	public OffsetDateTime getDeletedAt() {
 		return deletedAt;
+	}
+
+	private static String normalizeCategory(String category) {
+		if (category == null) {
+			return null;
+		}
+		String trimmedCategory = category.trim();
+		return trimmedCategory.isEmpty() ? null : trimmedCategory;
 	}
 }

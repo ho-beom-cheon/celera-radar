@@ -1,7 +1,6 @@
 package com.sellerradar.keyword.controller;
 
 import com.sellerradar.auth.security.AuthenticatedUser;
-import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.api.PageResponse;
 import com.sellerradar.common.web.RequestContext;
@@ -46,8 +45,8 @@ public class KeywordController {
 	@GetMapping
 	public ApiResponse<PageResponse<KeywordResponse>> list(
 			@AuthenticationPrincipal AuthenticatedUser user,
-			@RequestParam(required = false) CategoryCode category,
-			@RequestParam(required = false) AnalysisStatus status,
+			@RequestParam(required = false) String category,
+			@RequestParam(required = false) AnalysisStatus analysisStatus,
 			@RequestParam(defaultValue = "" + DEFAULT_PAGE) int page,
 			@RequestParam(defaultValue = "" + DEFAULT_SIZE) int size,
 			HttpServletRequest request
@@ -57,8 +56,17 @@ public class KeywordController {
 				Math.min(Math.max(size, 1), MAX_SIZE),
 				Sort.by(Sort.Direction.DESC, "createdAt")
 		);
-		PageResponse<KeywordResponse> response = PageResponse.from(keywordService.list(user.userId(), category, status, pageable));
+		PageResponse<KeywordResponse> response = PageResponse.from(keywordService.list(user.userId(), category, analysisStatus, pageable));
 		return ApiResponse.success(response, RequestContext.requestId(request));
+	}
+
+	@GetMapping("/{keywordId}")
+	public ApiResponse<KeywordResponse> detail(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable Long keywordId,
+			HttpServletRequest request
+	) {
+		return ApiResponse.success(keywordService.get(user.userId(), keywordId), RequestContext.requestId(request));
 	}
 
 	@GetMapping("/{keywordId}/analysis")

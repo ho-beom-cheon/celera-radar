@@ -1,29 +1,32 @@
 package com.sellerradar.keyword.dto;
 
-import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.Keyword;
-import com.sellerradar.keyword.domain.KeywordPriority;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record KeywordResponse(
 		Long id,
 		String keyword,
-		CategoryCode categoryCode,
-		KeywordPriority priority,
+		String category,
+		boolean active,
 		AnalysisStatus analysisStatus,
 		OffsetDateTime lastAnalyzedAt,
-		OffsetDateTime createdAt
+		LocalDate lastSnapshotDate,
+		OffsetDateTime createdAt,
+		OffsetDateTime updatedAt
 ) {
 	public static KeywordResponse from(Keyword keyword) {
 		return new KeywordResponse(
 				keyword.getId(),
 				keyword.getKeyword(),
-				keyword.getCategoryCode(),
-				keyword.getPriority(),
+				keyword.getCategory(),
+				keyword.isActive(),
 				keyword.getAnalysisStatus(),
 				keyword.getLastAnalyzedAt(),
-				keyword.getCreatedAt()
+				keyword.getLastSnapshotDate(),
+				keyword.getCreatedAt(),
+				keyword.getUpdatedAt()
 		);
 	}
 }
