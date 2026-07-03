@@ -491,6 +491,7 @@ overall_score = trend_score + competition_score + margin_score + price_band_scor
 - margin_score는 예상 판매가, 공급가, 배송비 기준 예상 마진율로 계산한다.
 - 빠른 마진 계산은 공급가, 배송비, 플랫폼 수수료율, 광고비, 쿠폰비, 기타 비용까지 총 비용에 포함한다.
 - price_band_score는 9,900~49,900원을 10점, 인접 가격대를 5점으로 계산한다.
+- API breakdown에서는 기존 `priceBandScore`를 유지하고 설계 용어 호환을 위해 `priceScore`도 함께 반환한다.
 - supply_score는 공급가와 배송비가 유효하면 5점으로 계산한다.
 - risk_penalty는 안전 0점, 주의 -15점, 제외 -40점으로 계산한다.
 - 위험 카테고리 제외 룰에 매칭되면 overall_score와 별개로 grade를 EXCLUDED로 강제한다.
