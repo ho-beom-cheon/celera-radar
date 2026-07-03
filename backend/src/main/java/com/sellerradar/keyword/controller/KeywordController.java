@@ -9,6 +9,7 @@ import com.sellerradar.keyword.dto.KeywordAnalysisResponse;
 import com.sellerradar.keyword.dto.KeywordCreateRequest;
 import com.sellerradar.keyword.dto.KeywordResponse;
 import com.sellerradar.keyword.dto.KeywordUpdateRequest;
+import com.sellerradar.keyword.dto.ShoppingSnapshotResponse;
 import com.sellerradar.keyword.service.KeywordAnalysisService;
 import com.sellerradar.keyword.service.KeywordService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -77,6 +78,30 @@ public class KeywordController {
 	) {
 		return ApiResponse.success(
 				keywordAnalysisService.getAnalysis(user.userId(), keywordId),
+				RequestContext.requestId(request)
+		);
+	}
+
+	@PostMapping("/{keywordId}/analyze/shopping")
+	public ApiResponse<ShoppingSnapshotResponse> analyzeShopping(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable Long keywordId,
+			HttpServletRequest request
+	) {
+		return ApiResponse.success(
+				keywordAnalysisService.analyzeShopping(user.userId(), keywordId),
+				RequestContext.requestId(request)
+		);
+	}
+
+	@GetMapping("/{keywordId}/shopping-snapshot/latest")
+	public ApiResponse<ShoppingSnapshotResponse> latestShoppingSnapshot(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable Long keywordId,
+			HttpServletRequest request
+	) {
+		return ApiResponse.success(
+				keywordAnalysisService.getLatestShoppingSnapshot(user.userId(), keywordId),
 				RequestContext.requestId(request)
 		);
 	}

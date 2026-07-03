@@ -89,13 +89,18 @@ class ShoppingSearchSnapshotServiceTest {
 		);
 		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
 				.thenReturn(Optional.of(cachedSnapshot));
+		when(keywordRepository.findById(KEYWORD_ID)).thenReturn(Optional.of(keyword));
 
-		ShoppingPriceSnapshot result = service.collect(KEYWORD_ID, BASE_DATE);
+		ShoppingSnapshotCollectResult result = service.collectWithCacheStatus(KEYWORD_ID, BASE_DATE);
 
-		assertThat(result).isSameAs(cachedSnapshot);
+		assertThat(result.snapshot()).isSameAs(cachedSnapshot);
+		assertThat(result.cached()).isTrue();
+		assertThat(keyword.getAnalysisStatus()).isEqualTo(AnalysisStatus.SUCCESS);
+		assertThat(keyword.getLastAnalyzedAt()).isNotNull();
+		assertThat(keyword.getLastSnapshotDate()).isEqualTo(BASE_DATE);
 		verifyNoInteractions(naverShoppingClient);
 		verify(apiCallLogRepository, never()).save(any());
-		verify(keywordRepository, never()).save(any());
+		verify(keywordRepository).save(keyword);
 	}
 
 	@Test
@@ -123,6 +128,7 @@ class ShoppingSearchSnapshotServiceTest {
 		assertThat(result.getTopItems().getFirst().getMallName()).isEqualTo("테스트몰");
 		assertThat(keyword.getAnalysisStatus()).isEqualTo(AnalysisStatus.SUCCESS);
 		assertThat(keyword.getLastAnalyzedAt()).isNotNull();
+		assertThat(keyword.getLastSnapshotDate()).isEqualTo(BASE_DATE);
 
 		ArgumentCaptor<ApiCallLog> logCaptor = ArgumentCaptor.forClass(ApiCallLog.class);
 		verify(apiCallLogRepository).save(logCaptor.capture());

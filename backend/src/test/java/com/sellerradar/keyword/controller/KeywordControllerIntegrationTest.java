@@ -1,6 +1,10 @@
 package com.sellerradar.keyword.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,9 +15,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.sellerradar.auth.dto.AuthResponse;
 import com.sellerradar.auth.dto.SignupRequest;
 import com.sellerradar.common.error.ErrorCode;
+import com.sellerradar.common.external.repository.ApiCallLogRepository;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.repository.KeywordRepository;
+import com.sellerradar.shopping.client.NaverShoppingClient;
+import com.sellerradar.shopping.client.NaverShoppingSearchItem;
+import com.sellerradar.shopping.client.NaverShoppingSearchRequest;
+import com.sellerradar.shopping.client.NaverShoppingSearchResponse;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.domain.ShoppingTopItem;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
@@ -28,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.JsonNode;
@@ -54,8 +64,15 @@ class KeywordControllerIntegrationTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private ApiCallLogRepository apiCallLogRepository;
+
+	@MockitoBean
+	private NaverShoppingClient naverShoppingClient;
+
 	@BeforeEach
 	void setUp() {
+		apiCallLogRepository.deleteAll();
 		snapshotRepository.deleteAll();
 		keywordRepository.deleteAll();
 		userRepository.deleteAll();
@@ -297,6 +314,114 @@ class KeywordControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.shopping.topItems[0].mallName").value("sample mall"));
 	}
 
+	@Test
+	void analyzeShoppingStoresSnapshotAndReusesSameDateCache() throws Exception {
+		AuthResponse auth = signup();
+		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
+		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponse(11));
+
+		mockMvc.perform(post("/api/v1/keywords/{keywordId}/analyze/shopping", keywordId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.keywordId").value(keywordId))
+				.andExpect(jsonPath("$.data.keyword").value("car storage box"))
+				.andExpect(jsonPath("$.data.cached").value(false))
+				.andExpect(jsonPath("$.data.sortType").value("sim"))
+				.andExpect(jsonPath("$.data.totalCount").value(1234))
+				.andExpect(jsonPath("$.data.minPrice").value(1000))
+				.andExpect(jsonPath("$.data.maxPrice").value(11000))
+				.andExpect(jsonPath("$.data.avgPrice").value(6000))
+				.andExpect(jsonPath("$.data.fetchedAt").exists())
+				.andExpect(jsonPath("$.data.topItems.length()").value(10))
+				.andExpect(jsonPath("$.data.topItems[0].rankNo").value(1))
+				.andExpect(jsonPath("$.data.topItems[0].title").value("Product 1"))
+				.andExpect(jsonPath("$.data.topItems[0].productUrl").value("https://example.com/products/1"))
+				.andExpect(jsonPath("$.data.topItems[0].imageUrl").value("https://example.com/products/1.jpg"))
+				.andExpect(jsonPath("$.data.topItems[0].lowPrice").value(1000))
+				.andExpect(jsonPath("$.data.topItems[0].mallName").value("Mall 1"));
+
+		mockMvc.perform(post("/api/v1/keywords/{keywordId}/analyze/shopping", keywordId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.cached").value(true))
+				.andExpect(jsonPath("$.data.topItems.length()").value(10));
+
+		verify(naverShoppingClient, times(1)).search(any(NaverShoppingSearchRequest.class));
+		assertThat(snapshotRepository.count()).isEqualTo(1);
+		assertThat(apiCallLogRepository.count()).isEqualTo(1);
+		var keyword = keywordRepository.findById(keywordId).orElseThrow();
+		assertThat(keyword.getAnalysisStatus()).isEqualTo(AnalysisStatus.SUCCESS);
+		assertThat(keyword.getLastAnalyzedAt()).isNotNull();
+		assertThat(keyword.getLastSnapshotDate()).isNotNull();
+	}
+
+	@Test
+	void latestShoppingSnapshotReturnsAcceptedWhenSnapshotDoesNotExist() throws Exception {
+		AuthResponse auth = signup();
+		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
+
+		mockMvc.perform(get("/api/v1/keywords/{keywordId}/shopping-snapshot/latest", keywordId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.ANALYSIS_NOT_READY.name()));
+	}
+
+	@Test
+	void latestShoppingSnapshotReturnsStoredSummaryAndTopItems() throws Exception {
+		AuthResponse auth = signup();
+		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
+		var keyword = keywordRepository.findById(keywordId).orElseThrow();
+		ShoppingPriceSnapshot snapshot = ShoppingPriceSnapshot.create(
+				keyword,
+				LocalDate.of(2026, 7, 2),
+				18230L,
+				4900,
+				29900,
+				12300,
+				"{}"
+		);
+		snapshot.addTopItem(ShoppingTopItem.create(
+				1,
+				"<b>car dust brush</b>",
+				"https://example.com/item",
+				"https://example.com/item.jpg",
+				4900,
+				5900,
+				"sample mall",
+				"1000001",
+				"1",
+				"sample brand",
+				"sample maker",
+				"living",
+				"car supplies",
+				"",
+				""
+		));
+		snapshotRepository.saveAndFlush(snapshot);
+
+		mockMvc.perform(get("/api/v1/keywords/{keywordId}/shopping-snapshot/latest", keywordId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.keywordId").value(keywordId))
+				.andExpect(jsonPath("$.data.searchDate").value("2026-07-02"))
+				.andExpect(jsonPath("$.data.cached").value(false))
+				.andExpect(jsonPath("$.data.totalCount").value(18230))
+				.andExpect(jsonPath("$.data.minPrice").value(4900))
+				.andExpect(jsonPath("$.data.maxPrice").value(29900))
+				.andExpect(jsonPath("$.data.avgPrice").value(12300))
+				.andExpect(jsonPath("$.data.topItems.length()").value(1))
+				.andExpect(jsonPath("$.data.topItems[0].rankNo").value(1))
+				.andExpect(jsonPath("$.data.topItems[0].title").value("car dust brush"))
+				.andExpect(jsonPath("$.data.topItems[0].productUrl").value("https://example.com/item"))
+				.andExpect(jsonPath("$.data.topItems[0].imageUrl").value("https://example.com/item.jpg"))
+				.andExpect(jsonPath("$.data.topItems[0].lowPrice").value(4900))
+				.andExpect(jsonPath("$.data.topItems[0].mallName").value("sample mall"));
+	}
+
 	private AuthResponse signup() throws Exception {
 		return signup(EMAIL);
 	}
@@ -335,6 +460,33 @@ class KeywordControllerIntegrationTest {
 		payload.put("keyword", keyword);
 		payload.put("category", category);
 		return objectMapper.writeValueAsBytes(payload);
+	}
+
+	private NaverShoppingSearchResponse shoppingResponse(int itemCount) {
+		return new NaverShoppingSearchResponse(
+				"Thu, 02 Jul 2026 20:00:00 +0900",
+				1234L,
+				1,
+				itemCount,
+				java.util.stream.IntStream.rangeClosed(1, itemCount)
+						.mapToObj(index -> new NaverShoppingSearchItem(
+								"<b>Product " + index + "</b>",
+								"https://example.com/products/" + index,
+								"https://example.com/products/" + index + ".jpg",
+								String.valueOf(index * 1000),
+								String.valueOf(index * 1000 + 500),
+								"Mall " + index,
+								"10000" + index,
+								"1",
+								"Brand " + index,
+								"Maker " + index,
+								"Category1",
+								"Category2",
+								"Category3",
+								"Category4"
+						))
+						.toList()
+		);
 	}
 
 	private String bearer(AuthResponse auth) {

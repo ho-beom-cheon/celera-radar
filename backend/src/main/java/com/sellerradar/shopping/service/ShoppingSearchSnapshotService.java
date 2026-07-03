@@ -80,12 +80,20 @@ public class ShoppingSearchSnapshotService {
 	}
 
 	public ShoppingPriceSnapshot collect(Long keywordId, LocalDate baseDate) {
+		return collectWithCacheStatus(keywordId, baseDate).snapshot();
+	}
+
+	public ShoppingSnapshotCollectResult collectWithCacheStatus(Long keywordId, LocalDate baseDate) {
 		return snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(
 						keywordId,
 						baseDate,
 						NaverShoppingSort.SIM.value()
 				)
-				.orElseGet(() -> collectFreshSnapshot(keywordId, baseDate));
+				.map(snapshot -> {
+					markKeywordAnalyzed(keywordId, snapshot.getSearchDate(), OffsetDateTime.now(clock));
+					return new ShoppingSnapshotCollectResult(snapshot, true);
+				})
+				.orElseGet(() -> new ShoppingSnapshotCollectResult(collectFreshSnapshot(keywordId, baseDate), false));
 	}
 
 	private ShoppingPriceSnapshot collectFreshSnapshot(Long keywordId, LocalDate baseDate) {
@@ -97,16 +105,17 @@ public class ShoppingSearchSnapshotService {
 		ShoppingPriceSnapshot snapshot = buildSnapshot(keyword, baseDate, response);
 		try {
 			ShoppingPriceSnapshot savedSnapshot = snapshotRepository.saveAndFlush(snapshot);
-			keyword.markAnalyzed(OffsetDateTime.now(clock));
-			keywordRepository.save(keyword);
+			markKeywordAnalyzed(keyword, savedSnapshot.getSearchDate(), OffsetDateTime.now(clock));
 			return savedSnapshot;
 		} catch (DataIntegrityViolationException exception) {
-			return snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(
+			ShoppingPriceSnapshot cachedSnapshot = snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(
 							keywordId,
 							baseDate,
 							NaverShoppingSort.SIM.value()
 					)
 					.orElseThrow(() -> exception);
+			markKeywordAnalyzed(keyword, cachedSnapshot.getSearchDate(), OffsetDateTime.now(clock));
+			return cachedSnapshot;
 		}
 	}
 
@@ -147,6 +156,18 @@ public class ShoppingSearchSnapshotService {
 				errorCode.name(),
 				exception.getMessage()
 		));
+	}
+
+	private void markKeywordAnalyzed(Long keywordId, LocalDate snapshotDate, OffsetDateTime analyzedAt) {
+		keywordRepository.findById(keywordId)
+				.filter(foundKeyword -> foundKeyword.getStatus() == KeywordStatus.ACTIVE)
+				.ifPresent(keyword -> markKeywordAnalyzed(keyword, snapshotDate, analyzedAt));
+	}
+
+	private void markKeywordAnalyzed(Keyword keyword, LocalDate snapshotDate, OffsetDateTime analyzedAt) {
+		keyword.markAnalyzed(analyzedAt);
+		keyword.updateLastSnapshotDate(snapshotDate);
+		keywordRepository.save(keyword);
 	}
 
 	private ShoppingPriceSnapshot buildSnapshot(
