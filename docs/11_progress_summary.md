@@ -408,15 +408,48 @@ docs/10_database_design.md 14.1 기준 4/7 완료
 
 ---
 
-## 10. 다음 작업 제안
+## 10. P2-002 구현 완료
 
-다음 구현 작업은 `P2-002 NaverShoppingClient mock test`가 적절하다.
+`docs/10_database_design.md` 기준으로 `P2-002 NaverShoppingClient mock test` 정합성 정리를 완료했다.
+
+반영 내용:
+
+- Naver Shopping Search client 테스트 fixture를 읽기 쉬운 ASCII 샘플로 정리
+- MockWebServer 기반 정상 응답 DTO 매핑 검증
+- 요청 header 검증
+- `query`, `display`, `start`, `sort`, `exclude` query parameter 검증
+- `sort` 기본값 `sim` 검증
+- 빈 `exclude`는 요청에서 생략되는지 검증
+- 429 응답을 `EXTERNAL_API_RATE_LIMIT`로 매핑하는지 검증
+- 400/500 응답을 `EXTERNAL_API_UNAVAILABLE`로 매핑하는지 검증
+- credential 누락 시 외부 요청 전 실패하는지 검증
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행율:
+
+```text
+docs/10_database_design.md 14.1 기준 5/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002
+다음: P2-003
+```
+
+---
+
+## 11. 다음 작업 제안
+
+다음 구현 작업은 `P2-003 분석 API 및 snapshot 저장`이 적절하다.
 
 작업 범위:
 
-- Naver Shopping Search client 테스트를 설계 기준으로 재검토
-- 외부 API 호출은 MockWebServer 기준으로만 검증
-- 요청 header/query parameter 검증
-- 4xx/5xx/429 오류 매핑 검증
-- credential 누락 시 외부 호출 전 실패하는지 검증
-- `api_call_logs` 저장 흐름은 P2-003에서 다루고 이번 작업에서는 client 단위에 집중
+- 키워드 분석 실행 API 정리
+- 최신 shopping snapshot 조회 API 정리
+- 같은 `keyword_id + search_date + sort_type` 성공 snapshot이 있으면 외부 API를 재호출하지 않는 캐시 정책 검증
+- 분석 성공/실패 시 keyword `analysisStatus`, `lastAnalyzedAt`, `lastSnapshotDate` 갱신 정합성 확인
+- `api_call_logs` 저장 흐름을 서비스 테스트에서 검증
+- 외부 Naver API는 직접 호출하지 않고 mock 기반으로만 검증
