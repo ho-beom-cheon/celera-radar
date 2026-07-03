@@ -6,6 +6,16 @@ export type CandidateGrade = 'RECOMMENDED' | 'REVIEW' | 'HOLD' | 'EXCLUDED';
 export type CandidateStatus = 'ACTIVE' | 'SAVED' | 'EXCLUDED';
 export type RiskLevel = 'LOW' | 'CAUTION' | 'EXCLUDED';
 
+export interface CandidateScoreBreakdown {
+  trendScore: number;
+  competitionScore: number;
+  marginScore: number;
+  priceBandScore: number;
+  priceScore: number;
+  supplyScore: number;
+  riskPenalty: number;
+}
+
 export interface CandidateListItem {
   candidateId: number;
   name: string;
@@ -23,15 +33,7 @@ export interface CandidateListItem {
 }
 
 export interface CandidateDetail extends CandidateListItem {
-  scoreBreakdown: {
-    trendScore: number;
-    competitionScore: number;
-    marginScore: number;
-    priceBandScore: number;
-    priceScore: number;
-    supplyScore: number;
-    riskPenalty: number;
-  };
+  scoreBreakdown: CandidateScoreBreakdown;
   reasons: string[];
   warnings: string[];
   keywordId: number | null;
@@ -59,6 +61,18 @@ export const gradeLabels: Record<CandidateGrade, string> = {
 export const riskLabels: Record<RiskLevel, string> = {
   LOW: '낮음',
   CAUTION: '주의',
+  EXCLUDED: '제외'
+};
+
+export const sourceLabels: Record<CandidateSource, string> = {
+  KEYWORD: '키워드',
+  CSV: 'CSV',
+  API: 'API'
+};
+
+export const statusLabels: Record<CandidateStatus, string> = {
+  ACTIVE: '활성',
+  SAVED: '관심',
   EXCLUDED: '제외'
 };
 

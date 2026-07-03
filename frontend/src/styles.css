@@ -536,6 +536,10 @@ h2 {
   min-width: 980px;
 }
 
+.candidates-data-table {
+  min-width: 1080px;
+}
+
 .upload-preview-table {
   min-width: 920px;
 }
@@ -566,6 +570,59 @@ h2 {
 .strong-cell {
   color: #202124;
   font-weight: 700;
+}
+
+.candidate-product {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 260px;
+}
+
+.candidate-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: #174d54;
+  background: #e8f3f4;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.candidate-subtext {
+  display: block;
+  margin-top: 4px;
+  color: #657982;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.candidate-expanded-row td {
+  padding: 0;
+  background: #fbfdff;
+}
+
+.candidate-breakdown-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-top: 1px solid #e5ebf2;
+}
+
+.candidate-breakdown-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.candidate-breakdown-notes h2,
+.candidate-breakdown-notes h3 {
+  margin: 0;
+  font-size: 16px;
 }
 
 .status-badge {
@@ -842,6 +899,11 @@ h2 {
   font-size: 14px;
 }
 
+.score-grid strong {
+  margin-left: 6px;
+  color: #202124;
+}
+
 .score-pill {
   display: inline-flex;
   align-items: center;
@@ -914,6 +976,7 @@ h2 {
   .form-grid-two,
   .form-grid-four,
   .category-checks,
+  .candidate-breakdown-notes,
   .candidate-metrics,
   .score-grid,
   .workflow-grid,
