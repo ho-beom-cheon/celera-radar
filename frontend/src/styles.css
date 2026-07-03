@@ -540,6 +540,10 @@ h2 {
   min-width: 1080px;
 }
 
+.store-margin-data-table {
+  min-width: 1120px;
+}
+
 .upload-preview-table {
   min-width: 920px;
 }
