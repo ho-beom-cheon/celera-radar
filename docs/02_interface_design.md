@@ -580,6 +580,8 @@ Response:
 
 ### POST /margin/calculate
 
+`platformFeeRate`, `targetMarginRate`는 percent 단위 입력값으로 해석한다. 예: `4.0`은 4%이다.
+
 빠른 마진 계산.
 
 Request:
@@ -590,9 +592,9 @@ Request:
   "supplyPrice": 22000,
   "platformFeeRate": 4.0,
   "shippingFee": 3000,
-  "packagingFee": 500,
-  "adCostPerOrder": 2000,
-  "couponDiscount": 1000,
+  "adCost": 2000,
+  "couponCost": 1000,
+  "extraCost": 500,
   "targetMarginRate": 25.0
 }
 ```
@@ -601,15 +603,10 @@ Response:
 
 ```json
 {
-  "salePrice": 39900,
   "totalCost": 30096,
-  "platformFee": 1596,
   "expectedProfit": 9804,
   "expectedMarginRate": 24.57,
-  "status": "WARNING",
-  "recommendedSalePrice": 40500,
-  "maxAllowedAdCost": 1820,
-  "maxAllowedCoupon": 1420
+  "recommendedSalePrice": 40500
 }
 ```
 
