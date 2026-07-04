@@ -1996,3 +1996,49 @@ P15 프로젝트 고도화: 11단계 완료
 다음: P15-012 Frontend validation pattern cleanup 또는 P15 closeout review
 
 ---
+
+## 최신 진행: P15-012 Frontend validation pattern cleanup 완료
+
+`P15-011 Margin calculator validation UX` 이후 후속 작업으로 `P15-012 Frontend validation pattern cleanup`을 완료했다.
+
+반영 내용:
+
+- `frontend/src/lib/formValidation.ts` 공통 validation helper 추가
+- `hasFormErrors` 중복 local helper 제거
+- 문자열 blank 판정용 `isBlank` helper 적용
+- 문자열 숫자 파싱용 `parseFiniteNumber` helper 적용
+- 후보 필터의 빈 값 유지 변환을 `blankToNumberFilter`로 정리
+- alert rule, candidate filter, margin calculator, wholesale upload의 기존 validation 정책 유지
+- `docs/beta/P15_VALIDATION_PATTERN_CLEANUP.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 12단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+- P15-011 Margin calculator validation UX: 완료
+- P15-012 Frontend validation pattern cleanup: 완료
+```
+
+다음: P15-013 P15 closeout review
+
+---
