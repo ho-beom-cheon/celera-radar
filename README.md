@@ -13,6 +13,7 @@
 - docs/09_decision_log.md: 주요 의사결정 로그
 - docs/10_database_design.md: DB 상세 설계 기준 문서
 - docs/11_progress_summary.md: 현재까지 작업 요약
+- docs/13_external_api_credentials.md: 외부 API credential 준비 가이드
 - AGENTS.md: Codex 작업 규칙 파일
 
 ## 로컬 실행
@@ -67,6 +68,7 @@ docker compose -f infra/docker-compose.yml up -d db
 Java 21이 필요합니다.
 `JWT_SECRET`은 32바이트 이상 값으로 환경변수에 설정합니다.
 네이버 API 연동 기능을 실행할 때는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 환경변수로 설정합니다.
+발급 경로와 적용 위치는 `docs/13_external_api_credentials.md`를 먼저 확인합니다.
 
 ```bash
 cd backend
