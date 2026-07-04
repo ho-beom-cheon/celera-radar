@@ -564,38 +564,42 @@ Unique: `(candidate_id, analysis_date)`.
 
 ---
 
-## 8.10 `alert_rules` / `alert_events`
+## 8.10 `alert_rule` / `alert`
 
-알림 조건과 발생 이벤트를 분리한다.
+알림 조건과 알림 저장 구조를 분리한다. 현재 애플리케이션 구현은 singular 테이블명 `alert_rule`, `alert`를 기준으로 한다.
 
-### `alert_rules`
+### `alert_rule`
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | `BIGINT` | PK |
 | `user_id` | `BIGINT` | FK |
-| `rule_name` | `VARCHAR(100)` | 규칙명 |
-| `alert_type` | `VARCHAR(30)` | 알림 유형 |
-| `threshold_value` | `NUMERIC(10,4)` | 기준값 |
-| `condition_json` | `JSONB` | 상세 조건 |
+| `name` | `VARCHAR(100)` | 규칙명 |
+| `min_score` | `INT` | 최소 후보 점수 |
+| `min_margin_rate` | `NUMERIC(6,2)` | 최소 예상 마진율 |
+| `category_codes` | `TEXT` | 대상 카테고리 코드 목록 |
+| `risk_excluded` | `BOOLEAN` | 위험 제외 후보 필터 여부 |
+| `frequency` | `VARCHAR(30)` | `DAILY_SUMMARY`, `WEEKLY_SUMMARY` |
 | `active` | `BOOLEAN` | 활성 여부 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
+| `updated_at` | `TIMESTAMPTZ` | 수정일 |
 
-### `alert_events`
+### `alert`
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | `BIGINT` | PK |
 | `user_id` | `BIGINT` | FK |
-| `alert_rule_id` | `BIGINT` | FK nullable |
-| `alert_type` | `VARCHAR(30)` | 알림 유형 |
-| `title` | `VARCHAR(200)` | 제목 |
-| `message` | `TEXT` | 본문 |
-| `target_type` | `VARCHAR(50)` | `KEYWORD`, `CANDIDATE`, `STORE_PRODUCT` 등 |
-| `target_id` | `BIGINT` | 대상 ID |
-| `status` | `VARCHAR(30)` | `UNREAD`, `READ`, `ARCHIVED` |
+| `rule_id` | `BIGINT` | FK |
+| `candidate_id` | `BIGINT` | 후보 ID |
+| `type` | `VARCHAR(40)` | `CANDIDATE_SCORE` |
+| `status` | `VARCHAR(20)` | `UNREAD`, `READ` |
+| `title` | `VARCHAR(160)` | 제목 |
+| `message` | `VARCHAR(500)` | 본문 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
 | `read_at` | `TIMESTAMPTZ` | 읽은 시각 |
+
+Unique: `(rule_id, candidate_id, type)`.
 
 ---
 
