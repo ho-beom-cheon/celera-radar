@@ -1082,6 +1082,56 @@ P12 디자인 대개편: 2/2 완료
 
 ---
 
+## 최신 진행: P14-001 문서 정리 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P14-001 Beta Readiness and Monetization Metrics`를 문서 작업으로 정리했다.
+
+진행 판단:
+
+- `P13-001 Apps in Toss Lite Route Skeleton`은 기존 결정대로 보류한다.
+- 앱인토스 구현 없이 진행 가능한 다음 작업인 P14 베타/수익화 준비 문서부터 반영했다.
+
+반영 내용:
+
+- `docs/12_beta_monetization_metrics.md` 추가
+- 베타 준비 체크리스트 정리
+- activation, engagement, monetization signal, retention, data quality 지표 정의
+- FREE/BASIC/PRO/BETA 요금제 가설 정리
+- 기능 제한 기준과 limit hit 이벤트 후보 정리
+- `feature_usage_events`, `usage_metrics_daily` 기준 이벤트/집계 설계 정리
+- `docs/10_database_design.md`에 P14 table 초안 보강
+
+제외:
+
+- 실제 결제 연동
+- backend/API/DB migration 구현
+- frontend 기능 구현
+- Apps in Toss Lite 구현
+- 요금제 강제 적용 로직 구현
+
+검증:
+
+```text
+git diff --stat
+문서 변경만 존재
+```
+
+진행률:
+
+```text
+P13 앱인토스 Lite: 보류
+P14 베타/수익화: 1/1 완료
+- P14-001 Beta Readiness and Monetization Metrics: 완료
+```
+
+다음:
+
+```text
+PR 승인/반영 또는 P13 보류 해제 전에는 로드맵상 신규 구현 작업 없음
+```
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
