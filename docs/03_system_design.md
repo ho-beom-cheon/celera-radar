@@ -489,6 +489,7 @@ overall_score = trend_score + competition_score + margin_score + price_band_scor
 - trend_score는 DataLab trend_score 계산 결과를 0~30으로 제한한다.
 - competition_score는 검색 결과 수가 적을수록 높게 주고, 상위 가격대 편차가 크면 감점한다.
 - margin_score는 예상 판매가, 공급가, 배송비 기준 예상 마진율로 계산한다.
+- 빠른 마진 계산은 공급가, 배송비, 플랫폼 수수료율, 광고비, 쿠폰비, 기타 비용까지 총 비용에 포함한다.
 - price_band_score는 9,900~49,900원을 10점, 인접 가격대를 5점으로 계산한다.
 - supply_score는 공급가와 배송비가 유효하면 5점으로 계산한다.
 - risk_penalty는 안전 0점, 주의 -15점, 제외 -40점으로 계산한다.

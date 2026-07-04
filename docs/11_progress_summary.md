@@ -480,6 +480,40 @@ P5 도매 CSV/XLSX 업로드: 4/4 완료
 
 ---
 
+## 최신 진행: P6-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P6-001 Margin Calculator 구현`을 완료했다.
+
+반영 내용:
+
+- `MarginCalculator.calculate` 요청/결과 record 추가
+- 입력값 `salePrice`, `supplyPrice`, `shippingFee`, `platformFeeRate`, `adCost`, `couponCost`, `extraCost`, `targetMarginRate` 반영
+- 결과값 `totalCost`, `expectedProfit`, `expectedMarginRate`, `recommendedSalePrice` 계산
+- 기존 후보 생성 흐름에서 사용하는 `expectedSalePrice`, `marginRate` 호환 메서드 유지
+- `platformFeeRate`, `targetMarginRate`는 percent 단위 입력으로 정리
+- 경계값 단위 테스트 보강
+- `docs/02_interface_design.md`, `docs/03_system_design.md` 마진 계산 기준 최소 갱신
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P6 마진/상품 검토 점수: 1/3 완료
+- P6-001 Margin Calculator 구현: 완료
+- P6-002 Candidate Scoring 구현: 다음
+- P6-003 Candidate 화면 구현: 대기
+```
+
+다음: P6-002
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
