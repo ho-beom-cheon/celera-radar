@@ -9,7 +9,7 @@ import {
 } from '../../api/alerts';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
 import { CategoryCode } from '../../api/keywords';
-import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
+import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, StatusBadge } from '../../components/ui';
 
 const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
   { value: 'CAR_ACCESSORY', label: '차량용품' },
@@ -189,7 +189,12 @@ export function AlertsPage({ mode }: AlertsPageProps) {
       ) : (
         <form className="panel keyword-form-panel alert-rule-form" onSubmit={handleRuleSubmit}>
           <div className="panel-header">
-            <h2>새 알림 조건</h2>
+            <h2>
+              <span className="table-heading-help">
+                <span>새 알림 조건</span>
+                <HelpTooltip contentKey="alertRule" compact />
+              </span>
+            </h2>
             <p className="muted">점수, 마진율, 카테고리 조건이 모두 맞는 후보에 알림을 생성합니다.</p>
           </div>
           <div className="form-grid form-grid-two">

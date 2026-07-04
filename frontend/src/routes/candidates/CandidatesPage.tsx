@@ -16,7 +16,7 @@ import {
 } from '../../api/candidates';
 import { CategoryCode, categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, LoadingState } from '../../components/ui';
+import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState } from '../../components/ui';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
   { value: 'RECOMMENDED', label: '추천 검토' },
@@ -146,7 +146,10 @@ export function CandidatesPage() {
           <h1>상품 검토 후보</h1>
         </div>
         <div className="limit-meter">
-          <span>현재 조건 후보</span>
+          <span className="metric-label">
+            <span>현재 조건 후보</span>
+            <HelpTooltip contentKey="candidateCount" compact />
+          </span>
           <strong>{totalElements}개</strong>
         </div>
       </section>
@@ -248,10 +251,30 @@ export function CandidatesPage() {
               <tr>
                 <th>상품</th>
                 <th>등급</th>
-                <th>점수</th>
-                <th>예상 판매가</th>
-                <th>공급가</th>
-                <th>예상 마진율</th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>점수</span>
+                    <HelpTooltip contentKey="productScore" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>예상 판매가</span>
+                    <HelpTooltip contentKey="salePrice" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>공급가</span>
+                    <HelpTooltip contentKey="supplyPrice" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>예상 마진율</span>
+                    <HelpTooltip contentKey="marginRate" compact />
+                  </span>
+                </th>
                 <th>상태</th>
                 <th>액션</th>
               </tr>

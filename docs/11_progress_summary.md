@@ -1503,3 +1503,164 @@ P5 도매 CSV/XLSX 업로드: 1/4 완료
 다음: P5-002
 
 ---
+
+## 최신 진행: P15-002 디자인/도움말 고도화 완료
+
+`docs/beta/P15_PROJECT_BASELINE_ANALYSIS.md` 기준으로 `P15-002 디자인/도움말 고도화`를 완료했다.
+
+반영 내용:
+
+- `frontend/src/lib/helpContent.ts` 도움말 사전 추가
+- `HelpTooltip`, `HelpText`, `HelpPopover` 공통 UI 컴포넌트 추가
+- `MetricCard`에 `helpKey` prop 추가
+- 대시보드, 키워드 상세, 후보 목록/상세, 도매 업로드, 마진 계산기, 내 상품 마진, 알림 조건 화면에 도움말 연결
+- form label 내부에 interactive button이 중첩되지 않도록 `field-label-row` 구조 적용
+- loading/empty 상태 표현 class 분리
+- `docs/beta/P15_DESIGN_HELP_POLISH.md` 문서 추가
+
+제외:
+
+- chart library 도입
+- backend/API/DB migration 변경
+- 외부 API 연동 변경
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- http://127.0.0.1:5174/margin
+- tooltip hover 노출 확인
+- 390px width horizontal overflow 없음
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 2단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 다음 후보
+```
+
+다음: P15-003
+
+---
+
+## 최신 진행: P15-003 Chart/KPI Visualization 완료
+
+`docs/beta/P15_PROJECT_BASELINE_ANALYSIS.md`와 P15-002 후속 제안 기준으로 `P15-003 Chart/KPI Visualization`을 완료했다.
+
+반영 내용:
+
+- `recharts` 의존성 추가
+- `KpiBarChart`, `KpiDonutChart` 공통 UI 컴포넌트 추가
+- 마진 계산기에 총 원가, 권장 판매가, 입력 판매가, 입력 마진 비교 차트 추가
+- 후보 상세에 점수 구성 차트 추가
+- 내 상품 마진 화면에 위험/주의/안전/원가 미설정 도넛 차트 추가
+- 키워드 상세에 최저가, 평균가, 최고가 가격대 비교 차트 추가
+- `docs/beta/P15_CHART_KPI_VISUALIZATION.md` 문서 추가
+
+제외:
+
+- backend/API/DB migration 변경
+- 외부 API 키 적용
+- 네이버/데이터랩/스마트스토어 실제 연동 변경
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin chart 렌더링 확인
+- /store/margins chart empty state 확인
+- 390px width horizontal overflow 없음
+```
+
+주의:
+
+```text
+Recharts 도입 후 Vite/Rolldown chunk size warning 발생
+이번 PR에서는 build 실패가 아니므로 기록만 남기고, 다음 성능 정리에서 chart lazy loading 검토
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 3단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+```
+
+다음: P15-004 API/Error UX Hardening 또는 Chart Lazy Loading 검토
+
+---
+
+## 최신 진행: P15-004 Chart Lazy Loading 완료
+
+`P15-003 Chart/KPI Visualization` 이후 발생한 frontend chunk size warning을 줄이기 위해 `P15-004 Chart Lazy Loading`을 완료했다.
+
+반영 내용:
+
+- `LazyKpiBarChart`, `LazyKpiDonutChart` 추가
+- Recharts를 직접 import하는 `KpiBarChart`, `KpiDonutChart`를 공통 UI barrel에서 제거
+- 마진 계산기, 키워드 상세, 후보 상세, 내 상품 마진 화면이 lazy chart wrapper를 사용하도록 변경
+- chart loading fallback 스타일 추가
+- `docs/beta/P15_CHART_LAZY_LOADING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin lazy chart 렌더링 확인
+- SVG chart count: 1
+- chart loading fallback 잔존 없음
+```
+
+Build 결과:
+
+```text
+dist/assets/KpiDonutChart-D1q7Vknh.js      18.45 kB
+dist/assets/KpiBarChart-DAqoynWN.js        53.13 kB
+dist/assets/index-D9iw9o9v.js             220.21 kB
+dist/assets/CategoricalChart-asXnCBk7.js  302.80 kB
+```
+
+주의:
+
+```text
+브라우저 smoke 중 favicon.ico 404가 확인됐지만 이번 변경과 무관한 기존 정적 자산 요청이다.
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 4단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+```
+
+다음: P15-005 API/Error UX Hardening
+
+---

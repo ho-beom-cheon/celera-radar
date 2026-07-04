@@ -9,7 +9,16 @@ import {
   statusLabels
 } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { EmptyState, ErrorState, LoadingState, MetricCard, ProductCard, StatusBadge } from '../../components/ui';
+import {
+  EmptyState,
+  ErrorState,
+  HelpTooltip,
+  LazyKpiBarChart,
+  LoadingState,
+  MetricCard,
+  ProductCard,
+  StatusBadge
+} from '../../components/ui';
 
 interface KeywordDetailPageProps {
   keywordId: number;
@@ -113,7 +122,10 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
         </div>
         <div className="detail-actions">
           <div className="limit-meter cache-meter">
-            <span>스냅샷 기준일</span>
+            <span className="metric-label">
+              <span>스냅샷 기준일</span>
+              <HelpTooltip contentKey="dataBaseDate" compact />
+            </span>
             <strong>{snapshot?.searchDate ?? keyword?.lastSnapshotDate ?? '-'}</strong>
           </div>
           <button type="button" className="primary-button" onClick={() => void handleAnalyzeShopping()} disabled={loading || analyzing}>
@@ -136,10 +148,10 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
       {snapshot ? (
         <>
           <section className="summary-grid analysis-summary" aria-label="쇼핑 검색 요약">
-            <MetricCard label="검색 결과 수" value={formatNumber(snapshot.totalCount)} />
-            <MetricCard label="최저가" value={formatCurrency(snapshot.minPrice)} />
-            <MetricCard label="평균가" value={formatCurrency(snapshot.avgPrice)} />
-            <MetricCard label="최고가" value={formatCurrency(snapshot.maxPrice)} />
+            <MetricCard label="검색 결과 수" value={formatNumber(snapshot.totalCount)} helpKey="searchResultCount" />
+            <MetricCard label="최저가" value={formatCurrency(snapshot.minPrice)} helpKey="minPrice" />
+            <MetricCard label="평균가" value={formatCurrency(snapshot.avgPrice)} helpKey="avgPrice" />
+            <MetricCard label="최고가" value={formatCurrency(snapshot.maxPrice)} helpKey="maxPrice" />
             <MetricCard
               label="경쟁강도"
               value={
@@ -148,8 +160,17 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
                 </span>
               }
               valueClassName="summary-badge-value"
+              helpKey="competitionLevel"
             />
           </section>
+
+          <LazyKpiBarChart
+            title="가격대 비교"
+            description="저장된 쇼핑 스냅샷의 최저가, 평균가, 최고가를 비교합니다."
+            data={priceChartItems(snapshot)}
+            valueFormatter={formatCurrency}
+            helpKey="avgPrice"
+          />
 
           <section className="panel keywords-table-panel">
             <div className="panel-header">
@@ -193,6 +214,14 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function priceChartItems(snapshot: ShoppingSnapshot) {
+  return [
+    { label: '최저가', value: snapshot.minPrice ?? 0, color: 'var(--sr-color-success)' },
+    { label: '평균가', value: snapshot.avgPrice ?? 0, color: 'var(--sr-color-brand)' },
+    { label: '최고가', value: snapshot.maxPrice ?? 0, color: 'var(--sr-color-warning-muted)' }
+  ];
 }
 
 function formatDateTime(value: string | null) {

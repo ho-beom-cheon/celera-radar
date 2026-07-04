@@ -12,7 +12,7 @@ import {
 } from '../../api/candidates';
 import { categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { ErrorState, LoadingState } from '../../components/ui';
+import { ErrorState, LazyKpiBarChart, LoadingState } from '../../components/ui';
 
 interface CandidateDetailPageProps {
   candidateId: number;
@@ -129,21 +129,13 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
             </div>
           </section>
 
-          <section className="panel keyword-form-panel">
-            <div className="panel-header">
-              <div>
-                <h2>점수 구성</h2>
-                <p className="muted">검토 후보 점수는 트렌드, 경쟁, 마진, 가격대, 공급, 위험 기준으로 계산됩니다.</p>
-              </div>
-            </div>
-            <div className="score-grid">
-              {scoreItems(candidate.scoreBreakdown).map((item) => (
-                <span key={item.label}>
-                  {item.label} <strong>{item.value}</strong>
-                </span>
-              ))}
-            </div>
-          </section>
+          <LazyKpiBarChart
+            title="점수 구성 차트"
+            description="검토 후보 점수의 구성 요소를 비교합니다. 점수는 검토 우선순위이며 판매 가능성을 보장하지 않습니다."
+            data={scoreChartItems(candidate.scoreBreakdown)}
+            valueFormatter={(value) => `${value}점`}
+            helpKey="productScore"
+          />
 
           <section className="panel keyword-form-panel">
             <div className="candidate-breakdown-notes">
@@ -176,14 +168,14 @@ function NoteList({ values, emptyText }: { values: string[]; emptyText: string }
   );
 }
 
-function scoreItems(breakdown: CandidateScoreBreakdown) {
+function scoreChartItems(breakdown: CandidateScoreBreakdown) {
   return [
-    { label: '트렌드', value: breakdown.trendScore },
-    { label: '경쟁', value: breakdown.competitionScore },
-    { label: '마진', value: breakdown.marginScore },
-    { label: '가격대', value: breakdown.priceScore },
-    { label: '공급', value: breakdown.supplyScore },
-    { label: '위험', value: breakdown.riskPenalty }
+    { label: '트렌드', value: breakdown.trendScore, color: 'var(--sr-color-brand)' },
+    { label: '경쟁', value: breakdown.competitionScore, color: 'var(--sr-color-warning-muted)' },
+    { label: '마진', value: breakdown.marginScore, color: 'var(--sr-color-success)' },
+    { label: '가격대', value: breakdown.priceScore, color: 'var(--sr-color-accent)' },
+    { label: '공급', value: breakdown.supplyScore, color: 'var(--sr-color-brand-focus)' },
+    { label: '위험 차감', value: Math.abs(breakdown.riskPenalty), color: 'var(--sr-color-danger-muted)' }
   ];
 }
 

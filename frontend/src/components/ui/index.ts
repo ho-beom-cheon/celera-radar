@@ -1,5 +1,11 @@
 export { DataTable } from './DataTable';
+export { HelpPopover } from './HelpPopover';
+export { HelpText } from './HelpText';
+export { HelpTooltip } from './HelpTooltip';
+export { LazyKpiBarChart, LazyKpiDonutChart } from './LazyKpiCharts';
 export { MetricCard } from './MetricCard';
 export { ProductCard } from './ProductCard';
 export { EmptyState, ErrorState, LoadingState } from './StateMessage';
 export { StatusBadge } from './StatusBadge';
+export type { KpiBarChartItem, KpiBarChartProps } from './KpiBarChart';
+export type { KpiDonutChartItem, KpiDonutChartProps } from './KpiDonutChart';

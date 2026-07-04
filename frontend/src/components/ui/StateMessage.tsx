@@ -5,11 +5,11 @@ interface StateMessageProps {
 }
 
 export function LoadingState({ children }: StateMessageProps) {
-  return <div className="state-row">{children}</div>;
+  return <div className="state-row state-loading">{children}</div>;
 }
 
 export function EmptyState({ children }: StateMessageProps) {
-  return <div className="state-row">{children}</div>;
+  return <div className="state-row state-empty">{children}</div>;
 }
 
 export function ErrorState({ children }: StateMessageProps) {
