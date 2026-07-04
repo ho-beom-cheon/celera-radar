@@ -17,6 +17,8 @@ public interface KeywordRepository extends JpaRepository<Keyword, Long> {
 
 	List<Keyword> findByActiveTrueAndDeletedAtIsNull();
 
+	List<Keyword> findByActiveTrueAndDeletedAtIsNullOrderByLastAnalyzedAtAscCreatedAtAsc(Pageable pageable);
+
 	Optional<Keyword> findByIdAndUserId(Long id, Long userId);
 
 	Optional<Keyword> findByIdAndUserIdAndActiveTrueAndDeletedAtIsNull(Long id, Long userId);

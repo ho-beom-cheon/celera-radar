@@ -1,6 +1,7 @@
 package com.sellerradar.batch.controller;
 
 import com.sellerradar.batch.dto.BatchJobHistoryResponse;
+import com.sellerradar.batch.service.DailyTrendBatchService;
 import com.sellerradar.batch.service.ShoppingSearchBatchService;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.api.PageResponse;
@@ -22,10 +23,23 @@ public class AdminBatchController {
 	private static final int DEFAULT_SIZE = 20;
 	private static final int MAX_SIZE = 100;
 
+	private final DailyTrendBatchService dailyTrendBatchService;
 	private final ShoppingSearchBatchService shoppingSearchBatchService;
 
-	public AdminBatchController(ShoppingSearchBatchService shoppingSearchBatchService) {
+	public AdminBatchController(
+			DailyTrendBatchService dailyTrendBatchService,
+			ShoppingSearchBatchService shoppingSearchBatchService
+	) {
+		this.dailyTrendBatchService = dailyTrendBatchService;
 		this.shoppingSearchBatchService = shoppingSearchBatchService;
+	}
+
+	@PostMapping("/datalab/run")
+	public ApiResponse<BatchJobHistoryResponse> runDatalabTrend(HttpServletRequest request) {
+		return ApiResponse.success(
+				dailyTrendBatchService.runManualDatalabTrend(),
+				RequestContext.requestId(request)
+		);
 	}
 
 	@PostMapping("/shopping-search/run")
