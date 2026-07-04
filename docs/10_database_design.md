@@ -833,7 +833,8 @@ V008__add_auth_columns_to_users.sql
 V009__create_naver_store_tables.sql
 V010__create_naver_store_products.sql
 V011__create_store_product_costs.sql
-V012__create_toss_tables.sql
+V012__create_naver_order_settlement_snapshots.sql
+V013__create_toss_tables.sql
 ```
 
 ## 12.2 작성 원칙
