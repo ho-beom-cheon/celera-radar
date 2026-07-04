@@ -1943,3 +1943,56 @@ P15 프로젝트 고도화: 10단계 완료
 다음: P15-011 Margin calculator validation UX
 
 ---
+
+## 최신 진행: P15-011 Margin calculator validation UX 완료
+
+`P15-010 Candidate filter validation UX` 이후 후속 작업으로 `P15-011 Margin calculator validation UX`를 완료했다.
+
+반영 내용:
+
+- 마진 계산기 입력 state를 number에서 string으로 변경해 빈 값/오류 상태 표현 가능
+- 공급가, 목표 마진율, 판매가 직접 입력 필수 숫자 검증 추가
+- 배송비는 빈 값 허용, 값이 있으면 0 이상 숫자 검증 추가
+- 공급가/판매가 0 이하 입력 안내 표시
+- 목표 마진율 1~90 범위 검증 표시
+- validation 오류 시 현재 마진율과 결과 metric을 `-`로 표시
+- validation 오류 시 KPI chart empty 상태 표시
+- `권장가 적용` 버튼 비활성화 사유 표시
+- `docs/beta/P15_MARGIN_CALCULATOR_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin 초기 유효 상태에서 현재 마진율, 결과 metric, KPI chart 표시 확인
+- 공급가 0 입력 시 field error와 권장가 적용 버튼 하단 사유 확인
+- invalid 상태에서 결과 metric `-` 표시와 KPI chart empty 상태 확인
+- console에는 favicon 404 1건 표시
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 11단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+- P15-011 Margin calculator validation UX: 완료
+```
+
+다음: P15-012 Frontend validation pattern cleanup 또는 P15 closeout review
+
+---
