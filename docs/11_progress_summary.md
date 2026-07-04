@@ -1755,3 +1755,47 @@ P15 프로젝트 고도화: 6단계 완료
 다음: P15-007 DataTable empty/loading structure
 
 ---
+
+## 최신 진행: P15-007 DataTable empty/loading structure 완료
+
+`P15-006 Route UX Hardening` 이후 후속 작업으로 `P15-007 DataTable empty/loading structure`를 완료했다.
+
+반영 내용:
+
+- `DataTableStateRow` 공통 컴포넌트 추가
+- `DataTableStateRow` 공통 UI export 추가
+- table state row 스타일 추가
+- 알림 목록, 키워드 목록, 후보 목록, 도매 CSV parsing 결과, 내 상품 마진 table의 loading/empty 상태 row 정리
+- `docs/beta/P15_DATATABLE_STATE_ROWS.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /keywords tbody state row 1개, outside state row 0개 확인
+- /candidates tbody state row 1개, outside state row 0개 확인
+- /store/margins tbody state row 1개, outside state row 0개 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 7단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+```
+
+다음: P15-008 Dashboard summary UX 또는 Form validation UX
+
+---
