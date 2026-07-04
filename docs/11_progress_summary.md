@@ -1799,3 +1799,49 @@ P15 프로젝트 고도화: 7단계 완료
 다음: P15-008 Dashboard summary UX 또는 Form validation UX
 
 ---
+
+## 최신 진행: P15-008 Dashboard summary UX 완료
+
+`P15-007 DataTable empty/loading structure` 이후 후속 작업으로 `P15-008 Dashboard summary UX`를 완료했다.
+
+반영 내용:
+
+- Dashboard 후보 요약 기본값을 `0`에서 `-`로 변경
+- 후보 요약 상태를 `loading`, `signed-out`, `ready`, `error`로 분리
+- 미로그인 상태에서 `EmptyState`로 계정 연결 안내 표시
+- API 오류 상태에서 `ErrorState`와 `formatApiError` 사용
+- 후보가 없는 ready 상태에서 empty 안내 표시
+- `docs/beta/P15_DASHBOARD_SUMMARY_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- / 미로그인 상태에서 summary card value -, -, -, - 확인
+- / 미로그인 상태에서 empty message 확인
+- / fake token 상태에서 error message 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 8단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+```
+
+다음: P15-009 Form validation UX
+
+---
