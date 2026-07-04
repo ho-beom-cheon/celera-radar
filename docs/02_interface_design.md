@@ -806,6 +806,58 @@ Response:
 
 ---
 
+## 4.10 SmartStore API
+
+P9 기준 SmartStore API는 실제 네이버 커머스API 호출 없이 mockable adapter를 통해 상품 동기화 흐름과 저장 구조를 먼저 검증한다. 이 API는 스마트스토어 상품 자동 등록을 수행하지 않는다.
+
+### POST /smartstore/connections/{connectionId}/products/sync
+
+연결된 스마트스토어의 상품 목록/판매가 동기화를 수동으로 실행한다. `connectionId`가 인증 사용자 소유가 아니면 `SMARTSTORE_CONNECTION_NOT_FOUND`로 응답한다.
+
+Response:
+
+```json
+{
+  "historyId": 1,
+  "connectionId": 10,
+  "status": "SUCCESS",
+  "targetCount": 1,
+  "successCount": 1,
+  "failureCount": 0,
+  "syncedAt": "2026-07-04T02:30:00+09:00"
+}
+```
+
+### GET /smartstore/products
+
+인증 사용자의 동기화된 스마트스토어 상품 목록을 최신 동기화 시각순으로 조회한다.
+
+Query Parameters:
+
+| 이름 | 타입 | 필수 | 설명 |
+|---|---|---:|---|
+| page | number | N | 기본 0 |
+| size | number | N | 기본 20, 최대 100 |
+
+Response item:
+
+```json
+{
+  "productId": 1001,
+  "connectionId": 10,
+  "sourceProductId": "mock-product-10",
+  "originProductNo": null,
+  "productName": "Mock SmartStore Product",
+  "salePrice": 12900,
+  "saleStatus": "SALE",
+  "imageUrl": null,
+  "categoryName": null,
+  "lastSyncedAt": "2026-07-04T02:30:00+09:00"
+}
+```
+
+---
+
 ## 5. 외부 API 인터페이스
 
 ## 5.1 네이버 쇼핑 검색 API
@@ -906,7 +958,7 @@ Content-Type: application/json
 
 ## 5.4 향후 네이버 커머스API
 
-v1.5 이후 연동한다.
+실제 네이버 커머스API 호출은 v1.5 이후 연동한다. P9 구현은 서버 내부 adapter 인터페이스와 mock adapter 기반 동기화 흐름만 사용한다.
 
 | 영역 | 용도 |
 |---|---|
@@ -958,6 +1010,7 @@ v1.5 이후 연동한다.
 | CANDIDATE_NOT_FOUND | 404 | 후보 없음 |
 | WHOLESALE_FILE_NOT_FOUND | 404 | 도매 CSV 파일 없음 |
 | ALERT_NOT_FOUND | 404 | 알림 없음 |
+| SMARTSTORE_CONNECTION_NOT_FOUND | 404 | 스마트스토어 연결 없음 |
 | KEYWORD_LIMIT_EXCEEDED | 400 | 요금제 키워드 한도 초과 |
 | DUPLICATED_KEYWORD | 409 | 중복 키워드 |
 | CSV_INVALID_FORMAT | 400 | CSV 형식 오류 |

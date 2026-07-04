@@ -15,6 +15,7 @@ public enum ErrorCode {
 	CANDIDATE_NOT_FOUND(HttpStatus.NOT_FOUND, "후보를 찾을 수 없습니다."),
 	WHOLESALE_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "도매 CSV 파일을 찾을 수 없습니다."),
 	ALERT_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+	SMARTSTORE_CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "SmartStore connection was not found."),
 	KEYWORD_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "현재 요금제에서 등록 가능한 키워드 수를 초과했습니다."),
 	DUPLICATED_KEYWORD(HttpStatus.CONFLICT, "이미 등록된 키워드입니다."),
 	CSV_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "CSV 형식이 올바르지 않습니다."),

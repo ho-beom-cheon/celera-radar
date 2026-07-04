@@ -52,7 +52,7 @@
 | P6 | 마진/상품 검토 점수 | `product_match_candidates`, `margin_analyses`, `product_review_scores`, `risk_category_rules` |
 | P7 | 알림/배치 | `alert_rules`, `alert_events`, `batch_job_histories` |
 | P8 | Web SaaS 하드닝 | `user_settings`, `subscription_plans`, `user_subscriptions`, `audit_logs` |
-| P9 | 스마트스토어 API 1차 연동 | `naver_store_connections`, `naver_store_products` |
+| P9 | 스마트스토어 API 1차 연동 | `naver_store_connections`, `naver_store_products`, `naver_store_product_sync_histories` |
 | P10 | 스마트스토어 내 상품 마진 감시 | `store_product_costs`, `store_margin_analyses` |
 | P11 | 주문/정산/수수료 연동 | `naver_order_snapshots`, `naver_settlement_snapshots`, `naver_commission_snapshots` |
 | P12 | 디자인 대개편 | 신규 핵심 테이블 없음. 필요 시 `user_ui_preferences`만 선택. |
@@ -81,6 +81,7 @@ erDiagram
     alert_rules ||--o{ alert_events : creates
     users ||--o{ naver_store_connections : connects
     naver_store_connections ||--o{ naver_store_products : syncs
+    naver_store_connections ||--o{ naver_store_product_sync_histories : records
     naver_store_products ||--o{ store_product_costs : costed_by
     naver_store_products ||--o{ store_margin_analyses : analyzed_by
 ```
@@ -655,7 +656,29 @@ Unique: `(connection_id, channel_product_no)`.
 
 ---
 
-## 9.3 `store_product_costs`
+## 9.3 `naver_store_product_sync_histories`
+
+스마트스토어 상품 동기화 실행 이력을 저장한다. P9에서는 수동 동기화 API의 실행 결과와 처리 건수를 기록한다.
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | `BIGINT` | PK |
+| `connection_id` | `BIGINT` | FK |
+| `user_id` | `BIGINT` | FK |
+| `status` | `VARCHAR(30)` | `RUNNING`, `SUCCESS`, `PARTIAL_SUCCESS`, `FAILED` |
+| `target_count` | `INT` | 동기화 대상 수 |
+| `success_count` | `INT` | 성공 건수 |
+| `failure_count` | `INT` | 실패 건수 |
+| `started_at` | `TIMESTAMPTZ` | 시작 시각 |
+| `finished_at` | `TIMESTAMPTZ` | 종료 시각 |
+| `error_message` | `VARCHAR(500)` | 실패 메시지 |
+| `created_at` | `TIMESTAMPTZ` | 생성일 |
+
+Index: `(user_id, created_at DESC)`, `(connection_id, created_at DESC)`.
+
+---
+
+## 9.4 `store_product_costs`
 
 스마트스토어는 매입가를 알 수 없으므로 사용자가 직접 입력하거나 도매 상품과 매칭해야 한다.
 
@@ -675,7 +698,7 @@ Unique: `(connection_id, channel_product_no)`.
 
 ---
 
-## 9.4 `store_margin_analyses`
+## 9.5 `store_margin_analyses`
 
 내 스마트스토어 상품의 예상/실제 마진 감시 결과다.
 
@@ -699,7 +722,7 @@ Unique: `(store_product_id, analysis_date)`.
 
 ---
 
-## 9.5 `naver_order_snapshots`, `naver_settlement_snapshots`, `naver_commission_snapshots`
+## 9.6 `naver_order_snapshots`, `naver_settlement_snapshots`, `naver_commission_snapshots`
 
 P11에서 도입한다. 원본 응답의 구조 변경 가능성이 크므로 핵심 컬럼 + `raw_payload JSONB`를 함께 저장한다.
 
@@ -804,7 +827,8 @@ V006__add_wholesale_upload_image_mapping.sql
 V007__create_alert_tables.sql
 V008__add_auth_columns_to_users.sql
 V009__create_naver_store_tables.sql
-V010__create_toss_tables.sql
+V010__create_naver_store_products.sql
+V011__create_toss_tables.sql
 ```
 
 ## 12.2 작성 원칙

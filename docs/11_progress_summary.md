@@ -783,6 +783,64 @@ P9 스마트스토어 API 1차 연동: 1/2 완료
 
 ---
 
+## 최신 진행: P9-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P9-002 SmartStore Product Sync 1차`를 구현했다.
+
+반영 내용:
+
+- `naver_store_products` Flyway migration 추가
+- `naver_store_product_sync_histories` Flyway migration 추가
+- `SmartStoreProduct` entity와 repository 추가
+- `SmartStoreProductSyncHistory` entity와 repository 추가
+- `SmartStoreClient.fetchProducts(...)` adapter 메서드 추가
+- 실제 네이버 커머스API 호출 없는 `MockSmartStoreClient` 상품 동기화 응답 추가
+- `POST /api/v1/smartstore/connections/{connectionId}/products/sync` 수동 동기화 API 추가
+- `GET /api/v1/smartstore/products` 내 스마트스토어 상품 목록 API 추가
+- 사용자 소유 connection 기준으로 동기화/목록 조회 범위 제한
+- 같은 connection의 같은 `sourceProductId`는 중복 생성하지 않고 upsert 처리
+- controller integration test 추가
+- `docs/02_interface_design.md`, `docs/10_database_design.md` 최소 갱신
+
+제외:
+
+- 실제 네이버 커머스API 호출
+- 스마트스토어 상품 자동 등록
+- 주문/정산/수수료 동기화
+- 토큰 암호화 구현체
+- 스마트스토어 상품과 원가 매핑
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V010 applied successfully
+tables: naver_store_products, naver_store_product_sync_histories
+constraints:
+- uk_naver_store_products_connection_channel
+- fk_naver_store_product_sync_histories_connection
+- fk_naver_store_product_sync_histories_user
+- ck_naver_store_product_sync_histories_status
+
+rg "RestClient|WebClient|HttpClient|commerce|apicenter|openapi" backend/src/main/java/com/sellerradar/smartstore backend/src/test/java/com/sellerradar/smartstore
+no matches
+```
+
+진행률:
+
+```text
+P9 스마트스토어 API 1차 연동: 2/2 완료
+- P9-001 SmartStore API 설계 skeleton: 완료
+- P9-002 SmartStore Product Sync 1차: 완료
+```
+
+다음: P10-001
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
