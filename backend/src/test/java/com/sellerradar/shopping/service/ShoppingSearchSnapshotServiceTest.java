@@ -62,6 +62,7 @@ class ShoppingSearchSnapshotServiceTest {
 				snapshotRepository,
 				apiCallLogRepository,
 				naverShoppingClient,
+				new CompetitionAnalyzer(),
 				new ObjectMapper(),
 				FIXED_CLOCK
 		);
@@ -140,6 +141,28 @@ class ShoppingSearchSnapshotServiceTest {
 	}
 
 	@Test
+	void collectStoresCompetitionLevelAndIgnoresEmptyOrZeroPricesWhenAveraging() {
+		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
+				.thenReturn(Optional.empty());
+		when(keywordRepository.findById(KEYWORD_ID)).thenReturn(Optional.of(keyword));
+		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponseWithPrices(
+				10_000L,
+				List.of("0", "", "1000", "3000")
+		));
+		when(snapshotRepository.saveAndFlush(any(ShoppingPriceSnapshot.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+
+		ShoppingPriceSnapshot result = service.collect(KEYWORD_ID, BASE_DATE);
+
+		assertThat(result.getCompetitionLevel()).hasToString("HIGH");
+		assertThat(result.getMinPrice()).isEqualTo(1000);
+		assertThat(result.getMaxPrice()).isEqualTo(3000);
+		assertThat(result.getAvgPrice()).isEqualTo(2000);
+		assertThat(result.getMedianPrice()).isEqualTo(2000);
+		assertThat(result.getTopItems()).hasSize(4);
+	}
+
+	@Test
 	void collectStoresFailedApiCallLogWhenExternalApiFails() {
 		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
 				.thenReturn(Optional.empty());
@@ -199,6 +222,33 @@ class ShoppingSearchSnapshotServiceTest {
 								""
 						)
 				)
+		);
+	}
+
+	private NaverShoppingSearchResponse shoppingResponseWithPrices(long total, List<String> lowPrices) {
+		return new NaverShoppingSearchResponse(
+				"Thu, 02 Jul 2026 20:00:00 +0900",
+				total,
+				1,
+				lowPrices.size(),
+				java.util.stream.IntStream.range(0, lowPrices.size())
+						.mapToObj(index -> new NaverShoppingSearchItem(
+								"sample item " + (index + 1),
+								"https://example.com/item-" + (index + 1),
+								"https://example.com/item-" + (index + 1) + ".jpg",
+								lowPrices.get(index),
+								"",
+								"sample mall",
+								"100000" + (index + 1),
+								"1",
+								"sample brand",
+								"sample maker",
+								"category1",
+								"category2",
+								"",
+								""
+						))
+						.toList()
 		);
 	}
 }

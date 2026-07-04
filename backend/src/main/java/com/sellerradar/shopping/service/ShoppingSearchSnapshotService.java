@@ -38,6 +38,7 @@ public class ShoppingSearchSnapshotService {
 	private final ShoppingPriceSnapshotRepository snapshotRepository;
 	private final ApiCallLogRepository apiCallLogRepository;
 	private final NaverShoppingClient naverShoppingClient;
+	private final CompetitionAnalyzer competitionAnalyzer;
 	private final ObjectMapper objectMapper;
 	private final Clock clock;
 
@@ -47,6 +48,7 @@ public class ShoppingSearchSnapshotService {
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			ApiCallLogRepository apiCallLogRepository,
 			NaverShoppingClient naverShoppingClient,
+			CompetitionAnalyzer competitionAnalyzer,
 			ObjectMapper objectMapper
 	) {
 		this(
@@ -54,6 +56,7 @@ public class ShoppingSearchSnapshotService {
 				snapshotRepository,
 				apiCallLogRepository,
 				naverShoppingClient,
+				competitionAnalyzer,
 				objectMapper,
 				Clock.systemDefaultZone()
 		);
@@ -64,6 +67,7 @@ public class ShoppingSearchSnapshotService {
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			ApiCallLogRepository apiCallLogRepository,
 			NaverShoppingClient naverShoppingClient,
+			CompetitionAnalyzer competitionAnalyzer,
 			ObjectMapper objectMapper,
 			Clock clock
 	) {
@@ -71,6 +75,7 @@ public class ShoppingSearchSnapshotService {
 		this.snapshotRepository = snapshotRepository;
 		this.apiCallLogRepository = apiCallLogRepository;
 		this.naverShoppingClient = naverShoppingClient;
+		this.competitionAnalyzer = competitionAnalyzer;
 		this.objectMapper = objectMapper;
 		this.clock = clock;
 	}
@@ -199,6 +204,9 @@ public class ShoppingSearchSnapshotService {
 		for (int index = 0; index < items.size(); index++) {
 			snapshot.addTopItem(toTopItem(index + 1, items.get(index)));
 		}
+		snapshot.updateCompetitionLevel(
+				competitionAnalyzer.analyze(snapshot.getTotalCount(), snapshot.getTopItems().size())
+		);
 		return snapshot;
 	}
 

@@ -207,6 +207,10 @@ public class ShoppingPriceSnapshot {
 		this.competitionLevel = ShoppingCompetitionLevel.from(totalCount, topItems.size());
 	}
 
+	public void updateCompetitionLevel(ShoppingCompetitionLevel competitionLevel) {
+		this.competitionLevel = competitionLevel == null ? ShoppingCompetitionLevel.UNKNOWN : competitionLevel;
+	}
+
 	@PrePersist
 	void onCreate() {
 		OffsetDateTime now = OffsetDateTime.now();
