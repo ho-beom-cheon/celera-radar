@@ -856,6 +856,54 @@ Response item:
 }
 ```
 
+### PUT /smartstore/products/{productId}/cost
+
+스마트스토어 상품의 원가 매핑을 생성하거나 갱신한다. `wholesaleProductId`를 지정하면 같은 사용자의 정상 파싱 도매 상품에서 공급가/배송비 기본값을 가져올 수 있다. `wholesaleProductId` 없이 등록할 때는 `purchaseCost`가 필요하다.
+
+Request:
+
+```json
+{
+  "wholesaleProductId": 5001,
+  "purchaseCost": 7000,
+  "shippingFee": 2500,
+  "packagingFee": 500,
+  "extraCost": 300,
+  "platformFeeRate": 4.0,
+  "targetMarginRate": 25.0,
+  "memo": "manual cost"
+}
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "storeProductId": 1001,
+  "wholesaleProductId": 5001,
+  "wholesaleProductName": "Supplier Desk",
+  "purchaseCost": 7000,
+  "shippingFee": 2500,
+  "packagingFee": 500,
+  "extraCost": 300,
+  "platformFeeRate": 4.0,
+  "targetMarginRate": 25.0,
+  "salePrice": 12900,
+  "totalCost": 10816,
+  "expectedProfit": 2084,
+  "expectedMarginRate": 16.16,
+  "recommendedSalePrice": 14600,
+  "memo": "manual cost",
+  "createdAt": "2026-07-04T02:40:00+09:00",
+  "updatedAt": "2026-07-04T02:40:00+09:00"
+}
+```
+
+### GET /smartstore/products/{productId}/cost
+
+스마트스토어 상품의 현재 원가 매핑과 예상 마진 계산 결과를 조회한다. 다른 사용자의 상품은 `SMARTSTORE_PRODUCT_NOT_FOUND`, 아직 원가 매핑이 없으면 `STORE_PRODUCT_COST_NOT_FOUND`로 응답한다.
+
 ---
 
 ## 5. 외부 API 인터페이스
@@ -1009,8 +1057,11 @@ Content-Type: application/json
 | KEYWORD_NOT_FOUND | 404 | 키워드 없음 |
 | CANDIDATE_NOT_FOUND | 404 | 후보 없음 |
 | WHOLESALE_FILE_NOT_FOUND | 404 | 도매 CSV 파일 없음 |
+| WHOLESALE_PRODUCT_NOT_FOUND | 404 | 도매 상품 없음 |
 | ALERT_NOT_FOUND | 404 | 알림 없음 |
 | SMARTSTORE_CONNECTION_NOT_FOUND | 404 | 스마트스토어 연결 없음 |
+| SMARTSTORE_PRODUCT_NOT_FOUND | 404 | 스마트스토어 상품 없음 |
+| STORE_PRODUCT_COST_NOT_FOUND | 404 | 스마트스토어 상품 원가 매핑 없음 |
 | KEYWORD_LIMIT_EXCEEDED | 400 | 요금제 키워드 한도 초과 |
 | DUPLICATED_KEYWORD | 409 | 중복 키워드 |
 | CSV_INVALID_FORMAT | 400 | CSV 형식 오류 |

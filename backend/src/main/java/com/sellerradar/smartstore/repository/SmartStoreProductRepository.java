@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SmartStoreProductRepository extends JpaRepository<SmartStoreProduct, Long> {
+	Optional<SmartStoreProduct> findByIdAndUserId(Long id, Long userId);
+
 	Optional<SmartStoreProduct> findByConnectionIdAndSourceProductId(Long connectionId, String sourceProductId);
 
 	Page<SmartStoreProduct> findByUserIdOrderByLastSyncedAtDesc(Long userId, Pageable pageable);

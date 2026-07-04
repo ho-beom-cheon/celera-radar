@@ -841,6 +841,73 @@ P9 스마트스토어 API 1차 연동: 2/2 완료
 
 ---
 
+## 최신 진행: P10-001 구현 완료
+
+`docs/10_database_design.md` 기준으로 `P10-001 Store Product Cost Mapping`을 구현했다.
+
+반영 내용:
+
+- `store_product_costs` Flyway migration 추가
+- `StoreProductCost` entity와 repository 추가
+- 스마트스토어 상품별 원가 매핑 생성/갱신 API 추가
+- 스마트스토어 상품별 원가 매핑 조회 API 추가
+- 도매 상품 연결 시 같은 사용자 소유의 정상 파싱 상품만 연결되도록 제한
+- `wholesaleProductId` 없이 등록할 때는 `purchaseCost` 직접 입력을 요구
+- 기존 `MarginCalculator`를 재사용해 예상 총비용, 예상 이익, 예상 마진율, 권장 판매가 계산
+- 사용자별 스마트스토어 상품/도매 상품/원가 매핑 격리 통합 테스트 추가
+- `docs/02_interface_design.md`, `docs/10_database_design.md` 최소 갱신
+
+설계 주의사항:
+
+- `docs/07_codex_execution_plan_v2.md`에는 `store_product_cost_mapping`으로 적혀 있으나, DB 기준 문서인 `docs/10_database_design.md`는 `store_product_costs`를 기준으로 한다.
+- 이번 구현은 `store_product_costs`를 기준으로 반영했다.
+
+제외:
+
+- 실제 네이버 커머스API 호출
+- 스마트스토어 상품 자동 등록
+- 주문/정산/수수료 동기화
+- P10-002 마진 위험 대시보드 화면
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V011 applied successfully
+table: store_product_costs
+columns:
+- store_product_id
+- wholesale_product_id
+- purchase_cost
+- shipping_fee
+- packaging_fee
+- extra_cost
+- platform_fee_rate
+- target_margin_rate
+constraints:
+- fk_store_product_costs_product
+- fk_store_product_costs_user
+- fk_store_product_costs_wholesale_product
+- uk_store_product_costs_product
+- ck_store_product_costs_amounts
+- ck_store_product_costs_rates
+```
+
+진행률:
+
+```text
+P10 스마트스토어 내 상품 마진 감시: 1/2 완료
+- P10-001 Store Product Cost Mapping: 완료
+- P10-002 Store Margin Risk Dashboard: 다음
+```
+
+다음: P10-002
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
