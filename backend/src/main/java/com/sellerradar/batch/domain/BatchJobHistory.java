@@ -86,6 +86,20 @@ public class BatchJobHistory {
 		}
 	}
 
+	public void complete(int targetCount, int successCount, int failureCount, OffsetDateTime finishedAt) {
+		this.targetCount = Math.max(targetCount, 0);
+		complete(successCount, failureCount, finishedAt);
+	}
+
+	public void fail(int targetCount, String errorMessage, OffsetDateTime finishedAt) {
+		this.targetCount = Math.max(targetCount, 0);
+		this.successCount = 0;
+		this.failureCount = 1;
+		this.finishedAt = finishedAt;
+		this.status = BatchJobStatus.FAILED;
+		this.errorMessage = truncate(errorMessage);
+	}
+
 	@PrePersist
 	void onCreate() {
 		this.createdAt = OffsetDateTime.now();
@@ -99,6 +113,13 @@ public class BatchJobHistory {
 			return BatchJobStatus.FAILED;
 		}
 		return BatchJobStatus.PARTIAL_SUCCESS;
+	}
+
+	private String truncate(String value) {
+		if (value == null || value.isBlank()) {
+			return "batch failed";
+		}
+		return value.length() <= 500 ? value : value.substring(0, 500);
 	}
 
 	public Long getId() {

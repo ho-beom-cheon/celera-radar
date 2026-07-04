@@ -624,12 +624,44 @@ success
 진행률:
 
 ```text
-P7 알림/배치: 1/2 완료
+P7 알림/배치: 2/2 완료
 - P7-001 Alert Rule/Notification DB 구현: 완료
-- P7-002 Notification 생성 Batch 구현: 다음
+- P7-002 Notification 생성 Batch 구현: 완료
 ```
 
-다음: P7-002
+다음: P8-001
+
+---
+
+## 최신 진행: P7-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P7-002 Notification 생성 Batch 구현`을 완료했다.
+
+반영 내용:
+
+- `AlertGenerateBatchService` batch history 기록 보강
+- 알림 생성 성공 시 `targetRuleCount`를 `target_count`에 반영
+- 생성된 알림 수를 `success_count`에 반영
+- 알림 생성 실패 시 `FAILED` 상태, `failure_count=1`, 오류 메시지 저장
+- `BatchJobHistory`에 완료 시 target count 반영 overload와 실패 기록 메서드 추가
+- `AlertGenerateBatchServiceTest` 추가
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P7 알림/배치: 2/2 완료
+- P7-001 Alert Rule/Notification DB 구현: 완료
+- P7-002 Notification 생성 Batch 구현: 완료
+```
+
+다음: P8-001
 
 ---
 

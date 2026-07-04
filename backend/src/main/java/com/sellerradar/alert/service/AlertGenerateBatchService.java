@@ -35,14 +35,33 @@ public class AlertGenerateBatchService {
 	}
 
 	public BatchJobHistoryResponse runScheduled() {
+		return run(BatchTriggerType.SCHEDULED);
+	}
+
+	BatchJobHistoryResponse runManual() {
+		return run(BatchTriggerType.MANUAL);
+	}
+
+	private BatchJobHistoryResponse run(BatchTriggerType triggerType) {
 		BatchJobHistory history = historyRepository.save(BatchJobHistory.start(
 				BatchJobType.ALERT_GENERATE_DAILY,
-				BatchTriggerType.SCHEDULED,
+				triggerType,
 				0,
 				OffsetDateTime.now(clock)
 		));
-		AlertGenerationResult result = alertGenerationService.generateDaily();
-		history.complete(result.generatedCount(), 0, OffsetDateTime.now(clock));
-		return BatchJobHistoryResponse.from(historyRepository.save(history));
+		try {
+			AlertGenerationResult result = alertGenerationService.generateDaily();
+			history.complete(
+					result.targetRuleCount(),
+					result.generatedCount(),
+					0,
+					OffsetDateTime.now(clock)
+			);
+			return BatchJobHistoryResponse.from(historyRepository.save(history));
+		} catch (RuntimeException exception) {
+			history.fail(0, exception.getMessage(), OffsetDateTime.now(clock));
+			historyRepository.save(history);
+			throw exception;
+		}
 	}
 }
