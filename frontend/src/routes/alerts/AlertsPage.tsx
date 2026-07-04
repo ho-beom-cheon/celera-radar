@@ -9,7 +9,7 @@ import {
 } from '../../api/alerts';
 import { getAccessToken } from '../../api/httpClient';
 import { CategoryCode } from '../../api/keywords';
-import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, StatusBadge } from '../../components/ui';
+import { DataTable, DataTableStateRow, EmptyState, ErrorState, HelpTooltip, LoadingState, StatusBadge } from '../../components/ui';
 import { authRequiredMessage, formatApiError } from '../../lib/apiError';
 
 const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
@@ -181,15 +181,23 @@ export function AlertsPage({ mode }: AlertsPageProps) {
                     </td>
                   </tr>
                 ))}
+                {loading ? (
+                  <DataTableStateRow colSpan={6}>
+                    <LoadingState>알림을 불러오는 중입니다.</LoadingState>
+                  </DataTableStateRow>
+                ) : null}
+                {!loading && !hasAccessToken ? (
+                  <DataTableStateRow colSpan={6}>
+                    <EmptyState>{authRequiredMessage('알림을 확인')}</EmptyState>
+                  </DataTableStateRow>
+                ) : null}
+                {!loading && hasAccessToken && alerts.length === 0 ? (
+                  <DataTableStateRow colSpan={6}>
+                    <EmptyState>아직 확인할 알림이 없습니다.</EmptyState>
+                  </DataTableStateRow>
+                ) : null}
               </tbody>
           </DataTable>
-          {loading ? <LoadingState>알림을 불러오는 중입니다.</LoadingState> : null}
-          {!loading && !hasAccessToken ? (
-            <EmptyState>{authRequiredMessage('알림을 확인')}</EmptyState>
-          ) : null}
-          {!loading && hasAccessToken && alerts.length === 0 ? (
-            <EmptyState>아직 확인할 알림이 없습니다.</EmptyState>
-          ) : null}
         </section>
       ) : (
         <form className="panel keyword-form-panel alert-rule-form" onSubmit={handleRuleSubmit}>

@@ -1043,6 +1043,14 @@ h2 {
   background: var(--sr-color-surface-subtle);
 }
 
+.data-table-state-row td {
+  padding: var(--sr-space-6);
+}
+
+.data-table-state-row .state-row {
+  min-height: 72px;
+}
+
 .detail-page {
   gap: var(--sr-space-10);
 }

@@ -1,4 +1,4 @@
-export { DataTable } from './DataTable';
+export { DataTable, DataTableStateRow } from './DataTable';
 export { HelpPopover } from './HelpPopover';
 export { HelpText } from './HelpText';
 export { HelpTooltip } from './HelpTooltip';

@@ -18,7 +18,7 @@ import {
   setAccessToken,
   setStoredPlan
 } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
+import { DataTable, DataTableStateRow, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
 import { formatApiError } from '../../lib/apiError';
 
 const planLimits: Record<Plan, number> = {
@@ -366,14 +366,23 @@ export function KeywordsPage() {
                   </td>
                 </tr>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={8}>
+                  <LoadingState>불러오는 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !accessToken ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>계정 연결 후 키워드를 등록할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && accessToken && keywords.length === 0 ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>불러오는 중입니다.</LoadingState> : null}
-        {!loading && !accessToken ? <EmptyState>계정 연결 후 키워드를 등록할 수 있습니다.</EmptyState> : null}
-        {!loading && accessToken && keywords.length === 0 ? (
-          <EmptyState>아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</EmptyState>
-        ) : null}
       </section>
     </div>
   );

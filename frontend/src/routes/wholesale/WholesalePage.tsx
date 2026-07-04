@@ -10,7 +10,7 @@ import {
   updateWholesaleColumnMapping,
   uploadWholesaleFile
 } from '../../api/wholesale';
-import { DataTable, EmptyState, ErrorState, LoadingState } from '../../components/ui';
+import { DataTable, DataTableStateRow, EmptyState, ErrorState, LoadingState } from '../../components/ui';
 import { formatApiError } from '../../lib/apiError';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
@@ -278,14 +278,23 @@ export function WholesalePage() {
                   <td>{row.errorMessage ?? '-'}</td>
                 </tr>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={7}>
+                  <LoadingState>처리 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !getAccessToken() ? (
+                <DataTableStateRow colSpan={7}>
+                  <EmptyState>키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && getAccessToken() && rows.length === 0 ? (
+                <DataTableStateRow colSpan={7}>
+                  <EmptyState>업로드 후 컬럼 매핑과 파싱을 실행하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>처리 중입니다.</LoadingState> : null}
-        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</EmptyState> : null}
-        {!loading && getAccessToken() && rows.length === 0 ? (
-          <EmptyState>업로드 후 컬럼 매핑과 파싱을 실행하세요.</EmptyState>
-        ) : null}
       </section>
 
       {generatedCount !== null ? (

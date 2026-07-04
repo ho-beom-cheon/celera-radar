@@ -16,7 +16,7 @@ import {
 } from '../../api/candidates';
 import { CategoryCode, categoryOptions } from '../../api/keywords';
 import { getAccessToken } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState } from '../../components/ui';
+import { DataTable, DataTableStateRow, EmptyState, ErrorState, HelpTooltip, LoadingState } from '../../components/ui';
 import { formatApiError } from '../../lib/apiError';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
@@ -333,26 +333,33 @@ export function CandidatesPage() {
                     </td>
                   </tr>
                   {expandedCandidateId === item.candidateId ? (
-                    <tr className="candidate-expanded-row">
-                      <td colSpan={8}>
-                        {loadingDetailId === item.candidateId ? (
-                          <LoadingState>점수 구성을 불러오는 중입니다.</LoadingState>
-                        ) : (
-                          <CandidateBreakdown detail={detailsById[item.candidateId]} />
-                        )}
-                      </td>
-                    </tr>
+                    <DataTableStateRow className="candidate-expanded-row" colSpan={8}>
+                      {loadingDetailId === item.candidateId ? (
+                        <LoadingState>점수 구성을 불러오는 중입니다.</LoadingState>
+                      ) : (
+                        <CandidateBreakdown detail={detailsById[item.candidateId]} />
+                      )}
+                    </DataTableStateRow>
                   ) : null}
                 </Fragment>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={8}>
+                  <LoadingState>후보를 불러오는 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !getAccessToken() ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && getAccessToken() && items.length === 0 ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>후보를 불러오는 중입니다.</LoadingState> : null}
-        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</EmptyState> : null}
-        {!loading && getAccessToken() && items.length === 0 ? (
-          <EmptyState>아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</EmptyState>
-        ) : null}
       </section>
     </div>
   );

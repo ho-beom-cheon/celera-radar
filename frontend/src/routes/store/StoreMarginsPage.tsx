@@ -8,6 +8,7 @@ import {
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
 import {
   DataTable,
+  DataTableStateRow,
   EmptyState,
   ErrorState,
   HelpTooltip,
@@ -182,25 +183,19 @@ export function StoreMarginsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={8}>
-                    <LoadingState>상품 마진 상태를 불러오는 중입니다.</LoadingState>
-                  </td>
-                </tr>
+                <DataTableStateRow colSpan={8}>
+                  <LoadingState>상품 마진 상태를 불러오는 중입니다.</LoadingState>
+                </DataTableStateRow>
               ) : null}
               {!loading && !hasAccessToken ? (
-                <tr>
-                  <td colSpan={8}>
-                    <EmptyState>{authRequiredMessage('내 상품 마진 상태를 확인')}</EmptyState>
-                  </td>
-                </tr>
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>{authRequiredMessage('내 상품 마진 상태를 확인')}</EmptyState>
+                </DataTableStateRow>
               ) : null}
               {!loading && hasAccessToken && rows.length === 0 ? (
-                <tr>
-                  <td colSpan={8}>
-                    <EmptyState>동기화된 스마트스토어 상품이 없습니다.</EmptyState>
-                  </td>
-                </tr>
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>동기화된 스마트스토어 상품이 없습니다.</EmptyState>
+                </DataTableStateRow>
               ) : null}
               {!loading
                 ? rows.map((row) => (
