@@ -9,7 +9,16 @@ import {
   statusLabels
 } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard, ProductCard, StatusBadge } from '../../components/ui';
+import {
+  EmptyState,
+  ErrorState,
+  HelpTooltip,
+  KpiBarChart,
+  LoadingState,
+  MetricCard,
+  ProductCard,
+  StatusBadge
+} from '../../components/ui';
 
 interface KeywordDetailPageProps {
   keywordId: number;
@@ -155,6 +164,14 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
             />
           </section>
 
+          <KpiBarChart
+            title="가격대 비교"
+            description="저장된 쇼핑 스냅샷의 최저가, 평균가, 최고가를 비교합니다."
+            data={priceChartItems(snapshot)}
+            valueFormatter={formatCurrency}
+            helpKey="avgPrice"
+          />
+
           <section className="panel keywords-table-panel">
             <div className="panel-header">
               <div>
@@ -197,6 +214,14 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function priceChartItems(snapshot: ShoppingSnapshot) {
+  return [
+    { label: '최저가', value: snapshot.minPrice ?? 0, color: 'var(--sr-color-success)' },
+    { label: '평균가', value: snapshot.avgPrice ?? 0, color: 'var(--sr-color-brand)' },
+    { label: '최고가', value: snapshot.maxPrice ?? 0, color: 'var(--sr-color-warning-muted)' }
+  ];
 }
 
 function formatDateTime(value: string | null) {

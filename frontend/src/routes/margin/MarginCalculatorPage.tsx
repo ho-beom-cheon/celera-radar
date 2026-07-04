@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { HelpTooltip, MetricCard } from '../../components/ui';
+import { HelpTooltip, KpiBarChart, MetricCard } from '../../components/ui';
 
 export function MarginCalculatorPage() {
   const [supplyPrice, setSupplyPrice] = useState(12000);
@@ -29,6 +29,16 @@ export function MarginCalculatorPage() {
       marginRate
     };
   }, [salePrice, shippingFee, supplyPrice, targetMarginRate]);
+
+  const marginChartData = useMemo(
+    () => [
+      { label: '총 원가', value: calculated.totalCost, color: 'var(--sr-color-danger-muted)' },
+      { label: '권장 판매가', value: calculated.recommendedSalePrice, color: 'var(--sr-color-brand)' },
+      { label: '입력 판매가', value: Math.max(0, salePrice), color: 'var(--sr-color-accent)' },
+      { label: '입력 마진', value: Math.max(0, calculated.marginAmount), color: 'var(--sr-color-success)' }
+    ],
+    [calculated.marginAmount, calculated.recommendedSalePrice, calculated.totalCost, salePrice]
+  );
 
   function applyRecommendedPrice() {
     setSalePrice(calculated.recommendedSalePrice);
@@ -163,6 +173,14 @@ export function MarginCalculatorPage() {
           </div>
         </section>
       </section>
+
+      <KpiBarChart
+        title="판매가와 마진 비교"
+        description="입력 판매가가 총 원가와 목표 기준 권장 판매가 대비 어느 위치인지 비교합니다."
+        data={marginChartData}
+        valueFormatter={formatCurrency}
+        helpKey="expectedMargin"
+      />
 
       <div className="notice">
         계산 결과는 도매 CSV 후보 검토를 돕기 위한 참고값입니다. 판매나 수익을 보장하지 않습니다.

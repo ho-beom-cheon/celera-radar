@@ -6,7 +6,16 @@ import {
   StoreProductCost
 } from '../../api/smartstore';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard, StatusBadge } from '../../components/ui';
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  HelpTooltip,
+  KpiDonutChart,
+  LoadingState,
+  MetricCard,
+  StatusBadge
+} from '../../components/ui';
 
 type MarginRisk = 'RISK' | 'CAUTION' | 'SAFE' | 'UNSET';
 
@@ -43,6 +52,16 @@ export function StoreMarginsPage() {
       unset: rows.filter((row) => row.risk === 'UNSET').length
     }),
     [rows]
+  );
+
+  const riskChartData = useMemo(
+    () => [
+      { label: '위험', value: counts.risk, color: 'var(--sr-color-danger-muted)' },
+      { label: '주의', value: counts.caution, color: 'var(--sr-color-warning-muted)' },
+      { label: '안전', value: counts.safe, color: 'var(--sr-color-success)' },
+      { label: '원가 미설정', value: counts.unset, color: 'var(--sr-color-neutral)' }
+    ],
+    [counts.caution, counts.risk, counts.safe, counts.unset]
   );
 
   async function loadMargins() {
@@ -101,6 +120,12 @@ export function StoreMarginsPage() {
         <MetricCard label="안전" value={String(counts.safe)} helpKey="riskLevel" />
         <MetricCard label="원가 미설정" value={String(counts.unset)} helpKey="riskLevel" />
       </section>
+
+      <KpiDonutChart
+        title="마진 위험 분포"
+        description="동기화된 상품을 원가와 목표 마진 기준으로 나눈 검토용 분포입니다."
+        data={riskChartData}
+      />
 
       <section className="panel keywords-table-panel">
         <div className="panel-header table-header">
