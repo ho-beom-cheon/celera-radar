@@ -591,3 +591,39 @@ P3 기준 1/2 완료
 다음 구현 작업은 `P3-002 가격/경쟁강도 화면 표시`가 적절하다.
 
 ---
+
+## 최신 진행: P4-001 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P4-001 Trend Snapshot DB/Domain 구현`을 완료했다.
+
+반영 내용:
+
+- `trend_snapshots` Flyway migration 추가
+- `batch_job_history` Flyway migration 추가
+- 기존 `TrendSnapshot` domain을 `trend_snapshots` 테이블과 snapshot/filter 컬럼 구조에 맞게 보정
+- trend snapshot 저장/조회 repository 메서드를 `snapshotDate`, `dataPeriod`, `timeUnit` 기준으로 정리
+- TrendSnapshot service/test 정합성 보강
+- PostgreSQL 임시 DB에서 V001~V004 migration 적용 확인
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V004 applied successfully
+```
+
+진행률:
+
+```text
+P4 데이터랩 트렌드 분석: 1/3 완료
+- P4-001 Trend Snapshot DB/Domain 구현: 완료
+- P4-002 NaverDataLabClient 구현: 다음
+- P4-003 Daily Trend Batch 구현: 대기
+```
+
+다음: P4-002
+
+---
