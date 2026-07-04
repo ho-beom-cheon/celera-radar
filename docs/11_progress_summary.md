@@ -1608,3 +1608,59 @@ P15 프로젝트 고도화: 3단계 완료
 다음: P15-004 API/Error UX Hardening 또는 Chart Lazy Loading 검토
 
 ---
+
+## 최신 진행: P15-004 Chart Lazy Loading 완료
+
+`P15-003 Chart/KPI Visualization` 이후 발생한 frontend chunk size warning을 줄이기 위해 `P15-004 Chart Lazy Loading`을 완료했다.
+
+반영 내용:
+
+- `LazyKpiBarChart`, `LazyKpiDonutChart` 추가
+- Recharts를 직접 import하는 `KpiBarChart`, `KpiDonutChart`를 공통 UI barrel에서 제거
+- 마진 계산기, 키워드 상세, 후보 상세, 내 상품 마진 화면이 lazy chart wrapper를 사용하도록 변경
+- chart loading fallback 스타일 추가
+- `docs/beta/P15_CHART_LAZY_LOADING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin lazy chart 렌더링 확인
+- SVG chart count: 1
+- chart loading fallback 잔존 없음
+```
+
+Build 결과:
+
+```text
+dist/assets/KpiDonutChart-D1q7Vknh.js      18.45 kB
+dist/assets/KpiBarChart-DAqoynWN.js        53.13 kB
+dist/assets/index-D9iw9o9v.js             220.21 kB
+dist/assets/CategoricalChart-asXnCBk7.js  302.80 kB
+```
+
+주의:
+
+```text
+브라우저 smoke 중 favicon.ico 404가 확인됐지만 이번 변경과 무관한 기존 정적 자산 요청이다.
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 4단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+```
+
+다음: P15-005 API/Error UX Hardening
+
+---

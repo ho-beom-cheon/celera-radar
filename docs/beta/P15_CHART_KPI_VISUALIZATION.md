@@ -144,3 +144,13 @@ dist/assets/index-*.js 약 590kB minified
 1. PR #69, PR #70 순서로 review/merge
 2. chart chunk warning을 줄이기 위한 lazy loading 검토
 3. 실제 API 연동 전 API key 발급/적용 가이드 작성
+
+## P15-004 후속 처리
+
+Chart Lazy Loading은 `docs/beta/P15_CHART_LAZY_LOADING.md` 기준으로 처리했다.
+
+확인 결과:
+
+- frontend build 성공
+- 이전 500kB chunk size warning 해소
+- `KpiBarChart`, `KpiDonutChart`, `CategoricalChart` chunk 분리 확인
