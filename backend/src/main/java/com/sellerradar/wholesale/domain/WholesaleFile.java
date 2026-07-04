@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "wholesale_file")
+@Table(name = "wholesale_uploads")
 public class WholesaleFile {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,10 +31,10 @@ public class WholesaleFile {
 	@Column(name = "source_name", length = 100)
 	private String sourceName;
 
-	@Column(name = "original_filename", nullable = false, length = 255)
+	@Column(name = "original_file_name", nullable = false, length = 255)
 	private String originalFilename;
 
-	@Column(name = "stored_path", nullable = false, length = 1000)
+	@Column(name = "file_path", nullable = false, length = 1000)
 	private String storedPath;
 
 	@Column(name = "file_size", nullable = false)
@@ -48,7 +48,7 @@ public class WholesaleFile {
 	@Column(name = "detected_encoding", nullable = false, length = 20)
 	private CsvEncoding detectedEncoding;
 
-	@Column(name = "row_count", nullable = false)
+	@Column(name = "total_rows", nullable = false)
 	private int rowCount;
 
 	@Column(name = "detected_columns", nullable = false, length = 1000)

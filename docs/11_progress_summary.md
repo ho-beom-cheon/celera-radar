@@ -695,3 +695,40 @@ P4 데이터랩 트렌드 분석: 3/3 완료
 다음: P5-001
 
 ---
+## 최신 진행: P5-001 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P5-001 Wholesale Product DB/Domain 정합화`를 완료했다.
+
+반영 내용:
+
+- `wholesale_uploads`, `wholesale_products` Flyway migration 추가
+- 기존 `wholesale_file`, `wholesale_product` 테이블이 있으면 plural table로 이전하는 방어 로직 추가
+- `WholesaleFile` table/column mapping을 설계 기준에 맞게 보정
+- `WholesaleProduct` table/column mapping을 설계 기준에 맞게 보정
+- `WholesaleProduct`에 `user`, `sourceName`, `externalProductId`, `imageUrl`, `brand`, `maker`, `optionName`, `stockStatus`, `soldOut`, `memo`, `rawRow` 저장 필드 추가
+- 기존 wholesale upload/parse/candidate integration 흐름 유지 확인
+- PostgreSQL 임시 DB에서 V001~V005 migration 적용 확인
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+PostgreSQL temporary migration check
+V001~V005 applied successfully
+```
+
+진행률:
+
+```text
+P5 도매 CSV/XLSX 업로드: 1/4 완료
+- P5-001 Wholesale Product DB/Domain 구현: 완료
+- P5-002 CSV/XLSX 파일 파서 구현: 다음
+- P5-003 컬럼 매핑/저장 API 구현: 대기
+- P5-004 Wholesale Upload Frontend 구현: 대기
+```
+
+다음: P5-002
+
+---

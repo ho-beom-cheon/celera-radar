@@ -19,6 +19,7 @@ import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
 import com.sellerradar.wholesale.domain.WholesaleFileStatus;
+import com.sellerradar.wholesale.domain.WholesaleProduct;
 import com.sellerradar.wholesale.domain.WholesaleProductParseStatus;
 import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
@@ -151,6 +152,15 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.items[1].parseStatus").value(WholesaleProductParseStatus.INVALID.name()))
 				.andExpect(jsonPath("$.data.items[1].errorMessage").value("supplyPrice must be a positive number."))
 				.andExpect(jsonPath("$.data.items[2].parseStatus").value(WholesaleProductParseStatus.INVALID.name()));
+
+		WholesaleProduct parsedProduct = wholesaleProductRepository.findAll().stream()
+				.filter(product -> product.getParseStatus() == WholesaleProductParseStatus.PARSED)
+				.findFirst()
+				.orElseThrow();
+		assertThat(parsedProduct.getUser().getId()).isEqualTo(auth.userId());
+		assertThat(parsedProduct.getSourceName()).isNull();
+		assertThat(parsedProduct.getSourceCategory()).isEqualTo("car");
+		assertThat(parsedProduct.isSoldOut()).isFalse();
 	}
 
 	@Test
