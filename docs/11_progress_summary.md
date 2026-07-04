@@ -1708,3 +1708,50 @@ P15 프로젝트 고도화: 5단계 완료
 다음: P15-006 Route UX Hardening 또는 DataTable empty/loading structure
 
 ---
+
+## 최신 진행: P15-006 Route UX Hardening 완료
+
+`P15-005 API/Error UX Hardening` 이후 후속 작업으로 `P15-006 Route UX Hardening`을 완료했다.
+
+반영 내용:
+
+- `App`의 route path를 React state로 관리하도록 변경
+- 내부 링크 클릭을 History API 기반 SPA navigation으로 처리
+- browser back/forward 이동을 `popstate`로 반영
+- trailing slash path normalize 적용
+- unknown route용 Not Found 안내 추가
+- `/alert-rules`가 sidebar의 `알림` 항목을 active로 표시하도록 정리
+- `/wholesale` legacy route가 sidebar의 `도매 업로드` 항목을 active로 표시하도록 정리
+- active nav에 `aria-current="page"` 추가
+- `docs/beta/P15_ROUTE_UX_HARDENING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /unknown-route Not Found 안내 확인
+- /alert-rules active nav: 알림 확인
+- /alert-rules -> /keywords 내부 nav click 후 marker 유지 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 6단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+```
+
+다음: P15-007 DataTable empty/loading structure
+
+---
