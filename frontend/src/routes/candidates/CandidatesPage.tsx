@@ -16,6 +16,7 @@ import {
 } from '../../api/candidates';
 import { CategoryCode, categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { DataTable, EmptyState, ErrorState, LoadingState } from '../../components/ui';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
   { value: 'RECOMMENDED', label: '추천 검토' },
@@ -229,7 +230,7 @@ export function CandidatesPage() {
       </form>
 
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       <section className="panel keywords-table-panel">
         <div className="panel-header table-header">
@@ -242,8 +243,7 @@ export function CandidatesPage() {
           </button>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table candidates-data-table">
+        <DataTable className="candidates-data-table">
             <thead>
               <tr>
                 <th>상품</th>
@@ -312,7 +312,7 @@ export function CandidatesPage() {
                     <tr className="candidate-expanded-row">
                       <td colSpan={8}>
                         {loadingDetailId === item.candidateId ? (
-                          <div className="state-row">점수 구성을 불러오는 중입니다.</div>
+                          <LoadingState>점수 구성을 불러오는 중입니다.</LoadingState>
                         ) : (
                           <CandidateBreakdown detail={detailsById[item.candidateId]} />
                         )}
@@ -322,13 +322,12 @@ export function CandidatesPage() {
                 </Fragment>
               ))}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
-        {loading ? <div className="state-row">후보를 불러오는 중입니다.</div> : null}
-        {!loading && !getAccessToken() ? <div className="state-row">키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</div> : null}
+        {loading ? <LoadingState>후보를 불러오는 중입니다.</LoadingState> : null}
+        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</EmptyState> : null}
         {!loading && getAccessToken() && items.length === 0 ? (
-          <div className="state-row">아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</div>
+          <EmptyState>아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</EmptyState>
         ) : null}
       </section>
     </div>

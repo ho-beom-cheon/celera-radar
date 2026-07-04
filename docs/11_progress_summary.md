@@ -1040,6 +1040,48 @@ P12 디자인 대개편: 1/2 완료
 
 ---
 
+## 최신 진행: P12-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P12-002 UI Component Consolidation`을 구현했다.
+
+반영 내용:
+
+- `frontend/src/components/ui` 공통 UI 컴포넌트 디렉터리 추가
+- `MetricCard`, `DataTable`, `ProductCard`, `StatusBadge`, `EmptyState`, `ErrorState`, `LoadingState` 공통화
+- 기존 keyword 전용 `ProductCard`를 공통 컴포넌트 위치로 이동
+- dashboard, keyword, candidate, wholesale, alert, store margin, margin calculator 화면에서 공통 컴포넌트 사용
+- route/app 화면의 직접 `table-wrap`, `table`, `state-row`, `status-badge`, `notice-error` 반복 JSX 제거
+
+제외:
+
+- API contract 변경
+- backend/DB 변경
+- 최종 시각 디자인 완성
+- 대규모 layout redesign
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+rg direct table/state/error/status patterns in frontend routes/app
+no matches
+```
+
+진행률:
+
+```text
+P12 디자인 대개편: 2/2 완료
+- P12-001 Design Token Foundation: 완료
+- P12-002 UI Component Consolidation: 완료
+```
+
+다음: P13-001
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.

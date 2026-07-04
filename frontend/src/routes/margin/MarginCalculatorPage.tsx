@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { MetricCard } from '../../components/ui';
 
 export function MarginCalculatorPage() {
   const [supplyPrice, setSupplyPrice] = useState(12000);
@@ -109,12 +110,12 @@ export function MarginCalculatorPage() {
             </div>
           </div>
           <div className="result-grid">
-            <Metric label="총 원가" value={formatCurrency(calculated.totalCost)} />
-            <Metric label="목표 기준 권장 판매가" value={formatCurrency(calculated.recommendedSalePrice)} />
-            <Metric label="권장가 기준 마진" value={formatCurrency(calculated.recommendedMarginAmount)} />
-            <Metric label="권장가 기준 마진율" value={formatRate(calculated.recommendedMarginRate)} />
-            <Metric label="입력 판매가 기준 마진" value={formatCurrency(calculated.marginAmount)} />
-            <Metric label="입력 판매가 기준 마진율" value={formatRate(calculated.marginRate)} />
+            <MetricCard variant="box" label="총 원가" value={formatCurrency(calculated.totalCost)} />
+            <MetricCard variant="box" label="목표 기준 권장 판매가" value={formatCurrency(calculated.recommendedSalePrice)} />
+            <MetricCard variant="box" label="권장가 기준 마진" value={formatCurrency(calculated.recommendedMarginAmount)} />
+            <MetricCard variant="box" label="권장가 기준 마진율" value={formatRate(calculated.recommendedMarginRate)} />
+            <MetricCard variant="box" label="입력 판매가 기준 마진" value={formatCurrency(calculated.marginAmount)} />
+            <MetricCard variant="box" label="입력 판매가 기준 마진율" value={formatRate(calculated.marginRate)} />
           </div>
         </section>
       </section>
@@ -122,15 +123,6 @@ export function MarginCalculatorPage() {
       <div className="notice">
         계산 결과는 도매 CSV 후보 검토를 돕기 위한 참고값입니다. 판매나 수익을 보장하지 않습니다.
       </div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric-box">
-      <span>{label}</span>
-      <strong>{value}</strong>
     </div>
   );
 }

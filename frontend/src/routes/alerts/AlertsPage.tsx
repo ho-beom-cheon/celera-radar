@@ -9,6 +9,7 @@ import {
 } from '../../api/alerts';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
 import { CategoryCode } from '../../api/keywords';
+import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
 
 const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
   { value: 'CAR_ACCESSORY', label: '차량용품' },
@@ -123,7 +124,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
       </section>
 
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       {mode === 'list' ? (
         <section className="panel keywords-table-panel">
@@ -136,8 +137,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
               새로고침
             </button>
           </div>
-          <div className="table-wrap">
-            <table className="data-table">
+          <DataTable>
               <thead>
                 <tr>
                   <th>상태</th>
@@ -152,9 +152,9 @@ export function AlertsPage({ mode }: AlertsPageProps) {
                 {alerts.map((alert) => (
                   <tr key={alert.id}>
                     <td>
-                      <span className={`status-badge ${alert.status === 'READ' ? 'status-analyzed' : 'status-pending'}`}>
+                      <StatusBadge className={alert.status === 'READ' ? 'status-analyzed' : 'status-pending'}>
                         {alert.status === 'READ' ? '읽음' : '미확인'}
-                      </span>
+                      </StatusBadge>
                     </td>
                     <td>
                       <strong>{alert.title}</strong>
@@ -180,11 +180,10 @@ export function AlertsPage({ mode }: AlertsPageProps) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-          {loading ? <div className="state-row">알림을 불러오는 중입니다.</div> : null}
+          </DataTable>
+          {loading ? <LoadingState>알림을 불러오는 중입니다.</LoadingState> : null}
           {!loading && alerts.length === 0 ? (
-            <div className="state-row">아직 확인할 알림이 없습니다.</div>
+            <EmptyState>아직 확인할 알림이 없습니다.</EmptyState>
           ) : null}
         </section>
       ) : (

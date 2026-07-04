@@ -10,6 +10,7 @@ import {
   updateWholesaleColumnMapping,
   uploadWholesaleFile
 } from '../../api/wholesale';
+import { DataTable, EmptyState, ErrorState, LoadingState } from '../../components/ui';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
   { value: 'AUTO', label: '자동 감지' },
@@ -223,7 +224,7 @@ export function WholesalePage() {
       </section>
 
       {message ? <div className="notice notice-success">{message}</div> : null}
-      {error ? <div className="notice notice-error">{error}</div> : null}
+      {error ? <ErrorState>{error}</ErrorState> : null}
 
       <section className="panel keywords-table-panel">
         <div className="panel-header table-header">
@@ -252,8 +253,7 @@ export function WholesalePage() {
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table">
+        <DataTable>
             <thead>
               <tr>
                 <th>행</th>
@@ -278,13 +278,12 @@ export function WholesalePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
-        {loading ? <div className="state-row">처리 중입니다.</div> : null}
-        {!loading && !getAccessToken() ? <div className="state-row">키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</div> : null}
+        {loading ? <LoadingState>처리 중입니다.</LoadingState> : null}
+        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</EmptyState> : null}
         {!loading && getAccessToken() && rows.length === 0 ? (
-          <div className="state-row">업로드 후 컬럼 매핑과 파싱을 실행하세요.</div>
+          <EmptyState>업로드 후 컬럼 매핑과 파싱을 실행하세요.</EmptyState>
         ) : null}
       </section>
 
