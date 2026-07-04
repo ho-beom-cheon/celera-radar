@@ -1845,3 +1845,52 @@ P15 프로젝트 고도화: 8단계 완료
 다음: P15-009 Form validation UX
 
 ---
+
+## 최신 진행: P15-009 Form validation UX 완료
+
+`P15-008 Dashboard summary UX` 이후 후속 작업으로 `P15-009 Form validation UX`를 완료했다.
+
+반영 내용:
+
+- 공통 `FieldMessage` UI 컴포넌트 추가
+- 필드 hint/error 메시지와 액션 비활성화 사유 스타일 추가
+- 키워드 등록 폼의 2~50자 검증 메시지와 등록 버튼 사유 정리
+- 도매 CSV/XLSX 업로드 폼의 파일 선택, 확장자, 필수 컬럼 매핑 메시지 정리
+- 알림 조건 설정 폼의 조건명, 점수 범위, 마진율, 카테고리 선택 검증 메시지 정리
+- 알림 조건 숫자 입력을 문자열 상태로 받고 제출 시 숫자로 변환
+- `docs/beta/P15_FORM_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /keywords 빈 키워드와 1자 입력 검증 메시지 확인
+- /wholesale/uploads 파일 미선택과 preview 전 저장 사유 확인
+- /alert-rules 유효 초기 상태와 최소 점수 120 오류 메시지 확인
+- console error 0개 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 9단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+```
+
+다음: P15-010 Candidate filter validation UX 또는 Form validation pattern expansion
+
+---
