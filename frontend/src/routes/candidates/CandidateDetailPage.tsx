@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   CandidateDetail,
+  CandidateScoreBreakdown,
   excludeCandidate,
   getCandidate,
   gradeLabels,
   riskLabels,
-  saveCandidate
+  saveCandidate,
+  sourceLabels,
+  statusLabels
 } from '../../api/candidates';
+import { categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
 
 interface CandidateDetailPageProps {
@@ -76,8 +80,8 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
 
   return (
     <div className="keywords-page detail-page">
-      <a className="back-link" href="/alerts">
-        알림 목록
+      <a className="back-link" href="/candidates">
+        후보 목록
       </a>
 
       {loading ? <div className="notice">후보 상세를 불러오는 중입니다.</div> : null}
@@ -92,19 +96,30 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
                 <p className="eyebrow">Candidate</p>
                 <h1>{candidate.name}</h1>
                 <p className="muted">
-                  {gradeLabels[candidate.grade]} · 위험 {riskLabels[candidate.riskLevel]}
+                  {gradeLabels[candidate.grade]} · 위험 {riskLabels[candidate.riskLevel]} · {statusLabels[candidate.status]}
                 </p>
               </div>
-              <strong className="score-pill">{candidate.score}</strong>
+              <strong className="score-pill" aria-label={`상품 검토 점수 ${candidate.score}점`}>
+                {candidate.score}
+              </strong>
             </div>
             <div className="candidate-metrics">
               <span>예상 판매가 {formatCurrency(candidate.expectedSalePrice)}</span>
               <span>공급가 {formatCurrency(candidate.supplyPrice)}</span>
-              <span>예상 마진율 {candidate.expectedMarginRate}%</span>
-              <span>상태 {candidate.status}</span>
+              <span>배송비 {formatCurrency(candidate.shippingFee)}</span>
+              <span>예상 마진율 {formatPercent(candidate.expectedMarginRate)}</span>
+              <span>소스 {sourceLabels[candidate.source]}</span>
+              <span>카테고리 {categoryLabel(candidate.categoryCode)}</span>
+              <span>상태 {statusLabels[candidate.status]}</span>
+              <span>연결 키워드 {candidate.keywordId ?? '-'}</span>
             </div>
             <div className="button-row">
-              <button type="button" className="primary-button" onClick={() => void handleSave()}>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => void handleSave()}
+                disabled={candidate.status === 'SAVED'}
+              >
                 관심 저장
               </button>
               <button type="button" className="secondary-button" onClick={() => void handleExclude()}>
@@ -114,35 +129,65 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
           </section>
 
           <section className="panel keyword-form-panel">
-            <h2>점수 구성</h2>
+            <div className="panel-header">
+              <div>
+                <h2>점수 구성</h2>
+                <p className="muted">검토 후보 점수는 트렌드, 경쟁, 마진, 가격대, 공급, 위험 기준으로 계산됩니다.</p>
+              </div>
+            </div>
             <div className="score-grid">
-              <span>트렌드 {candidate.scoreBreakdown.trendScore}</span>
-              <span>경쟁 {candidate.scoreBreakdown.competitionScore}</span>
-              <span>마진 {candidate.scoreBreakdown.marginScore}</span>
-              <span>가격대 {candidate.scoreBreakdown.priceBandScore}</span>
-              <span>공급 {candidate.scoreBreakdown.supplyScore}</span>
-              <span>위험 {candidate.scoreBreakdown.riskPenalty}</span>
+              {scoreItems(candidate.scoreBreakdown).map((item) => (
+                <span key={item.label}>
+                  {item.label} <strong>{item.value}</strong>
+                </span>
+              ))}
             </div>
           </section>
 
           <section className="panel keyword-form-panel">
-            <h2>검토 이유</h2>
-            <ul className="plain-list">
-              {candidate.reasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
-            <h2>주의사항</h2>
-            <ul className="plain-list">
-              {candidate.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
+            <div className="candidate-breakdown-notes">
+              <section>
+                <h2>검토 이유</h2>
+                <NoteList values={candidate.reasons} emptyText="아직 기록된 검토 이유가 없습니다." />
+              </section>
+              <section>
+                <h2>주의사항</h2>
+                <NoteList values={candidate.warnings} emptyText="아직 기록된 주의사항이 없습니다." />
+              </section>
+            </div>
           </section>
         </>
       ) : null}
     </div>
   );
+}
+
+function NoteList({ values, emptyText }: { values: string[]; emptyText: string }) {
+  if (values.length === 0) {
+    return <p className="muted">{emptyText}</p>;
+  }
+  return (
+    <ul className="plain-list">
+      {values.map((value) => (
+        <li key={value}>{value}</li>
+      ))}
+    </ul>
+  );
+}
+
+function scoreItems(breakdown: CandidateScoreBreakdown) {
+  return [
+    { label: '트렌드', value: breakdown.trendScore },
+    { label: '경쟁', value: breakdown.competitionScore },
+    { label: '마진', value: breakdown.marginScore },
+    { label: '가격대', value: breakdown.priceScore },
+    { label: '공급', value: breakdown.supplyScore },
+    { label: '위험', value: breakdown.riskPenalty }
+  ];
+}
+
+function categoryLabel(categoryCode: string) {
+  return categoryOptions.find((option) => option.value === categoryCode)?.label ?? categoryCode;
 }
 
 function formatCurrency(value: number | null) {
@@ -154,6 +199,13 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) {
+    return '-';
+  }
+  return `${value}%`;
 }
 
 function errorMessage(error: unknown) {
