@@ -386,6 +386,7 @@ Response:
     "competitionScore": 18,
     "marginScore": 22,
     "priceBandScore": 10,
+    "priceScore": 10,
     "supplyScore": 5,
     "riskPenalty": 0
   },

@@ -28,6 +28,7 @@ export interface CandidateDetail extends CandidateListItem {
     competitionScore: number;
     marginScore: number;
     priceBandScore: number;
+    priceScore: number;
     supplyScore: number;
     riskPenalty: number;
   };

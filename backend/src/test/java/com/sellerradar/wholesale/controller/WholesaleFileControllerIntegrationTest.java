@@ -366,15 +366,36 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.generatedCount").value(0))
 				.andExpect(jsonPath("$.data.skippedCount").value(1));
 
-		mockMvc.perform(get("/api/v1/candidates")
+		MvcResult listResult = mockMvc.perform(get("/api/v1/candidates")
 						.header("Authorization", bearer(auth))
 						.param("source", "CSV"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.items.length()").value(1))
 				.andExpect(jsonPath("$.data.items[0].name").value("car brush set"))
 				.andExpect(jsonPath("$.data.items[0].categoryCode").value(CategoryCode.CAR_ACCESSORY.name()))
+				.andExpect(jsonPath("$.data.items[0].score").value(70))
+				.andExpect(jsonPath("$.data.items[0].grade").value("REVIEW"))
 				.andExpect(jsonPath("$.data.items[0].expectedSalePrice").value(12900))
-				.andExpect(jsonPath("$.data.items[0].expectedMarginRate").value(44.19));
+				.andExpect(jsonPath("$.data.items[0].expectedMarginRate").value(44.19))
+				.andReturn();
+		Long candidateId = objectMapper.readTree(listResult.getResponse().getContentAsByteArray())
+				.get("data")
+				.get("items")
+				.get(0)
+				.get("candidateId")
+				.asLong();
+
+		mockMvc.perform(get("/api/v1/candidates/{candidateId}", candidateId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.scoreBreakdown.trendScore").value(0))
+				.andExpect(jsonPath("$.data.scoreBreakdown.competitionScore").value(25))
+				.andExpect(jsonPath("$.data.scoreBreakdown.marginScore").value(30))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceBandScore").value(10))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceScore").value(10))
+				.andExpect(jsonPath("$.data.scoreBreakdown.supplyScore").value(5))
+				.andExpect(jsonPath("$.data.scoreBreakdown.riskPenalty").value(0))
+				.andExpect(jsonPath("$.data.warnings[0]").value("데이터 기반 검토 후보이며 판매나 수익을 보장하지 않습니다."));
 	}
 
 	private Long upload(AuthResponse auth, String content) throws Exception {

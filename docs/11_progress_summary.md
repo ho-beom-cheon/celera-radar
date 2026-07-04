@@ -504,13 +504,50 @@ BUILD SUCCESSFUL
 진행률:
 
 ```text
-P6 마진/상품 검토 점수: 1/3 완료
+P6 마진/상품 검토 점수: 2/3 완료
 - P6-001 Margin Calculator 구현: 완료
-- P6-002 Candidate Scoring 구현: 다음
-- P6-003 Candidate 화면 구현: 대기
+- P6-002 Candidate Scoring 구현: 완료
+- P6-003 Candidate 화면 구현: 다음
 ```
 
-다음: P6-002
+다음: P6-003
+
+---
+
+## 최신 진행: P6-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P6-002 Candidate Scoring 구현`을 완료했다.
+
+반영 내용:
+
+- `CandidateScoreCalculator` service 추가
+- 기존 `ScoringEngine`은 호환 래퍼로 유지
+- 후보 생성 흐름에서 `CandidateScoreCalculator`로 score breakdown 계산
+- `trendScore`, `competitionScore`, `marginScore`, `priceBandScore`, `priceScore`, `supplyScore`, `riskPenalty` 응답 정합성 보강
+- 총점 0~100 clamp, 등급 threshold, 위험 제외 강제 등급 테스트 보강
+- CSV 후보 생성 통합 테스트에서 score breakdown, grade, warning 저장/반환 검증
+- `판매 성공 점수` 같은 보장 표현은 추가하지 않음
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+cd frontend && npm.cmd run build
+success
+```
+
+진행률:
+
+```text
+P6 마진/상품 검토 점수: 2/3 완료
+- P6-001 Margin Calculator 구현: 완료
+- P6-002 Candidate Scoring 구현: 완료
+- P6-003 Candidate 화면 구현: 다음
+```
+
+다음: P6-003
 
 ---
 
