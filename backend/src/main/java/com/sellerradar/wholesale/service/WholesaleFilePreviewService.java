@@ -23,6 +23,10 @@ public class WholesaleFilePreviewService {
 			CsvEncoding requestedEncoding
 	) {
 		ParsedWholesaleFile parsedFile = fileParser.parse(originalFilename, bytes, requestedEncoding);
+		return toResponse(originalFilename, parsedFile);
+	}
+
+	WholesaleFilePreviewResponse toResponse(String originalFilename, ParsedWholesaleFile parsedFile) {
 		CsvDocument document = parsedFile.document();
 		List<WholesaleFilePreviewRowResponse> rows = document.rows().stream()
 				.map(row -> toRow(document.header(), row))
