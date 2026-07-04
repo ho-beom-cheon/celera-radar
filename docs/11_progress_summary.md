@@ -487,3 +487,35 @@ docs/10_database_design.md 14.1 기준 6/7 완료
 - imageUrl 누락/로드 실패 placeholder 처리
 - frontend keyword API 타입을 P2-003 backend 응답과 정합화
 - `npm run build`와 브라우저 화면 확인
+## 최신 진행: P2-004 구현 완료
+
+`docs/10_database_design.md`와 `docs/07_codex_execution_plan_v2.md` 기준으로 `P2-004 상품 카드 화면` 구현을 완료했다.
+
+반영 내용:
+
+- 키워드 상세 화면에서 `GET /api/v1/keywords/{keywordId}/shopping-snapshot/latest`를 조회하도록 정리
+- 키워드 상세 화면에 `POST /api/v1/keywords/{keywordId}/analyze/shopping` 분석 실행 버튼 추가
+- 최신 shopping snapshot의 `totalCount`, `minPrice`, `avgPrice`, `maxPrice`, `searchDate`, `fetchedAt` 표시
+- 상위 상품 10개를 `ProductCard` 컴포넌트로 분리해 카드 형태로 표시
+- 상품 카드에 이미지, 상품명, 최저가, 몰명, 카테고리, 원본 링크 표시
+- 이미지 URL이 없거나 로드 실패 시 placeholder 표시
+- frontend keyword API 타입을 P2-003 backend 응답 필드와 정합화
+
+검증:
+
+```text
+cd frontend && npm run build
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+docs/10_database_design.md 14.1 기준 7/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002, P2-003, P2-004
+다음: P3-001
+```
+
+다음 구현 작업은 `P3-001 Competition Analyzer 구현`이 적절하다.
+
+---

@@ -1,58 +1,96 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  KeywordAnalysis,
-  ShoppingTopItem,
-  getKeywordAnalysis,
+  KeywordItem,
+  ShoppingSnapshot,
+  analyzeShopping,
+  getKeyword,
+  getLatestShoppingSnapshot,
   statusLabels
 } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { ProductCard } from './ProductCard';
 
 interface KeywordDetailPageProps {
   keywordId: number;
 }
 
 export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
-  const [analysis, setAnalysis] = useState<KeywordAnalysis | null>(null);
+  const [keyword, setKeyword] = useState<KeywordItem | null>(null);
+  const [snapshot, setSnapshot] = useState<ShoppingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
-  useEffect(() => {
-    let ignore = false;
-    async function loadAnalysis() {
-      if (!Number.isFinite(keywordId) || keywordId <= 0) {
-        setError('키워드를 찾을 수 없습니다.');
-        setLoading(false);
-        return;
-      }
-      if (!getAccessToken()) {
-        setError('계정 연결 후 분석 결과를 확인할 수 있습니다.');
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError('');
-      try {
-        const response = await getKeywordAnalysis(keywordId);
-        if (!ignore) {
-          setAnalysis(response);
-        }
-      } catch (requestError) {
-        if (!ignore) {
-          setError(errorMessage(requestError));
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
+  const loadDetail = useCallback(async () => {
+    if (!Number.isFinite(keywordId) || keywordId <= 0) {
+      setError('키워드를 찾을 수 없습니다.');
+      setLoading(false);
+      return;
     }
-    void loadAnalysis();
-    return () => {
-      ignore = true;
-    };
+    if (!getAccessToken()) {
+      setError('계정 연결 후 분석 결과를 확인할 수 있습니다.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const keywordResponse = await getKeyword(keywordId);
+      setKeyword(keywordResponse);
+      try {
+        const snapshotResponse = await getLatestShoppingSnapshot(keywordId);
+        setSnapshot(snapshotResponse);
+      } catch (requestError) {
+        if (isAnalysisNotReady(requestError)) {
+          setSnapshot(null);
+          setNotice('아직 저장된 쇼핑 스냅샷이 없습니다. 분석 실행 후 상품 카드를 확인할 수 있습니다.');
+        } else {
+          throw requestError;
+        }
+      }
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
   }, [keywordId]);
 
-  const shopping = analysis?.shopping ?? null;
+  useEffect(() => {
+    void loadDetail();
+  }, [loadDetail]);
+
+  async function handleAnalyzeShopping() {
+    if (analyzing) {
+      return;
+    }
+    setAnalyzing(true);
+    setError('');
+    setNotice('');
+    try {
+      const response = await analyzeShopping(keywordId);
+      setSnapshot(response);
+      setKeyword((current) =>
+        current
+          ? {
+              ...current,
+              analysisStatus: 'SUCCESS',
+              lastAnalyzedAt: response.fetchedAt ?? current.lastAnalyzedAt,
+              lastSnapshotDate: response.searchDate
+            }
+          : current
+      );
+      setNotice(response.cached ? '오늘 저장된 쇼핑 스냅샷을 재사용했습니다.' : '쇼핑 분석이 완료되었습니다.');
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  const title = keyword?.keyword ?? snapshot?.keyword ?? '키워드 상세';
 
   return (
     <div className="keywords-page detail-page">
@@ -61,95 +99,78 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
           <a className="back-link" href="/keywords">
             키워드 목록
           </a>
-          <h1>{analysis?.keyword ?? '키워드 분석'}</h1>
-          {analysis ? (
+          <h1>{title}</h1>
+          {keyword ? (
             <p className="muted">
-              <span className={`status-badge status-${analysis.status.toLowerCase()}`}>
-                {statusLabels[analysis.status]}
+              <span className={`status-badge status-${keyword.analysisStatus.toLowerCase()}`}>
+                {statusLabels[keyword.analysisStatus]}
               </span>
-              <span className="inline-meta">마지막 분석 {formatDateTime(analysis.lastAnalyzedAt)}</span>
+              <span className="inline-meta">마지막 분석 {formatDateTime(keyword.lastAnalyzedAt)}</span>
             </p>
           ) : null}
         </div>
-        <div className="limit-meter cache-meter">
-          <span>캐시 기준일</span>
-          <strong>{shopping?.baseDate ?? '-'}</strong>
+        <div className="detail-actions">
+          <div className="limit-meter cache-meter">
+            <span>스냅샷 기준일</span>
+            <strong>{snapshot?.searchDate ?? keyword?.lastSnapshotDate ?? '-'}</strong>
+          </div>
+          <button type="button" className="primary-button" onClick={() => void handleAnalyzeShopping()} disabled={loading || analyzing}>
+            {analyzing ? '분석 중' : '쇼핑 분석 실행'}
+          </button>
         </div>
       </section>
 
-      {loading ? <div className="notice">분석 결과를 불러오는 중입니다.</div> : null}
+      {loading ? <div className="notice">키워드 상세 정보를 불러오는 중입니다.</div> : null}
+      {notice ? <div className="notice notice-success">{notice}</div> : null}
       {error ? <div className="notice notice-error">{error}</div> : null}
 
-      {!loading && !error && analysis && !shopping ? (
+      {!loading && !error && !snapshot ? (
         <section className="panel empty-analysis-panel">
-          <h2>분석 대기</h2>
-          <p>아직 저장된 쇼핑 검색 스냅샷이 없습니다. 다음 쇼핑 검색 배치 이후 가격대와 상위 상품이 표시됩니다.</p>
+          <h2>쇼핑 스냅샷 대기</h2>
+          <p>저장된 네이버 쇼핑 스냅샷이 없습니다. 분석을 실행하면 가격 요약과 상위 상품 카드가 표시됩니다.</p>
         </section>
       ) : null}
 
-      {shopping ? (
+      {snapshot ? (
         <>
           <section className="summary-grid analysis-summary" aria-label="쇼핑 검색 요약">
             <article className="summary-card">
               <span>검색 결과 수</span>
-              <strong>{formatNumber(shopping.totalResults)}</strong>
+              <strong>{formatNumber(snapshot.totalCount)}</strong>
             </article>
             <article className="summary-card">
               <span>최저가</span>
-              <strong>{formatCurrency(shopping.minPrice)}</strong>
+              <strong>{formatCurrency(snapshot.minPrice)}</strong>
             </article>
             <article className="summary-card">
               <span>평균가</span>
-              <strong>{formatCurrency(shopping.avgPrice)}</strong>
+              <strong>{formatCurrency(snapshot.avgPrice)}</strong>
             </article>
             <article className="summary-card">
               <span>최고가</span>
-              <strong>{formatCurrency(shopping.maxPrice)}</strong>
+              <strong>{formatCurrency(snapshot.maxPrice)}</strong>
             </article>
           </section>
 
           <section className="panel keywords-table-panel">
             <div className="panel-header">
               <div>
-                <h2>상위 상품</h2>
-                <p className="muted">네이버 쇼핑 검색 스냅샷 기준 상위 결과입니다.</p>
+                <h2>상위 상품 카드</h2>
+                <p className="muted">
+                  {snapshot.searchDate} 기준 네이버 쇼핑 스냅샷입니다. {snapshot.cached ? '캐시 결과를 표시 중입니다.' : '새로 수집한 결과입니다.'}
+                </p>
               </div>
+              <span className="muted">수집 시각 {formatDateTime(snapshot.fetchedAt)}</span>
             </div>
-            <div className="table-wrap">
-              <table className="data-table detail-table">
-                <thead>
-                  <tr>
-                    <th>순위</th>
-                    <th>상품</th>
-                    <th>가격</th>
-                    <th>몰</th>
-                    <th>카테고리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shopping.topItems.map((item) => (
-                    <tr key={`${item.itemRank}-${item.title}`}>
-                      <td>{item.itemRank}</td>
-                      <td className="product-cell">
-                        {item.link ? (
-                          <a href={item.link} target="_blank" rel="noreferrer">
-                            {stripTags(item.title)}
-                          </a>
-                        ) : (
-                          stripTags(item.title)
-                        )}
-                      </td>
-                      <td>{formatPriceRange(item)}</td>
-                      <td>{item.mallName ?? '-'}</td>
-                      <td>{categoryPath(item)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {shopping.topItems.length === 0 ? (
+            {snapshot.topItems.length > 0 ? (
+              <div className="product-card-grid">
+                {snapshot.topItems.map((item) => (
+                  <ProductCard key={`${item.rankNo}-${item.productUrl ?? item.title}`} item={item} />
+                ))}
+              </div>
+            ) : (
               <div className="state-row">저장된 상위 상품이 없습니다.</div>
-            ) : null}
+            )}
           </section>
         </>
       ) : null}
@@ -157,7 +178,10 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
   );
 }
 
-function formatNumber(value: number) {
+function formatNumber(value: number | null) {
+  if (value === null) {
+    return '-';
+  }
   return new Intl.NumberFormat('ko-KR').format(value);
 }
 
@@ -172,21 +196,6 @@ function formatCurrency(value: number | null) {
   }).format(value);
 }
 
-function formatPriceRange(item: ShoppingTopItem) {
-  if (item.lprice === null && item.hprice === null) {
-    return '-';
-  }
-  if (item.hprice !== null && item.lprice !== null && item.hprice > item.lprice) {
-    return `${formatCurrency(item.lprice)} ~ ${formatCurrency(item.hprice)}`;
-  }
-  return formatCurrency(item.lprice ?? item.hprice);
-}
-
-function categoryPath(item: ShoppingTopItem) {
-  const values = [item.category1, item.category2, item.category3, item.category4].filter(Boolean);
-  return values.length > 0 ? values.join(' > ') : '-';
-}
-
 function formatDateTime(value: string | null) {
   if (!value) {
     return '-';
@@ -197,8 +206,8 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function stripTags(value: string) {
-  return value.replace(/<[^>]*>/g, '');
+function isAnalysisNotReady(error: unknown) {
+  return error instanceof ApiRequestError && error.code === 'ANALYSIS_NOT_READY';
 }
 
 function errorMessage(error: unknown) {

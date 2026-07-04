@@ -561,9 +561,24 @@ h2 {
   background: #dff5e9;
 }
 
+.status-success {
+  color: #176b55;
+  background: #dff5e9;
+}
+
+.status-running {
+  color: #174d54;
+  background: #dff4f6;
+}
+
 .status-failed {
   color: #9f1d1d;
   background: #ffe1e1;
+}
+
+.status-skipped {
+  color: #615238;
+  background: #f2eadc;
 }
 
 .state-row {
@@ -599,6 +614,13 @@ h2 {
   min-width: 190px;
 }
 
+.detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .analysis-summary {
   margin-bottom: 0;
 }
@@ -629,6 +651,97 @@ h2 {
   color: #174d54;
   font-weight: 800;
   line-height: 1.45;
+}
+
+.product-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.product-card {
+  display: grid;
+  grid-template-rows: 164px minmax(260px, auto);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.product-card-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f7;
+  color: #657982;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.product-card-rank {
+  width: max-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #174d54;
+  background: #e8f3f4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-card h3 {
+  min-height: 58px;
+  margin: 0;
+  color: #202124;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.product-card-meta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.product-card-meta div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.product-card-meta dt {
+  color: #657982;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-card-meta dd {
+  min-width: 0;
+  margin: 0;
+  color: #202124;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.product-card-link {
+  width: 100%;
+  margin-top: auto;
 }
 
 .category-checks {
@@ -720,6 +833,11 @@ h2 {
   .table-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .detail-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .limit-meter {
