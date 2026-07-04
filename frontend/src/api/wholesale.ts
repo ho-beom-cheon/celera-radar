@@ -20,8 +20,47 @@ export interface WholesaleColumnMapping {
   productName: string;
   supplyPrice: string;
   shippingFee?: string;
+  imageUrl?: string;
   category?: string;
   productUrl?: string;
+}
+
+export interface WholesaleFilePreviewCell {
+  header: string;
+  rawValue: string;
+  decimalValue: number | null;
+  longValue: number | null;
+}
+
+export interface WholesaleFilePreviewRow {
+  rowNo: number;
+  cells: WholesaleFilePreviewCell[];
+}
+
+export interface WholesaleFilePreview {
+  originalFilename: string;
+  fileType: 'CSV' | 'XLSX';
+  headers: string[];
+  rows: WholesaleFilePreviewRow[];
+  rowCount: number;
+}
+
+export interface WholesaleUploadPreview {
+  uploadId: number;
+  status: WholesaleFileStatus;
+  fileType: 'CSV' | 'XLSX';
+  detectedEncoding: CsvEncoding;
+  preview: WholesaleFilePreview;
+}
+
+export interface WholesaleUploadConfirmResult {
+  uploadId: number;
+  successCount: number;
+  failureCount: number;
+  failureReasons: Array<{
+    rowNo: number;
+    message: string;
+  }>;
 }
 
 export interface WholesaleParseResult {
@@ -58,6 +97,26 @@ export function uploadWholesaleFile(file: File, encoding: CsvEncoding, sourceNam
   return apiRequest<WholesaleFile>('/wholesale-files', {
     method: 'POST',
     body
+  });
+}
+
+export function previewWholesaleUpload(file: File, encoding: CsvEncoding, sourceName: string) {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('encoding', encoding);
+  if (sourceName.trim()) {
+    body.append('sourceName', sourceName.trim());
+  }
+  return apiRequest<WholesaleUploadPreview>('/wholesale-uploads/preview', {
+    method: 'POST',
+    body
+  });
+}
+
+export function confirmWholesaleUpload(uploadId: number, mapping: WholesaleColumnMapping) {
+  return apiRequest<WholesaleUploadConfirmResult>(`/wholesale-uploads/${uploadId}/confirm`, {
+    method: 'POST',
+    body: { mapping }
   });
 }
 

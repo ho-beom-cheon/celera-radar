@@ -443,6 +443,43 @@ P5 도매 CSV/XLSX 업로드: 3/4 완료
 
 ---
 
+## 최신 진행: P5-004 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P5-004 Wholesale Upload Frontend 구현`을 완료했다.
+
+반영 내용:
+
+- `/wholesale/uploads` route 추가
+- 도매 CSV/XLSX 파일 선택 후 preview API 호출 화면 추가
+- preview header와 row 확인 테이블 추가
+- `productName`, `supplyPrice`, `shippingFee`, `imageUrl`, `productUrl`, `category` 컬럼 매핑 UI 추가
+- confirm API 호출 후 정상/오류 건수와 실패 사유 목록 표시
+- sidebar와 기존 CSV 업로드 링크를 신규 route 기준으로 연결
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+빌드 성공
+
+http://127.0.0.1:5173/wholesale/uploads
+HTTP 200
+```
+
+진행률:
+
+```text
+P5 도매 CSV/XLSX 업로드: 4/4 완료
+- P5-001 Wholesale Product DB/Domain 구현: 완료
+- P5-002 CSV/XLSX 파일 파서 구현: 완료
+- P5-003 컬럼 매핑/저장 API 구현: 완료
+- P5-004 Wholesale Upload Frontend 구현: 완료
+```
+
+다음: P6-001
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
