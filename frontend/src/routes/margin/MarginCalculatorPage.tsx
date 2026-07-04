@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { MetricCard } from '../../components/ui';
+import { HelpTooltip, MetricCard } from '../../components/ui';
 
 export function MarginCalculatorPage() {
   const [supplyPrice, setSupplyPrice] = useState(12000);
@@ -42,7 +42,10 @@ export function MarginCalculatorPage() {
           <h1>마진 계산기</h1>
         </div>
         <div className="limit-meter">
-          <span>현재 마진율</span>
+          <span className="metric-label">
+            <span>현재 마진율</span>
+            <HelpTooltip contentKey="marginRate" compact />
+          </span>
           <strong>{formatRate(calculated.marginRate)}</strong>
         </div>
       </section>
@@ -56,27 +59,39 @@ export function MarginCalculatorPage() {
             </div>
           </div>
           <div className="form-grid form-grid-two">
-            <label className="field">
-              <span>공급가</span>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="margin-supply-price">공급가</label>
+                <HelpTooltip contentKey="supplyPrice" compact />
+              </div>
               <input
+                id="margin-supply-price"
                 type="number"
                 min="0"
                 value={supplyPrice}
                 onChange={(event) => setSupplyPrice(Number(event.target.value))}
               />
-            </label>
-            <label className="field">
-              <span>배송비</span>
+            </div>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="margin-shipping-fee">배송비</label>
+                <HelpTooltip contentKey="shippingFee" compact />
+              </div>
               <input
+                id="margin-shipping-fee"
                 type="number"
                 min="0"
                 value={shippingFee}
                 onChange={(event) => setShippingFee(Number(event.target.value))}
               />
-            </label>
-            <label className="field">
-              <span>목표 마진율</span>
+            </div>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="margin-target-rate">목표 마진율</label>
+                <HelpTooltip contentKey="targetMarginRate" compact />
+              </div>
               <input
+                id="margin-target-rate"
                 type="number"
                 min="1"
                 max="90"
@@ -84,16 +99,20 @@ export function MarginCalculatorPage() {
                 value={targetMarginRate}
                 onChange={(event) => setTargetMarginRate(Number(event.target.value))}
               />
-            </label>
-            <label className="field">
-              <span>판매가 직접 입력</span>
+            </div>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="margin-sale-price">판매가 직접 입력</label>
+                <HelpTooltip contentKey="salePrice" compact />
+              </div>
               <input
+                id="margin-sale-price"
                 type="number"
                 min="0"
                 value={salePrice}
                 onChange={(event) => setSalePrice(Number(event.target.value))}
               />
-            </label>
+            </div>
           </div>
           <div className="button-row">
             <button type="button" className="primary-button" onClick={applyRecommendedPrice}>
@@ -110,12 +129,37 @@ export function MarginCalculatorPage() {
             </div>
           </div>
           <div className="result-grid">
-            <MetricCard variant="box" label="총 원가" value={formatCurrency(calculated.totalCost)} />
-            <MetricCard variant="box" label="목표 기준 권장 판매가" value={formatCurrency(calculated.recommendedSalePrice)} />
-            <MetricCard variant="box" label="권장가 기준 마진" value={formatCurrency(calculated.recommendedMarginAmount)} />
-            <MetricCard variant="box" label="권장가 기준 마진율" value={formatRate(calculated.recommendedMarginRate)} />
-            <MetricCard variant="box" label="입력 판매가 기준 마진" value={formatCurrency(calculated.marginAmount)} />
-            <MetricCard variant="box" label="입력 판매가 기준 마진율" value={formatRate(calculated.marginRate)} />
+            <MetricCard variant="box" label="총 원가" value={formatCurrency(calculated.totalCost)} helpKey="totalCost" />
+            <MetricCard
+              variant="box"
+              label="목표 기준 권장 판매가"
+              value={formatCurrency(calculated.recommendedSalePrice)}
+              helpKey="recommendedSalePrice"
+            />
+            <MetricCard
+              variant="box"
+              label="권장가 기준 마진"
+              value={formatCurrency(calculated.recommendedMarginAmount)}
+              helpKey="expectedMargin"
+            />
+            <MetricCard
+              variant="box"
+              label="권장가 기준 마진율"
+              value={formatRate(calculated.recommendedMarginRate)}
+              helpKey="marginRate"
+            />
+            <MetricCard
+              variant="box"
+              label="입력 판매가 기준 마진"
+              value={formatCurrency(calculated.marginAmount)}
+              helpKey="expectedMargin"
+            />
+            <MetricCard
+              variant="box"
+              label="입력 판매가 기준 마진율"
+              value={formatRate(calculated.marginRate)}
+              helpKey="marginRate"
+            />
           </div>
         </section>
       </section>

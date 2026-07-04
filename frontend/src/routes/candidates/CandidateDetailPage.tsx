@@ -12,7 +12,7 @@ import {
 } from '../../api/candidates';
 import { categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { ErrorState, LoadingState } from '../../components/ui';
+import { ErrorState, HelpText, LoadingState } from '../../components/ui';
 
 interface CandidateDetailPageProps {
   candidateId: number;
@@ -134,6 +134,7 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
               <div>
                 <h2>점수 구성</h2>
                 <p className="muted">검토 후보 점수는 트렌드, 경쟁, 마진, 가격대, 공급, 위험 기준으로 계산됩니다.</p>
+                <HelpText contentKey="productScore" />
               </div>
             </div>
             <div className="score-grid">

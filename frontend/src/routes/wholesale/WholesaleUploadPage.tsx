@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useId, useMemo, useState } from 'react';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
 import {
   CsvEncoding,
@@ -9,7 +9,8 @@ import {
   confirmWholesaleUpload,
   previewWholesaleUpload
 } from '../../api/wholesale';
-import { DataTable, EmptyState, ErrorState, LoadingState, MetricCard } from '../../components/ui';
+import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard } from '../../components/ui';
+import type { HelpContentKey } from '../../lib/helpContent';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
   { value: 'AUTO', label: '자동 감지' },
@@ -93,7 +94,10 @@ export function WholesaleUploadPage() {
           <h1>도매 CSV/XLSX 업로드</h1>
         </div>
         <div className="limit-meter">
-          <span>Preview rows</span>
+          <span className="metric-label">
+            <span>Preview rows</span>
+            <HelpTooltip contentKey="uploadFileFormat" compact />
+          </span>
           <strong>{preview ? `${preview.preview.rowCount}행` : '-'}</strong>
         </div>
       </section>
@@ -107,25 +111,37 @@ export function WholesaleUploadPage() {
             </div>
           </div>
           <div className="form-grid">
-            <label className="field">
-              <span>파일</span>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="wholesale-upload-file">파일</label>
+                <HelpTooltip contentKey="uploadFileFormat" compact />
+              </div>
               <input
+                id="wholesale-upload-file"
                 type="file"
                 accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
                 disabled={!getAccessToken() || loading}
               />
-            </label>
-            <label className="field">
-              <span>인코딩</span>
-              <select value={encoding} onChange={(event) => setEncoding(event.target.value as CsvEncoding)} disabled={loading}>
+            </div>
+            <div className="field">
+              <div className="field-label-row">
+                <label htmlFor="wholesale-upload-encoding">인코딩</label>
+                <HelpTooltip contentKey="uploadEncoding" compact />
+              </div>
+              <select
+                id="wholesale-upload-encoding"
+                value={encoding}
+                onChange={(event) => setEncoding(event.target.value as CsvEncoding)}
+                disabled={loading}
+              >
                 {encodingOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
             <label className="field">
               <span>도매처명</span>
               <input value={sourceName} onChange={(event) => setSourceName(event.target.value)} disabled={loading} />
@@ -146,9 +162,29 @@ export function WholesaleUploadPage() {
             </div>
           </div>
           <div className="form-grid form-grid-two">
-            <ColumnSelect label="상품명" value={mapping.productName} columns={headers} onChange={(value) => updateMapping('productName', value)} required />
-            <ColumnSelect label="공급가" value={mapping.supplyPrice} columns={headers} onChange={(value) => updateMapping('supplyPrice', value)} required />
-            <ColumnSelect label="배송비" value={mapping.shippingFee ?? ''} columns={headers} onChange={(value) => updateMapping('shippingFee', value)} />
+            <ColumnSelect
+              label="상품명"
+              value={mapping.productName}
+              columns={headers}
+              onChange={(value) => updateMapping('productName', value)}
+              helpKey="requiredColumns"
+              required
+            />
+            <ColumnSelect
+              label="공급가"
+              value={mapping.supplyPrice}
+              columns={headers}
+              onChange={(value) => updateMapping('supplyPrice', value)}
+              helpKey="requiredColumns"
+              required
+            />
+            <ColumnSelect
+              label="배송비"
+              value={mapping.shippingFee ?? ''}
+              columns={headers}
+              onChange={(value) => updateMapping('shippingFee', value)}
+              helpKey="shippingFee"
+            />
             <ColumnSelect label="이미지 URL" value={mapping.imageUrl ?? ''} columns={headers} onChange={(value) => updateMapping('imageUrl', value)} />
             <ColumnSelect label="상품 URL" value={mapping.productUrl ?? ''} columns={headers} onChange={(value) => updateMapping('productUrl', value)} />
             <ColumnSelect label="카테고리" value={mapping.category ?? ''} columns={headers} onChange={(value) => updateMapping('category', value)} />
@@ -187,8 +223,8 @@ export function WholesaleUploadPage() {
               <p className="muted">정상 저장 row와 실패 row를 구분해 확인합니다.</p>
             </div>
             <div className="result-grid upload-result-grid">
-              <MetricCard variant="box" label="정상" value={confirmResult.successCount} />
-              <MetricCard variant="box" label="오류" value={confirmResult.failureCount} />
+              <MetricCard variant="box" label="정상" value={confirmResult.successCount} helpKey="requiredColumns" />
+              <MetricCard variant="box" label="오류" value={confirmResult.failureCount} helpKey="errorRows" />
             </div>
           </div>
           {confirmResult.failureReasons.length > 0 ? (
@@ -224,18 +260,24 @@ interface ColumnSelectProps {
   label: string;
   value: string;
   columns: string[];
+  helpKey?: HelpContentKey;
   required?: boolean;
   onChange: (value: string) => void;
 }
 
-function ColumnSelect({ label, value, columns, required, onChange }: ColumnSelectProps) {
+function ColumnSelect({ label, value, columns, helpKey, required, onChange }: ColumnSelectProps) {
+  const selectId = useId();
+
   return (
-    <label className="field">
-      <span>
-        {label}
-        {required ? ' *' : ''}
-      </span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} disabled={columns.length === 0}>
+    <div className="field">
+      <div className="field-label-row">
+        <label htmlFor={selectId}>
+          {label}
+          {required ? ' *' : ''}
+        </label>
+        {helpKey ? <HelpTooltip contentKey={helpKey} compact /> : null}
+      </div>
+      <select id={selectId} value={value} onChange={(event) => onChange(event.target.value)} disabled={columns.length === 0}>
         <option value="">선택 안 함</option>
         {columns.map((column) => (
           <option key={column} value={column}>
@@ -243,7 +285,7 @@ function ColumnSelect({ label, value, columns, required, onChange }: ColumnSelec
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 

@@ -6,7 +6,7 @@ import {
   StoreProductCost
 } from '../../api/smartstore';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, LoadingState, MetricCard, StatusBadge } from '../../components/ui';
+import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard, StatusBadge } from '../../components/ui';
 
 type MarginRisk = 'RISK' | 'CAUTION' | 'SAFE' | 'UNSET';
 
@@ -96,10 +96,10 @@ export function StoreMarginsPage() {
       {message ? <ErrorState>{message}</ErrorState> : null}
 
       <section className="summary-grid" aria-label="마진 위험 요약">
-        <MetricCard label="위험" value={String(counts.risk)} />
-        <MetricCard label="주의" value={String(counts.caution)} />
-        <MetricCard label="안전" value={String(counts.safe)} />
-        <MetricCard label="원가 미설정" value={String(counts.unset)} />
+        <MetricCard label="위험" value={String(counts.risk)} helpKey="riskLevel" />
+        <MetricCard label="주의" value={String(counts.caution)} helpKey="riskLevel" />
+        <MetricCard label="안전" value={String(counts.safe)} helpKey="riskLevel" />
+        <MetricCard label="원가 미설정" value={String(counts.unset)} helpKey="riskLevel" />
       </section>
 
       <section className="panel keywords-table-panel">
@@ -114,13 +114,43 @@ export function StoreMarginsPage() {
             <thead>
               <tr>
                 <th>상품</th>
-                <th>판매가</th>
-                <th>원가</th>
-                <th>예상 마진율</th>
-                <th>예상 이익</th>
-                <th>위험 상태</th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>판매가</span>
+                    <HelpTooltip contentKey="salePrice" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>원가</span>
+                    <HelpTooltip contentKey="totalCost" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>예상 마진율</span>
+                    <HelpTooltip contentKey="marginRate" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>예상 이익</span>
+                    <HelpTooltip contentKey="expectedMargin" compact />
+                  </span>
+                </th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>위험 상태</span>
+                    <HelpTooltip contentKey="riskLevel" compact />
+                  </span>
+                </th>
                 <th>원가 출처</th>
-                <th>최근 동기화</th>
+                <th>
+                  <span className="table-heading-help">
+                    <span>최근 동기화</span>
+                    <HelpTooltip contentKey="lastSyncedAt" compact />
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>

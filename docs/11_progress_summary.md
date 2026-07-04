@@ -1503,3 +1503,52 @@ P5 도매 CSV/XLSX 업로드: 1/4 완료
 다음: P5-002
 
 ---
+
+## 최신 진행: P15-002 디자인/도움말 고도화 완료
+
+`docs/beta/P15_PROJECT_BASELINE_ANALYSIS.md` 기준으로 `P15-002 디자인/도움말 고도화`를 완료했다.
+
+반영 내용:
+
+- `frontend/src/lib/helpContent.ts` 도움말 사전 추가
+- `HelpTooltip`, `HelpText`, `HelpPopover` 공통 UI 컴포넌트 추가
+- `MetricCard`에 `helpKey` prop 추가
+- 대시보드, 키워드 상세, 후보 목록/상세, 도매 업로드, 마진 계산기, 내 상품 마진, 알림 조건 화면에 도움말 연결
+- form label 내부에 interactive button이 중첩되지 않도록 `field-label-row` 구조 적용
+- loading/empty 상태 표현 class 분리
+- `docs/beta/P15_DESIGN_HELP_POLISH.md` 문서 추가
+
+제외:
+
+- chart library 도입
+- backend/API/DB migration 변경
+- 외부 API 연동 변경
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- http://127.0.0.1:5174/margin
+- tooltip hover 노출 확인
+- 390px width horizontal overflow 없음
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 2단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 다음 후보
+```
+
+다음: P15-003
+
+---

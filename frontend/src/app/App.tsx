@@ -133,7 +133,12 @@ function Dashboard() {
 
       <section className="summary-grid" aria-label="분석 상태 요약">
         {statusItems.map((item) => (
-          <MetricCard key={item.label} label={item.label} value={item.value} />
+          <MetricCard
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            helpKey={item.label.includes('후보') ? 'candidateCount' : undefined}
+          />
         ))}
       </section>
 
