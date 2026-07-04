@@ -617,6 +617,35 @@ h2 {
   line-height: 1.2;
 }
 
+.field-message {
+  margin: var(--sr-space-0);
+  color: var(--sr-color-text-muted);
+  font-size: var(--sr-font-size-xs);
+  font-weight: var(--sr-font-weight-semibold);
+  line-height: 1.45;
+}
+
+.field-message-error {
+  color: var(--sr-color-danger);
+}
+
+.field-message-hint {
+  color: var(--sr-color-text-muted);
+}
+
+.form-action-hint {
+  width: 100%;
+  margin: var(--sr-space-0);
+  color: var(--sr-color-text-muted);
+  font-size: var(--sr-font-size-sm);
+  font-weight: var(--sr-font-weight-semibold);
+  line-height: 1.5;
+}
+
+.form-action-hint-error {
+  color: var(--sr-color-danger);
+}
+
 .field-label-row,
 .table-heading-help {
   display: inline-flex;
@@ -1219,6 +1248,15 @@ h2 {
   color: var(--sr-color-text-label);
   font-size: var(--sr-font-size-sm);
   font-weight: var(--sr-font-weight-extrabold);
+}
+
+.category-checks .field-message {
+  grid-column: 1 / -1;
+}
+
+.category-checks-error {
+  border-color: var(--sr-color-danger-border);
+  background: var(--sr-color-danger-bg-soft);
 }
 
 .candidate-metrics,

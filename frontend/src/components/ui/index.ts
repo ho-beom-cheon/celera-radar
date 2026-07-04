@@ -1,4 +1,5 @@
 export { DataTable, DataTableStateRow } from './DataTable';
+export { FieldMessage } from './FieldMessage';
 export { HelpPopover } from './HelpPopover';
 export { HelpText } from './HelpText';
 export { HelpTooltip } from './HelpTooltip';
