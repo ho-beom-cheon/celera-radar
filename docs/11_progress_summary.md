@@ -1002,6 +1002,44 @@ P11 주문/정산/수수료 연동: 1/1 완료
 
 ---
 
+## 최신 진행: P12-001 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P12-001 Design Token Foundation`을 구현했다.
+
+반영 내용:
+
+- `frontend/src/styles/tokens.css` 추가
+- color, spacing, radius, shadow, typography token foundation 추가
+- 기존 `frontend/src/styles.css`가 token 파일을 import하도록 정리
+- 기존 주요 화면 스타일의 색상, radius, typography, 주요 spacing 선언을 `var(...)` token 참조로 전환
+- 화면 layout 수치와 route/API 동작은 변경하지 않음
+
+제외:
+
+- 최종 시각 디자인 완성
+- 대규모 레이아웃 변경
+- backend/API/DB 변경
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P12 디자인 대개편: 1/2 완료
+- P12-001 Design Token Foundation: 완료
+- P12-002 UI Component Consolidation: 다음
+```
+
+다음: P12-002
+
+---
+
 ## 9. P2-001 구현 완료
 
 `docs/10_database_design.md` 기준으로 shopping snapshot migration과 domain/repository 정합성 정리를 완료했다.
