@@ -16,6 +16,7 @@ import {
   MetricCard,
   StatusBadge
 } from '../../components/ui';
+import { authRequiredMessage, formatApiError } from '../../lib/apiError';
 
 type MarginRisk = 'RISK' | 'CAUTION' | 'SAFE' | 'UNSET';
 
@@ -40,6 +41,7 @@ const riskClassNames: Record<MarginRisk, string> = {
 };
 
 export function StoreMarginsPage() {
+  const hasAccessToken = Boolean(getAccessToken());
   const [rows, setRows] = useState<StoreMarginRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -67,7 +69,7 @@ export function StoreMarginsPage() {
   async function loadMargins() {
     if (!getAccessToken()) {
       setRows([]);
-      setMessage('로그인 후 내 상품 마진 상태를 불러옵니다.');
+      setMessage('');
       return;
     }
     setLoading(true);
@@ -87,7 +89,7 @@ export function StoreMarginsPage() {
       setRows(nextRows);
       setMessage('');
     } catch (error) {
-      setMessage(error instanceof ApiRequestError ? error.message : '상품 마진 상태를 불러오지 못했습니다.');
+      setMessage(formatApiError(error, '상품 마진 상태를 불러오지 못했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -186,7 +188,14 @@ export function StoreMarginsPage() {
                   </td>
                 </tr>
               ) : null}
-              {!loading && rows.length === 0 ? (
+              {!loading && !hasAccessToken ? (
+                <tr>
+                  <td colSpan={8}>
+                    <EmptyState>{authRequiredMessage('내 상품 마진 상태를 확인')}</EmptyState>
+                  </td>
+                </tr>
+              ) : null}
+              {!loading && hasAccessToken && rows.length === 0 ? (
                 <tr>
                   <td colSpan={8}>
                     <EmptyState>동기화된 스마트스토어 상품이 없습니다.</EmptyState>

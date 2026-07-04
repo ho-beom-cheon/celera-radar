@@ -11,8 +11,9 @@ import {
   statusLabels
 } from '../../api/candidates';
 import { categoryOptions } from '../../api/keywords';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import { ErrorState, LazyKpiBarChart, LoadingState } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 interface CandidateDetailPageProps {
   candidateId: number;
@@ -41,7 +42,7 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
         }
       } catch (requestError) {
         if (!ignore) {
-          setError(errorMessage(requestError));
+          setError(formatApiError(requestError));
         }
       } finally {
         if (!ignore) {
@@ -63,7 +64,7 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
       setCandidate(response);
       setMessage('관심 후보로 저장했습니다.');
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -75,7 +76,7 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
       setCandidate(response);
       setMessage('후보를 제외 처리했습니다.');
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -199,11 +200,4 @@ function formatPercent(value: number | null) {
     return '-';
   }
   return `${value}%`;
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

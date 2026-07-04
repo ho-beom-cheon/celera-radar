@@ -12,7 +12,6 @@ import {
   statusLabels
 } from '../../api/keywords';
 import {
-  ApiRequestError,
   clearAccessToken,
   getAccessToken,
   getStoredPlan,
@@ -20,6 +19,7 @@ import {
   setStoredPlan
 } from '../../api/httpClient';
 import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 const planLimits: Record<Plan, number> = {
   FREE: 3,
@@ -85,7 +85,7 @@ export function KeywordsPage() {
       setKeywords(filteredPage.items);
       setUsageCount(usagePage.totalElements);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export function KeywordsPage() {
       setPlan(response.plan);
       setMessage(`${response.email} 계정으로 연결되었습니다.`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setAuthLoading(false);
     }
@@ -141,7 +141,7 @@ export function KeywordsPage() {
       setMessage('키워드가 등록되었습니다.');
       await loadKeywords();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setSubmitting(false);
     }
@@ -159,7 +159,7 @@ export function KeywordsPage() {
       setMessage('키워드가 삭제되었습니다.');
       await loadKeywords();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -405,11 +405,4 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

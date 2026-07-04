@@ -7,9 +7,10 @@ import {
   listAlerts,
   markAlertRead
 } from '../../api/alerts';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import { CategoryCode } from '../../api/keywords';
 import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, StatusBadge } from '../../components/ui';
+import { authRequiredMessage, formatApiError } from '../../lib/apiError';
 
 const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
   { value: 'CAR_ACCESSORY', label: '차량용품' },
@@ -29,6 +30,7 @@ interface AlertsPageProps {
 }
 
 export function AlertsPage({ mode }: AlertsPageProps) {
+  const hasAccessToken = Boolean(getAccessToken());
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -51,7 +53,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
       const response = await listAlerts();
       setAlerts(response.items);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
       setMessage('알림을 읽음 처리했습니다.');
       await loadAlerts();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -91,7 +93,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
       await createAlertRule(payload);
       setMessage('알림 조건을 저장했습니다. 다음 알림 생성 배치부터 적용됩니다.');
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -182,7 +184,10 @@ export function AlertsPage({ mode }: AlertsPageProps) {
               </tbody>
           </DataTable>
           {loading ? <LoadingState>알림을 불러오는 중입니다.</LoadingState> : null}
-          {!loading && alerts.length === 0 ? (
+          {!loading && !hasAccessToken ? (
+            <EmptyState>{authRequiredMessage('알림을 확인')}</EmptyState>
+          ) : null}
+          {!loading && hasAccessToken && alerts.length === 0 ? (
             <EmptyState>아직 확인할 알림이 없습니다.</EmptyState>
           ) : null}
         </section>
@@ -254,7 +259,7 @@ export function AlertsPage({ mode }: AlertsPageProps) {
             <span>위험 제외 후보는 알림에서 제외</span>
           </label>
           <div className="button-row">
-            <button type="submit" className="primary-button" disabled={!getAccessToken()}>
+            <button type="submit" className="primary-button" disabled={!hasAccessToken}>
               조건 저장
             </button>
           </div>
@@ -272,11 +277,4 @@ function formatDateTime(value: string | null) {
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(new Date(value));
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

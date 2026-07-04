@@ -15,8 +15,9 @@ import {
   statusLabels
 } from '../../api/candidates';
 import { CategoryCode, categoryOptions } from '../../api/keywords';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
   { value: 'RECOMMENDED', label: '추천 검토' },
@@ -67,7 +68,7 @@ export function CandidatesPage() {
       setItems(response.items);
       setTotalElements(response.totalElements);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export function CandidatesPage() {
       setMessage('관심 후보로 저장했습니다.');
       await loadCandidates();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -111,7 +112,7 @@ export function CandidatesPage() {
       await loadCandidates();
       setExpandedCandidateId((current) => (current === candidateId ? null : current));
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -131,7 +132,7 @@ export function CandidatesPage() {
       const detail = await getCandidate(candidateId);
       setDetailsById((current) => ({ ...current, [candidateId]: detail }));
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
       setExpandedCandidateId(null);
     } finally {
       setLoadingDetailId(null);
@@ -433,11 +434,4 @@ function formatPercent(value: number | null) {
     return '-';
   }
   return `${value}%`;
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

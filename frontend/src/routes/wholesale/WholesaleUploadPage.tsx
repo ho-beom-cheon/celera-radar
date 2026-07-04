@@ -1,5 +1,5 @@
 import { FormEvent, useId, useMemo, useState } from 'react';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import {
   CsvEncoding,
   WholesaleColumnMapping,
@@ -10,6 +10,7 @@ import {
   previewWholesaleUpload
 } from '../../api/wholesale';
 import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 import type { HelpContentKey } from '../../lib/helpContent';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
@@ -54,7 +55,7 @@ export function WholesaleUploadPage() {
       setMapping(defaultMapping(response.preview.headers));
       setMessage(`${response.preview.originalFilename} preview가 준비됐습니다.`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export function WholesaleUploadPage() {
       setConfirmResult(response);
       setMessage(`저장 완료: 정상 ${response.successCount}건, 오류 ${response.failureCount}건`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -360,11 +361,4 @@ function compactMapping(mapping: WholesaleColumnMapping): WholesaleColumnMapping
 
 function emptyToUndefined(value?: string) {
   return value?.trim() ? value.trim() : undefined;
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }
