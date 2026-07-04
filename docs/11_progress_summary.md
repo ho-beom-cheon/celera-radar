@@ -1664,3 +1664,47 @@ P15 프로젝트 고도화: 4단계 완료
 다음: P15-005 API/Error UX Hardening
 
 ---
+
+## 최신 진행: P15-005 API/Error UX Hardening 완료
+
+`P15-004 Chart Lazy Loading` 이후 후속 작업으로 `P15-005 API/Error UX Hardening`을 완료했다.
+
+반영 내용:
+
+- `formatApiError` 공통 helper 추가
+- `authRequiredMessage` 공통 helper 추가
+- route별 중복 `errorMessage` 함수 제거
+- API 공통 오류 포맷의 message/field 표시 경로 정리
+- 알림 목록 미로그인 상태를 오류 배너가 아닌 empty 안내로 변경
+- 내 상품 마진 미로그인 상태를 오류 배너가 아닌 empty 안내로 변경
+- `docs/beta/P15_API_ERROR_UX_HARDENING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /alerts 미로그인 empty 안내 확인
+- /store/margins 미로그인 empty 안내 확인
+- 두 화면 모두 error banner count 0 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 5단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+```
+
+다음: P15-006 Route UX Hardening 또는 DataTable empty/loading structure
+
+---
