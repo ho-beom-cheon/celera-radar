@@ -27,13 +27,13 @@ P15는 Web SaaS beta 전 화면 품질, 상태 처리, 차트, validation UX를 
 - P15는 MVP 금지 범위인 AI 호출, SmartStore 자동 등록, 도매 direct API 연동을 포함하지 않는다.
 - 외부 API key가 필요한 작업은 아직 진행하지 않았다.
 - Apps in Toss Lite는 이후 단계로 보류한다.
-- P15 stacked PR은 병합 전 base 순서대로 승인/병합해야 한다.
+- P15는 main에 반영된 상태다.
+- 과거 stacked PR은 main 포함 여부 확인 후 superseded로 정리했다.
 
 ## 다음 연결
 
 P15 closeout 이후에는 다음 중 하나를 별도 이슈/브랜치로 분리한다.
 
 - P16 또는 beta readiness 후속 작업
-- PR stack 병합/충돌 정리
 - 실제 외부 API 연동 전 credential 준비 문서
 - 사용자 학습용 프로젝트 회고/구현 설명 문서

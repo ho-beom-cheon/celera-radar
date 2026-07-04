@@ -2084,3 +2084,38 @@ P15 프로젝트 고도화: 13단계 완료
 다음: P15 stacked PR 승인/병합 준비 또는 P16/beta readiness 후속 작업
 
 ---
+
+## 최신 진행: P15 post-merge cleanup 진행
+
+`P15-013 P15 closeout review` 병합 이후 후속 정리 작업으로 `P15 post-merge cleanup`을 진행했다.
+
+반영 내용:
+
+- PR #92를 main에 병합해 P15 closeout 문서까지 main 반영 완료
+- `docs/beta/P15_CLOSEOUT_REVIEW.md`를 병합 전 기준에서 post-merge 기준으로 갱신
+- `docs/beta/README.md`의 P15 현재 기준을 main 반영 상태로 갱신
+- old stacked PR #67, #69, #71, #73, #75, #77, #79, #81, #83, #85, #87, #90의 head commit이 main에 포함된 것을 확인
+- 해당 old stacked PR에 superseded 코멘트를 남기고 closed 상태로 정리
+
+검증:
+
+```text
+git diff --check
+PASS
+
+old stacked PR main 포함 여부 확인
+PASS
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: main 반영 및 post-merge cleanup 진행 중
+- P15-001 ~ P15-012: main 반영 완료
+- P15-013 P15 closeout review: main 반영 완료
+- P15 post-merge cleanup: 완료
+```
+
+다음: P16/beta readiness 후속 작업 또는 외부 API 연동 전 credential 준비 가이드
+
+---
