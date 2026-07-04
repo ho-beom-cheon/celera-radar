@@ -150,6 +150,42 @@ Request:
 }
 ```
 
+Response:
+
+```json
+{
+  "userId": 1,
+  "email": "seller@example.com",
+  "plan": "FREE",
+  "accessToken": "jwt...",
+  "refreshToken": "jwt..."
+}
+```
+
+### POST /auth/refresh
+
+Refresh token으로 새 access token과 refresh token을 발급한다.
+
+Request:
+
+```json
+{
+  "refreshToken": "jwt..."
+}
+```
+
+Response:
+
+```json
+{
+  "userId": 1,
+  "email": "seller@example.com",
+  "plan": "FREE",
+  "accessToken": "jwt...",
+  "refreshToken": "jwt..."
+}
+```
+
 ---
 
 ## 4.2 Keyword API
