@@ -2119,3 +2119,32 @@ P15 프로젝트 고도화: main 반영 및 post-merge cleanup 진행 중
 다음: P16/beta readiness 후속 작업 또는 외부 API 연동 전 credential 준비 가이드
 
 ---
+
+## 최신 진행: External API credential preparation guide 완료
+
+P15 post-merge cleanup 이후 후속 작업으로 실제 외부 API 연동 전 credential 준비 가이드를 추가했다.
+
+반영 내용:
+
+- `docs/13_external_api_credentials.md` 추가
+- Naver Search API, Shopping Insight API, NAVER API HUB 이관 일정을 문서화
+- 현재 코드가 사용하는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_DATALAB_DAILY_QUOTA` 적용 위치 정리
+- SmartStore Commerce API는 OAuth2 client credentials 방식이며, 현재 프로젝트에는 실제 credential read 구현이 없음을 명시
+- README 문서 목록과 backend 실행 안내에 credential 가이드 참조 추가
+
+검증:
+
+```text
+git diff --check
+PASS
+```
+
+주의사항:
+
+```text
+2026-07-31 이후 Search API, Search Trend API, Shopping Insight API는 개발자센터 신규 신청이 차단되므로 신규 운영 연동은 NAVER API HUB 기준 전환 설계를 먼저 검토해야 한다.
+```
+
+다음: NAVER API HUB 기준 외부 API adapter 전환 설계 또는 P16/beta readiness 후속 작업
+
+---
