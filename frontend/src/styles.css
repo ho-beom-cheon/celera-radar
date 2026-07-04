@@ -111,7 +111,8 @@ button:disabled {
 
 .nav-item:hover,
 .nav-item:focus-visible,
-.nav-item-active {
+.nav-item-active,
+.nav-item[aria-current="page"] {
   color: var(--sr-color-on-brand);
   background: var(--sr-color-surface-hover);
   outline: none;
@@ -167,6 +168,22 @@ h2 {
   grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: var(--sr-space-6);
   margin-bottom: var(--sr-space-12);
+}
+
+.not-found-page {
+  display: grid;
+  gap: var(--sr-space-8);
+  max-width: 760px;
+}
+
+.not-found-page code {
+  display: inline-block;
+  max-width: 100%;
+  padding: var(--sr-space-1) var(--sr-space-3);
+  border-radius: var(--sr-radius-sm);
+  color: var(--sr-color-text-primary);
+  background: var(--sr-color-surface-subtle);
+  overflow-wrap: anywhere;
 }
 
 .summary-card,
