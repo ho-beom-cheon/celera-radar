@@ -183,6 +183,9 @@ Response item:
   "analysisStatus": "SUCCESS",
   "lastAnalyzedAt": "2026-07-02T07:12:00+09:00",
   "lastSnapshotDate": "2026-07-02",
+  "latestMinPrice": 4900,
+  "latestAvgPrice": 12300,
+  "latestCompetitionLevel": "HIGH",
   "createdAt": "2026-07-01T10:00:00+09:00",
   "updatedAt": "2026-07-02T07:12:00+09:00"
 }
@@ -295,6 +298,7 @@ Response:
   "minPrice": 4900,
   "maxPrice": 29900,
   "avgPrice": 12300,
+  "competitionLevel": "HIGH",
   "fetchedAt": "2026-07-03T07:12:00+09:00",
   "topItems": [
     {
