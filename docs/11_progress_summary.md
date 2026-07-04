@@ -1894,3 +1894,52 @@ P15 프로젝트 고도화: 9단계 완료
 다음: P15-010 Candidate filter validation UX 또는 Form validation pattern expansion
 
 ---
+
+## 최신 진행: P15-010 Candidate filter validation UX 완료
+
+`P15-009 Form validation UX` 이후 후속 작업으로 `P15-010 Candidate filter validation UX`를 완료했다.
+
+반영 내용:
+
+- 후보 필터 폼에 `FieldMessage` 패턴 적용
+- 최소 점수는 빈 값 허용, 값이 있으면 0~100 범위 검증
+- 최소 마진율은 빈 값 허용, 값이 있으면 0 이상 검증
+- 검증 오류가 있으면 후보 조회 API 호출 전에 중단
+- 조회 버튼 하단에 비활성화 사유 표시
+- 공백 입력은 빈 필터로 처리하도록 query payload 변환 기준을 `trim()`으로 정리
+- `docs/beta/P15_CANDIDATE_FILTER_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /candidates 초기 유효 상태에서 조회 버튼 활성 확인
+- 최소 점수 120 입력 시 field error와 버튼 하단 사유 확인
+- fake token/backend 미연결 상태라 후보 목록 초기 조회 CORS/fetch console error 발생
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 10단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+```
+
+다음: P15-011 Margin calculator validation UX
+
+---
