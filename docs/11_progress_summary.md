@@ -441,15 +441,49 @@ docs/10_database_design.md 14.1 기준 5/7 완료
 
 ---
 
-## 11. 다음 작업 제안
+## 11. P2-003 구현 완료
 
-다음 구현 작업은 `P2-003 분석 API 및 snapshot 저장`이 적절하다.
+`docs/10_database_design.md` 기준으로 `P2-003 분석 API 및 snapshot 저장` 정합성 정리를 완료했다.
+
+반영 내용:
+
+- `POST /api/v1/keywords/{keywordId}/analyze/shopping` 추가
+- `GET /api/v1/keywords/{keywordId}/shopping-snapshot/latest` 추가
+- 분석 실행 응답에 `cached`, `searchDate`, `sortType`, `totalCount`, `minPrice`, `maxPrice`, `avgPrice`, `fetchedAt` 포함
+- 상위 item 응답에 `rankNo`, `title`, `productUrl`, `imageUrl`, `lowPrice`, `mallName`, `category1~4` 포함
+- 같은 `keyword_id + search_date + sort_type` snapshot이 있으면 외부 API를 재호출하지 않고 캐시 응답 반환
+- 분석 성공 시 keyword `analysisStatus`, `lastAnalyzedAt`, `lastSnapshotDate` 갱신
+- 분석 실패 시 keyword `analysisStatus=FAILED` 및 `api_call_logs` 실패 이력 저장 유지
+- snapshot 미존재 시 최신 snapshot 조회 API는 `ANALYSIS_NOT_READY` 반환
+- controller integration test와 service test 보강
+- `docs/02_interface_design.md` 최소 갱신
+
+검증:
+
+```text
+cd backend && ./gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행율:
+
+```text
+docs/10_database_design.md 14.1 기준 6/7 완료
+완료: P0-001, P1-001, P1-002, P2-001, P2-002, P2-003
+다음: P2-004
+```
+
+---
+
+## 12. 다음 작업 제안
+
+다음 구현 작업은 `P2-004 상품 카드 화면`이 적절하다.
 
 작업 범위:
 
-- 키워드 분석 실행 API 정리
-- 최신 shopping snapshot 조회 API 정리
-- 같은 `keyword_id + search_date + sort_type` 성공 snapshot이 있으면 외부 API를 재호출하지 않는 캐시 정책 검증
-- 분석 성공/실패 시 keyword `analysisStatus`, `lastAnalyzedAt`, `lastSnapshotDate` 갱신 정합성 확인
-- `api_call_logs` 저장 흐름을 서비스 테스트에서 검증
-- 외부 Naver API는 직접 호출하지 않고 mock 기반으로만 검증
+- frontend keyword 상세 화면에서 분석 실행 버튼 추가
+- 최신 shopping snapshot 조회 및 가격 요약 표시
+- 상위 상품 카드 10개 표시
+- imageUrl 누락/로드 실패 placeholder 처리
+- frontend keyword API 타입을 P2-003 backend 응답과 정합화
+- `npm run build`와 브라우저 화면 확인
