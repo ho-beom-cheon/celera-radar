@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ApiRequestError, apiBaseUrl, getAccessToken } from '../api/httpClient';
+import { type ReactNode, useEffect, useState } from 'react';
+import { apiBaseUrl, getAccessToken } from '../api/httpClient';
 import { listCandidates } from '../api/candidates';
 import { AlertsPage } from '../routes/alerts/AlertsPage';
 import { CandidateDetailPage } from '../routes/candidates/CandidateDetailPage';
@@ -10,7 +10,8 @@ import { MarginCalculatorPage } from '../routes/margin/MarginCalculatorPage';
 import { StoreMarginsPage } from '../routes/store/StoreMarginsPage';
 import { WholesalePage } from '../routes/wholesale/WholesalePage';
 import { WholesaleUploadPage } from '../routes/wholesale/WholesaleUploadPage';
-import { MetricCard } from '../components/ui';
+import { EmptyState, ErrorState, LoadingState, MetricCard } from '../components/ui';
+import { authRequiredMessage, formatApiError } from '../lib/apiError';
 
 const navigationItems = [
   { label: '대시보드', href: '/' },
@@ -22,10 +23,69 @@ const navigationItems = [
   { label: '알림', href: '/alerts' }
 ];
 
+interface RouteView {
+  content: ReactNode;
+  activeNavHref: string | null;
+}
+
 export function App() {
-  const path = window.location.pathname;
-  const keywordDetailMatch = path.match(/^\/keywords\/(\d+)$/);
-  const candidateDetailMatch = path.match(/^\/candidates\/(\d+)$/);
+  const [path, setPath] = useState(() => normalizePath(window.location.pathname));
+  const route = resolveRoute(path);
+
+  useEffect(() => {
+    const normalizedPath = normalizePath(window.location.pathname);
+    if (normalizedPath !== window.location.pathname) {
+      window.history.replaceState(null, '', buildHref(normalizedPath, window.location.search, window.location.hash));
+      setPath(normalizedPath);
+    }
+
+    function handlePopState() {
+      setPath(normalizePath(window.location.pathname));
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      const anchor = event.target.closest('a[href]');
+      if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+      if (anchor.target && anchor.target !== '_self') {
+        return;
+      }
+      if (anchor.hasAttribute('download')) {
+        return;
+      }
+
+      const url = new URL(anchor.href);
+      if (url.origin !== window.location.origin) {
+        return;
+      }
+
+      const nextHref = buildHref(url.pathname, url.search, url.hash);
+      const currentHref = buildHref(window.location.pathname, window.location.search, window.location.hash);
+      event.preventDefault();
+      if (nextHref === currentHref) {
+        return;
+      }
+
+      window.history.pushState(null, '', nextHref);
+      setPath(normalizePath(url.pathname));
+      window.scrollTo({ top: 0, left: 0 });
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []);
 
   return (
     <div className="app-shell">
@@ -41,7 +101,8 @@ export function App() {
             <a
               key={item.href}
               href={item.href}
-              className={`nav-item ${isActiveNavItem(path, item.href) ? 'nav-item-active' : ''}`}
+              className={`nav-item ${route.activeNavHref === item.href ? 'nav-item-active' : ''}`}
+              aria-current={route.activeNavHref === item.href ? 'page' : undefined}
             >
               {item.label}
             </a>
@@ -50,47 +111,111 @@ export function App() {
       </aside>
 
       <main className="content">
-        {path === '/keywords' ? <KeywordsPage /> : null}
-        {keywordDetailMatch ? <KeywordDetailPage keywordId={Number(keywordDetailMatch[1])} /> : null}
-        {candidateDetailMatch ? (
-          <CandidateDetailPage candidateId={Number(candidateDetailMatch[1])} />
-        ) : null}
-        {path === '/candidates' ? <CandidatesPage /> : null}
-        {path === '/wholesale/uploads' ? <WholesaleUploadPage /> : null}
-        {path === '/wholesale' ? <WholesalePage /> : null}
-        {path === '/store/margins' ? <StoreMarginsPage /> : null}
-        {path === '/margin' ? <MarginCalculatorPage /> : null}
-        {path === '/alerts' ? <AlertsPage mode="list" /> : null}
-        {path === '/alert-rules' ? <AlertsPage mode="rules" /> : null}
-        {path === '/' ? <Dashboard /> : null}
+        {route.content}
       </main>
     </div>
   );
 }
 
-function isActiveNavItem(path: string, href: string) {
-  if (href === '/') {
-    return path === '/';
+function resolveRoute(path: string): RouteView {
+  const keywordDetailMatch = path.match(/^\/keywords\/(\d+)$/);
+  const candidateDetailMatch = path.match(/^\/candidates\/(\d+)$/);
+
+  if (path === '/') {
+    return { content: <Dashboard />, activeNavHref: '/' };
   }
-  return path === href || path.startsWith(`${href}/`);
+  if (path === '/keywords') {
+    return { content: <KeywordsPage />, activeNavHref: '/keywords' };
+  }
+  if (keywordDetailMatch) {
+    return { content: <KeywordDetailPage keywordId={Number(keywordDetailMatch[1])} />, activeNavHref: '/keywords' };
+  }
+  if (path === '/candidates') {
+    return { content: <CandidatesPage />, activeNavHref: '/candidates' };
+  }
+  if (candidateDetailMatch) {
+    return { content: <CandidateDetailPage candidateId={Number(candidateDetailMatch[1])} />, activeNavHref: '/candidates' };
+  }
+  if (path === '/wholesale/uploads') {
+    return { content: <WholesaleUploadPage />, activeNavHref: '/wholesale/uploads' };
+  }
+  if (path === '/wholesale') {
+    return { content: <WholesalePage />, activeNavHref: '/wholesale/uploads' };
+  }
+  if (path === '/store/margins') {
+    return { content: <StoreMarginsPage />, activeNavHref: '/store/margins' };
+  }
+  if (path === '/margin') {
+    return { content: <MarginCalculatorPage />, activeNavHref: '/margin' };
+  }
+  if (path === '/alerts') {
+    return { content: <AlertsPage mode="list" />, activeNavHref: '/alerts' };
+  }
+  if (path === '/alert-rules') {
+    return { content: <AlertsPage mode="rules" />, activeNavHref: '/alerts' };
+  }
+
+  return { content: <NotFoundPage path={path} />, activeNavHref: null };
 }
 
+function normalizePath(pathname: string) {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
+function buildHref(pathname: string, search = '', hash = '') {
+  return `${normalizePath(pathname)}${search}${hash}`;
+}
+
+function NotFoundPage({ path }: { path: string }) {
+  return (
+    <section className="not-found-page" aria-labelledby="not-found-title">
+      <div>
+        <p className="eyebrow">Not Found</p>
+        <h1 id="not-found-title">페이지를 찾을 수 없습니다</h1>
+      </div>
+      <EmptyState>
+        요청한 경로 <code>{path}</code>는 셀러레이더에서 제공하지 않는 화면입니다.
+      </EmptyState>
+      <div className="button-row">
+        <a className="primary-button" href="/">
+          대시보드
+        </a>
+        <a className="secondary-button" href="/keywords">
+          키워드 레이더
+        </a>
+      </div>
+    </section>
+  );
+}
+
+const defaultDashboardSummaryItems = [
+  { label: '추천 검토 후보', value: '-' },
+  { label: '검토 후보', value: '-' },
+  { label: '보류', value: '-' },
+  { label: '전체 후보', value: '-' }
+];
+
 function Dashboard() {
-  const [statusItems, setStatusItems] = useState([
-    { label: '추천 검토 후보', value: '0' },
-    { label: '검토 후보', value: '0' },
-    { label: '보류', value: '0' },
-    { label: '분석 대기', value: '0' }
-  ]);
-  const [message, setMessage] = useState('');
+  const [statusItems, setStatusItems] = useState(defaultDashboardSummaryItems);
+  const [summaryStatus, setSummaryStatus] = useState<'loading' | 'signed-out' | 'ready' | 'error'>('loading');
+  const [summaryMessage, setSummaryMessage] = useState('');
+  const [totalCandidates, setTotalCandidates] = useState(0);
 
   useEffect(() => {
     let ignore = false;
     async function loadSummary() {
       if (!getAccessToken()) {
-        setMessage('계정 연결 후 후보 요약을 불러옵니다.');
+        setStatusItems(defaultDashboardSummaryItems);
+        setTotalCandidates(0);
+        setSummaryStatus('signed-out');
+        setSummaryMessage('');
         return;
       }
+      setSummaryStatus('loading');
+      setSummaryMessage('');
       try {
         const response = await listCandidates({ page: 0, size: 100 });
         if (ignore) {
@@ -105,12 +230,16 @@ function Dashboard() {
           { label: '보류', value: String(hold) },
           { label: '전체 후보', value: String(response.totalElements) }
         ]);
-        setMessage('');
+        setTotalCandidates(response.totalElements);
+        setSummaryStatus('ready');
       } catch (error) {
         if (ignore) {
           return;
         }
-        setMessage(error instanceof ApiRequestError ? error.message : 'API 서버 연결을 확인하세요.');
+        setStatusItems(defaultDashboardSummaryItems);
+        setTotalCandidates(0);
+        setSummaryStatus('error');
+        setSummaryMessage(formatApiError(error, '후보 요약을 불러오지 못했습니다.'));
       }
     }
     void loadSummary();
@@ -129,18 +258,18 @@ function Dashboard() {
         <div className="api-status">API {apiBaseUrl}</div>
       </header>
 
-      {message ? <div className="notice">{message}</div> : null}
-
       <section className="summary-grid" aria-label="분석 상태 요약">
         {statusItems.map((item) => (
           <MetricCard
             key={item.label}
             label={item.label}
             value={item.value}
-            helpKey={item.label.includes('후보') ? 'candidateCount' : undefined}
+            helpKey={item.label.includes('후보') || item.label.includes('전체') ? 'candidateCount' : undefined}
           />
         ))}
       </section>
+
+      <DashboardSummaryState status={summaryStatus} message={summaryMessage} totalCandidates={totalCandidates} />
 
       <section className="work-panel" aria-labelledby="next-work-title">
         <div>
@@ -168,4 +297,28 @@ function Dashboard() {
       </section>
     </>
   );
+}
+
+function DashboardSummaryState({
+  status,
+  message,
+  totalCandidates
+}: {
+  status: 'loading' | 'signed-out' | 'ready' | 'error';
+  message: string;
+  totalCandidates: number;
+}) {
+  if (status === 'loading') {
+    return <LoadingState>후보 요약을 불러오는 중입니다.</LoadingState>;
+  }
+  if (status === 'signed-out') {
+    return <EmptyState>{authRequiredMessage('후보 요약을 확인')}</EmptyState>;
+  }
+  if (status === 'error') {
+    return <ErrorState>{message}</ErrorState>;
+  }
+  if (totalCandidates === 0) {
+    return <EmptyState>아직 후보가 없습니다. 키워드 분석 또는 도매 CSV에서 데이터 기반 후보를 만들어 보세요.</EmptyState>;
+  }
+  return null;
 }

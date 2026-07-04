@@ -15,8 +15,18 @@ import {
   statusLabels
 } from '../../api/candidates';
 import { CategoryCode, categoryOptions } from '../../api/keywords';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState } from '../../components/ui';
+import { getAccessToken } from '../../api/httpClient';
+import {
+  DataTable,
+  DataTableStateRow,
+  EmptyState,
+  ErrorState,
+  FieldMessage,
+  HelpTooltip,
+  LoadingState
+} from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
+import { blankToNumberFilter, hasFormErrors, isBlank, parseFiniteNumber } from '../../lib/formValidation';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
   { value: 'RECOMMENDED', label: '추천 검토' },
@@ -31,7 +41,13 @@ const sourceOptions: Array<{ value: CandidateSource; label: string }> = [
   { value: 'API', label: 'API' }
 ];
 
+interface CandidateFilterErrors {
+  minScore?: string;
+  minMarginRate?: string;
+}
+
 export function CandidatesPage() {
+  const hasAccessToken = Boolean(getAccessToken());
   const [items, setItems] = useState<CandidateListItem[]>([]);
   const [detailsById, setDetailsById] = useState<Record<number, CandidateDetail>>({});
   const [expandedCandidateId, setExpandedCandidateId] = useState<number | null>(null);
@@ -45,11 +61,27 @@ export function CandidatesPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [filterErrors, setFilterErrors] = useState<CandidateFilterErrors>({});
+  const liveFilterErrors = validateCandidateFilterForm(minScore, minMarginRate);
+  const minScoreFieldError = filterErrors.minScore ?? liveFilterErrors.minScore;
+  const minMarginRateFieldError = filterErrors.minMarginRate ?? liveFilterErrors.minMarginRate;
+  const hasVisibleFilterErrors = Boolean(minScoreFieldError || minMarginRateFieldError);
+  const filterSubmitReason = getCandidateFilterSubmitReason(
+    hasAccessToken,
+    loading,
+    minScore,
+    minMarginRate
+  );
 
   const loadCandidates = useCallback(async () => {
-    if (!getAccessToken()) {
+    if (!hasAccessToken) {
       setItems([]);
       setTotalElements(0);
+      return;
+    }
+    const nextErrors = validateCandidateFilterForm(minScore, minMarginRate);
+    setFilterErrors(nextErrors);
+    if (hasFormErrors(nextErrors)) {
       return;
     }
     setLoading(true);
@@ -59,19 +91,19 @@ export function CandidatesPage() {
         grade,
         categoryCode,
         source,
-        minScore: minScore === '' ? '' : Number(minScore),
-        minMarginRate: minMarginRate === '' ? '' : Number(minMarginRate),
+        minScore: blankToNumberFilter(minScore),
+        minMarginRate: blankToNumberFilter(minMarginRate),
         page: 0,
         size: 50
       });
       setItems(response.items);
       setTotalElements(response.totalElements);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
-  }, [categoryCode, grade, minMarginRate, minScore, source]);
+  }, [categoryCode, grade, hasAccessToken, minMarginRate, minScore, source]);
 
   useEffect(() => {
     void loadCandidates();
@@ -79,6 +111,11 @@ export function CandidatesPage() {
 
   async function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const nextErrors = validateCandidateFilterForm(minScore, minMarginRate);
+    setFilterErrors(nextErrors);
+    if (!hasAccessToken || loading || hasFormErrors(nextErrors)) {
+      return;
+    }
     await loadCandidates();
   }
 
@@ -88,6 +125,7 @@ export function CandidatesPage() {
     setSource('');
     setMinScore('');
     setMinMarginRate('');
+    setFilterErrors({});
   }
 
   async function handleSave(candidateId: number) {
@@ -98,7 +136,7 @@ export function CandidatesPage() {
       setMessage('관심 후보로 저장했습니다.');
       await loadCandidates();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -111,7 +149,7 @@ export function CandidatesPage() {
       await loadCandidates();
       setExpandedCandidateId((current) => (current === candidateId ? null : current));
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -131,7 +169,7 @@ export function CandidatesPage() {
       const detail = await getCandidate(candidateId);
       setDetailsById((current) => ({ ...current, [candidateId]: detail }));
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
       setExpandedCandidateId(null);
     } finally {
       setLoadingDetailId(null);
@@ -208,8 +246,19 @@ export function CandidatesPage() {
               min="0"
               max="100"
               value={minScore}
-              onChange={(event) => setMinScore(event.target.value)}
+              onChange={(event) => {
+                setMinScore(event.target.value);
+                setFilterErrors((current) => ({ ...current, minScore: undefined }));
+              }}
+              aria-invalid={Boolean(minScoreFieldError)}
+              aria-describedby="candidate-filter-min-score-message"
             />
+            <FieldMessage
+              id="candidate-filter-min-score-message"
+              tone={minScoreFieldError ? 'error' : 'hint'}
+            >
+              {minScoreFieldError ?? '0~100 사이로 입력하세요.'}
+            </FieldMessage>
           </label>
           <label className="field">
             <span>최소 마진율</span>
@@ -218,14 +267,30 @@ export function CandidatesPage() {
               min="0"
               step="0.1"
               value={minMarginRate}
-              onChange={(event) => setMinMarginRate(event.target.value)}
+              onChange={(event) => {
+                setMinMarginRate(event.target.value);
+                setFilterErrors((current) => ({ ...current, minMarginRate: undefined }));
+              }}
+              aria-invalid={Boolean(minMarginRateFieldError)}
+              aria-describedby="candidate-filter-min-margin-message"
             />
+            <FieldMessage
+              id="candidate-filter-min-margin-message"
+              tone={minMarginRateFieldError ? 'error' : 'hint'}
+            >
+              {minMarginRateFieldError ?? '0 이상 숫자로 입력하세요.'}
+            </FieldMessage>
           </label>
         </div>
         <div className="button-row">
-          <button type="submit" className="primary-button" disabled={!getAccessToken() || loading}>
-            조회
+          <button type="submit" className="primary-button" disabled={Boolean(filterSubmitReason)}>
+            {loading ? '조회 중' : '조회'}
           </button>
+          {filterSubmitReason ? (
+            <p className={`form-action-hint ${hasVisibleFilterErrors ? 'form-action-hint-error' : ''}`}>
+              {filterSubmitReason}
+            </p>
+          ) : null}
           <a className="secondary-button" href="/wholesale/uploads">
             CSV 후보 생성
           </a>
@@ -332,26 +397,33 @@ export function CandidatesPage() {
                     </td>
                   </tr>
                   {expandedCandidateId === item.candidateId ? (
-                    <tr className="candidate-expanded-row">
-                      <td colSpan={8}>
-                        {loadingDetailId === item.candidateId ? (
-                          <LoadingState>점수 구성을 불러오는 중입니다.</LoadingState>
-                        ) : (
-                          <CandidateBreakdown detail={detailsById[item.candidateId]} />
-                        )}
-                      </td>
-                    </tr>
+                    <DataTableStateRow className="candidate-expanded-row" colSpan={8}>
+                      {loadingDetailId === item.candidateId ? (
+                        <LoadingState>점수 구성을 불러오는 중입니다.</LoadingState>
+                      ) : (
+                        <CandidateBreakdown detail={detailsById[item.candidateId]} />
+                      )}
+                    </DataTableStateRow>
                   ) : null}
                 </Fragment>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={8}>
+                  <LoadingState>후보를 불러오는 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !hasAccessToken ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && hasAccessToken && items.length === 0 ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>후보를 불러오는 중입니다.</LoadingState> : null}
-        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 후보를 확인할 수 있습니다.</EmptyState> : null}
-        {!loading && getAccessToken() && items.length === 0 ? (
-          <EmptyState>아직 후보가 없습니다. 도매 CSV에서 후보 생성을 먼저 실행하세요.</EmptyState>
-        ) : null}
       </section>
     </div>
   );
@@ -435,9 +507,32 @@ function formatPercent(value: number | null) {
   return `${value}%`;
 }
 
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
+function validateCandidateFilterForm(minScore: string, minMarginRate: string): CandidateFilterErrors {
+  const errors: CandidateFilterErrors = {};
+  const parsedMinScore = parseFiniteNumber(minScore);
+  const parsedMinMarginRate = parseFiniteNumber(minMarginRate);
+
+  if (!isBlank(minScore) && (parsedMinScore === undefined || parsedMinScore < 0 || parsedMinScore > 100)) {
+    errors.minScore = '최소 점수는 0~100 사이여야 합니다.';
   }
-  return '요청을 처리하지 못했습니다.';
+  if (!isBlank(minMarginRate) && (parsedMinMarginRate === undefined || parsedMinMarginRate < 0)) {
+    errors.minMarginRate = '최소 마진율은 0 이상이어야 합니다.';
+  }
+  return errors;
+}
+
+function getCandidateFilterSubmitReason(
+  hasAccessToken: boolean,
+  loading: boolean,
+  minScore: string,
+  minMarginRate: string
+) {
+  if (!hasAccessToken) {
+    return '계정 연결 후 후보를 조회할 수 있습니다.';
+  }
+  if (loading) {
+    return '후보를 조회하는 중입니다.';
+  }
+  const errors = validateCandidateFilterForm(minScore, minMarginRate);
+  return errors.minScore ?? errors.minMarginRate ?? '';
 }

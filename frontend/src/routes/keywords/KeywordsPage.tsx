@@ -12,14 +12,22 @@ import {
   statusLabels
 } from '../../api/keywords';
 import {
-  ApiRequestError,
   clearAccessToken,
   getAccessToken,
   getStoredPlan,
   setAccessToken,
   setStoredPlan
 } from '../../api/httpClient';
-import { DataTable, EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui';
+import {
+  DataTable,
+  DataTableStateRow,
+  EmptyState,
+  ErrorState,
+  FieldMessage,
+  LoadingState,
+  StatusBadge
+} from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 const planLimits: Record<Plan, number> = {
   FREE: 3,
@@ -34,6 +42,10 @@ const statusOptions: Array<{ value: AnalysisStatus; label: string }> = [
   { value: 'FAILED', label: '실패' },
   { value: 'SKIPPED', label: '건너뜀' }
 ];
+
+interface KeywordFormErrors {
+  keyword?: string;
+}
 
 export function KeywordsPage() {
   const [accessToken, setTokenState] = useState(() => getAccessToken());
@@ -55,9 +67,14 @@ export function KeywordsPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [keywordFormErrors, setKeywordFormErrors] = useState<KeywordFormErrors>({});
 
   const limit = planLimits[plan];
   const limitReached = usageCount >= limit;
+  const keywordMessageId = 'keyword-create-message';
+  const keywordFieldError = keywordFormErrors.keyword ?? getInlineKeywordError(keyword);
+  const keywordSubmitReason = getKeywordSubmitReason(accessToken, submitting, limitReached, keyword);
+  const keywordSubmitReasonIsError = Boolean(keywordFieldError) || limitReached;
 
   const usageText = useMemo(
     () => `${plan} 플랜 ${limit}개 중 ${usageCount}개 사용`,
@@ -85,7 +102,7 @@ export function KeywordsPage() {
       setKeywords(filteredPage.items);
       setUsageCount(usagePage.totalElements);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -110,7 +127,7 @@ export function KeywordsPage() {
       setPlan(response.plan);
       setMessage(`${response.email} 계정으로 연결되었습니다.`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setAuthLoading(false);
     }
@@ -126,7 +143,9 @@ export function KeywordsPage() {
 
   async function handleCreateKeyword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!accessToken || submitting || limitReached) {
+    const nextErrors = validateKeywordForm(keyword);
+    setKeywordFormErrors(nextErrors);
+    if (!accessToken || submitting || limitReached || Object.keys(nextErrors).length > 0) {
       return;
     }
     setSubmitting(true);
@@ -134,14 +153,15 @@ export function KeywordsPage() {
     setMessage('');
     try {
       await createKeyword({
-        keyword,
+        keyword: keyword.trim(),
         category
       });
       setKeyword('');
+      setKeywordFormErrors({});
       setMessage('키워드가 등록되었습니다.');
       await loadKeywords();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setSubmitting(false);
     }
@@ -159,7 +179,7 @@ export function KeywordsPage() {
       setMessage('키워드가 삭제되었습니다.');
       await loadKeywords();
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     }
   }
 
@@ -247,10 +267,18 @@ export function KeywordsPage() {
                 value={keyword}
                 minLength={2}
                 maxLength={50}
-                onChange={(event) => setKeyword(event.target.value)}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setKeywordFormErrors({});
+                }}
                 placeholder="차량용 수납함"
                 disabled={!accessToken || limitReached}
+                aria-invalid={Boolean(keywordFieldError)}
+                aria-describedby={keywordMessageId}
               />
+              <FieldMessage id={keywordMessageId} tone={keywordFieldError ? 'error' : 'hint'}>
+                {keywordFieldError ?? '2~50자로 입력하세요.'}
+              </FieldMessage>
             </label>
             <label className="field">
               <span>카테고리</span>
@@ -271,10 +299,15 @@ export function KeywordsPage() {
             <button
               type="submit"
               className="primary-button"
-              disabled={!accessToken || submitting || keyword.trim().length < 2 || limitReached}
+              disabled={Boolean(keywordSubmitReason)}
             >
-              등록
+              {submitting ? '등록 중' : '등록'}
             </button>
+            {keywordSubmitReason ? (
+              <p className={`form-action-hint ${keywordSubmitReasonIsError ? 'form-action-hint-error' : ''}`}>
+                {keywordSubmitReason}
+              </p>
+            ) : null}
           </div>
         </form>
       </section>
@@ -366,14 +399,23 @@ export function KeywordsPage() {
                   </td>
                 </tr>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={8}>
+                  <LoadingState>불러오는 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !accessToken ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>계정 연결 후 키워드를 등록할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && accessToken && keywords.length === 0 ? (
+                <DataTableStateRow colSpan={8}>
+                  <EmptyState>아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>불러오는 중입니다.</LoadingState> : null}
-        {!loading && !accessToken ? <EmptyState>계정 연결 후 키워드를 등록할 수 있습니다.</EmptyState> : null}
-        {!loading && accessToken && keywords.length === 0 ? (
-          <EmptyState>아직 등록한 키워드가 없습니다. 관심 상품 키워드를 추가하세요.</EmptyState>
-        ) : null}
       </section>
     </div>
   );
@@ -384,6 +426,46 @@ function categoryLabel(category: KeywordCategory | null) {
     return '-';
   }
   return categoryOptions.find((option) => option.value === category)?.label ?? category;
+}
+
+function validateKeywordForm(value: string): KeywordFormErrors {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return { keyword: '키워드를 입력하세요.' };
+  }
+  if (trimmed.length < 2) {
+    return { keyword: '키워드는 2자 이상 입력하세요.' };
+  }
+  if (trimmed.length > 50) {
+    return { keyword: '키워드는 50자 이하로 입력하세요.' };
+  }
+  return {};
+}
+
+function getInlineKeywordError(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.length > 0 && trimmed.length < 2) {
+    return '키워드는 2자 이상 입력하세요.';
+  }
+  return undefined;
+}
+
+function getKeywordSubmitReason(
+  accessToken: string | null,
+  submitting: boolean,
+  limitReached: boolean,
+  value: string
+) {
+  if (!accessToken) {
+    return '계정 연결 후 등록할 수 있습니다.';
+  }
+  if (limitReached) {
+    return '플랜 한도에 도달했습니다.';
+  }
+  if (submitting) {
+    return '키워드를 등록하는 중입니다.';
+  }
+  return validateKeywordForm(value).keyword ?? '';
 }
 
 function formatDateTime(value: string | null) {
@@ -405,11 +487,4 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

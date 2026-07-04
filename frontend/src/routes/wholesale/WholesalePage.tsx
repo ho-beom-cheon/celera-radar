@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import {
   CsvEncoding,
   WholesaleFile,
@@ -10,7 +10,8 @@ import {
   updateWholesaleColumnMapping,
   uploadWholesaleFile
 } from '../../api/wholesale';
-import { DataTable, EmptyState, ErrorState, LoadingState } from '../../components/ui';
+import { DataTable, DataTableStateRow, EmptyState, ErrorState, LoadingState } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
   { value: 'AUTO', label: '자동 감지' },
@@ -55,7 +56,7 @@ export function WholesalePage() {
       setMessage(`${response.originalFilename} 업로드가 완료되었습니다.`);
       applyDefaultMapping(response.detectedColumns);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ export function WholesalePage() {
       setWholesaleFile(response);
       setMessage('컬럼 매핑이 저장되었습니다.');
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ export function WholesalePage() {
       setRows(rowPage.items);
       setMessage(`파싱 완료: 정상 ${parseResult.parsedCount}건, 오류 ${parseResult.invalidCount}건`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -119,7 +120,7 @@ export function WholesalePage() {
       setSkippedCount(response.skippedCount);
       setMessage(`후보 생성 완료: 신규 ${response.generatedCount}건, 중복 제외 ${response.skippedCount}건`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -277,14 +278,23 @@ export function WholesalePage() {
                   <td>{row.errorMessage ?? '-'}</td>
                 </tr>
               ))}
+              {loading ? (
+                <DataTableStateRow colSpan={7}>
+                  <LoadingState>처리 중입니다.</LoadingState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && !getAccessToken() ? (
+                <DataTableStateRow colSpan={7}>
+                  <EmptyState>키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
+              {!loading && getAccessToken() && rows.length === 0 ? (
+                <DataTableStateRow colSpan={7}>
+                  <EmptyState>업로드 후 컬럼 매핑과 파싱을 실행하세요.</EmptyState>
+                </DataTableStateRow>
+              ) : null}
             </tbody>
         </DataTable>
-
-        {loading ? <LoadingState>처리 중입니다.</LoadingState> : null}
-        {!loading && !getAccessToken() ? <EmptyState>키워드 레이더에서 계정 연결 후 CSV를 업로드할 수 있습니다.</EmptyState> : null}
-        {!loading && getAccessToken() && rows.length === 0 ? (
-          <EmptyState>업로드 후 컬럼 매핑과 파싱을 실행하세요.</EmptyState>
-        ) : null}
       </section>
 
       {generatedCount !== null ? (
@@ -362,11 +372,4 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

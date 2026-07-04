@@ -1664,3 +1664,381 @@ P15 프로젝트 고도화: 4단계 완료
 다음: P15-005 API/Error UX Hardening
 
 ---
+
+## 최신 진행: P15-005 API/Error UX Hardening 완료
+
+`P15-004 Chart Lazy Loading` 이후 후속 작업으로 `P15-005 API/Error UX Hardening`을 완료했다.
+
+반영 내용:
+
+- `formatApiError` 공통 helper 추가
+- `authRequiredMessage` 공통 helper 추가
+- route별 중복 `errorMessage` 함수 제거
+- API 공통 오류 포맷의 message/field 표시 경로 정리
+- 알림 목록 미로그인 상태를 오류 배너가 아닌 empty 안내로 변경
+- 내 상품 마진 미로그인 상태를 오류 배너가 아닌 empty 안내로 변경
+- `docs/beta/P15_API_ERROR_UX_HARDENING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /alerts 미로그인 empty 안내 확인
+- /store/margins 미로그인 empty 안내 확인
+- 두 화면 모두 error banner count 0 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 5단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+```
+
+다음: P15-006 Route UX Hardening 또는 DataTable empty/loading structure
+
+---
+
+## 최신 진행: P15-006 Route UX Hardening 완료
+
+`P15-005 API/Error UX Hardening` 이후 후속 작업으로 `P15-006 Route UX Hardening`을 완료했다.
+
+반영 내용:
+
+- `App`의 route path를 React state로 관리하도록 변경
+- 내부 링크 클릭을 History API 기반 SPA navigation으로 처리
+- browser back/forward 이동을 `popstate`로 반영
+- trailing slash path normalize 적용
+- unknown route용 Not Found 안내 추가
+- `/alert-rules`가 sidebar의 `알림` 항목을 active로 표시하도록 정리
+- `/wholesale` legacy route가 sidebar의 `도매 업로드` 항목을 active로 표시하도록 정리
+- active nav에 `aria-current="page"` 추가
+- `docs/beta/P15_ROUTE_UX_HARDENING.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /unknown-route Not Found 안내 확인
+- /alert-rules active nav: 알림 확인
+- /alert-rules -> /keywords 내부 nav click 후 marker 유지 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 6단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+```
+
+다음: P15-007 DataTable empty/loading structure
+
+---
+
+## 최신 진행: P15-007 DataTable empty/loading structure 완료
+
+`P15-006 Route UX Hardening` 이후 후속 작업으로 `P15-007 DataTable empty/loading structure`를 완료했다.
+
+반영 내용:
+
+- `DataTableStateRow` 공통 컴포넌트 추가
+- `DataTableStateRow` 공통 UI export 추가
+- table state row 스타일 추가
+- 알림 목록, 키워드 목록, 후보 목록, 도매 CSV parsing 결과, 내 상품 마진 table의 loading/empty 상태 row 정리
+- `docs/beta/P15_DATATABLE_STATE_ROWS.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /keywords tbody state row 1개, outside state row 0개 확인
+- /candidates tbody state row 1개, outside state row 0개 확인
+- /store/margins tbody state row 1개, outside state row 0개 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 7단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+```
+
+다음: P15-008 Dashboard summary UX 또는 Form validation UX
+
+---
+
+## 최신 진행: P15-008 Dashboard summary UX 완료
+
+`P15-007 DataTable empty/loading structure` 이후 후속 작업으로 `P15-008 Dashboard summary UX`를 완료했다.
+
+반영 내용:
+
+- Dashboard 후보 요약 기본값을 `0`에서 `-`로 변경
+- 후보 요약 상태를 `loading`, `signed-out`, `ready`, `error`로 분리
+- 미로그인 상태에서 `EmptyState`로 계정 연결 안내 표시
+- API 오류 상태에서 `ErrorState`와 `formatApiError` 사용
+- 후보가 없는 ready 상태에서 empty 안내 표시
+- `docs/beta/P15_DASHBOARD_SUMMARY_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- / 미로그인 상태에서 summary card value -, -, -, - 확인
+- / 미로그인 상태에서 empty message 확인
+- / fake token 상태에서 error message 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 8단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+```
+
+다음: P15-009 Form validation UX
+
+---
+
+## 최신 진행: P15-009 Form validation UX 완료
+
+`P15-008 Dashboard summary UX` 이후 후속 작업으로 `P15-009 Form validation UX`를 완료했다.
+
+반영 내용:
+
+- 공통 `FieldMessage` UI 컴포넌트 추가
+- 필드 hint/error 메시지와 액션 비활성화 사유 스타일 추가
+- 키워드 등록 폼의 2~50자 검증 메시지와 등록 버튼 사유 정리
+- 도매 CSV/XLSX 업로드 폼의 파일 선택, 확장자, 필수 컬럼 매핑 메시지 정리
+- 알림 조건 설정 폼의 조건명, 점수 범위, 마진율, 카테고리 선택 검증 메시지 정리
+- 알림 조건 숫자 입력을 문자열 상태로 받고 제출 시 숫자로 변환
+- `docs/beta/P15_FORM_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /keywords 빈 키워드와 1자 입력 검증 메시지 확인
+- /wholesale/uploads 파일 미선택과 preview 전 저장 사유 확인
+- /alert-rules 유효 초기 상태와 최소 점수 120 오류 메시지 확인
+- console error 0개 확인
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 9단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+```
+
+다음: P15-010 Candidate filter validation UX 또는 Form validation pattern expansion
+
+---
+
+## 최신 진행: P15-010 Candidate filter validation UX 완료
+
+`P15-009 Form validation UX` 이후 후속 작업으로 `P15-010 Candidate filter validation UX`를 완료했다.
+
+반영 내용:
+
+- 후보 필터 폼에 `FieldMessage` 패턴 적용
+- 최소 점수는 빈 값 허용, 값이 있으면 0~100 범위 검증
+- 최소 마진율은 빈 값 허용, 값이 있으면 0 이상 검증
+- 검증 오류가 있으면 후보 조회 API 호출 전에 중단
+- 조회 버튼 하단에 비활성화 사유 표시
+- 공백 입력은 빈 필터로 처리하도록 query payload 변환 기준을 `trim()`으로 정리
+- `docs/beta/P15_CANDIDATE_FILTER_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /candidates 초기 유효 상태에서 조회 버튼 활성 확인
+- 최소 점수 120 입력 시 field error와 버튼 하단 사유 확인
+- fake token/backend 미연결 상태라 후보 목록 초기 조회 CORS/fetch console error 발생
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 10단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+```
+
+다음: P15-011 Margin calculator validation UX
+
+---
+
+## 최신 진행: P15-011 Margin calculator validation UX 완료
+
+`P15-010 Candidate filter validation UX` 이후 후속 작업으로 `P15-011 Margin calculator validation UX`를 완료했다.
+
+반영 내용:
+
+- 마진 계산기 입력 state를 number에서 string으로 변경해 빈 값/오류 상태 표현 가능
+- 공급가, 목표 마진율, 판매가 직접 입력 필수 숫자 검증 추가
+- 배송비는 빈 값 허용, 값이 있으면 0 이상 숫자 검증 추가
+- 공급가/판매가 0 이하 입력 안내 표시
+- 목표 마진율 1~90 범위 검증 표시
+- validation 오류 시 현재 마진율과 결과 metric을 `-`로 표시
+- validation 오류 시 KPI chart empty 상태 표시
+- `권장가 적용` 버튼 비활성화 사유 표시
+- `docs/beta/P15_MARGIN_CALCULATOR_VALIDATION_UX.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin 초기 유효 상태에서 현재 마진율, 결과 metric, KPI chart 표시 확인
+- 공급가 0 입력 시 field error와 권장가 적용 버튼 하단 사유 확인
+- invalid 상태에서 결과 metric `-` 표시와 KPI chart empty 상태 확인
+- console에는 favicon 404 1건 표시
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 11단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+- P15-011 Margin calculator validation UX: 완료
+```
+
+다음: P15-012 Frontend validation pattern cleanup 또는 P15 closeout review
+
+---
+
+## 최신 진행: P15-012 Frontend validation pattern cleanup 완료
+
+`P15-011 Margin calculator validation UX` 이후 후속 작업으로 `P15-012 Frontend validation pattern cleanup`을 완료했다.
+
+반영 내용:
+
+- `frontend/src/lib/formValidation.ts` 공통 validation helper 추가
+- `hasFormErrors` 중복 local helper 제거
+- 문자열 blank 판정용 `isBlank` helper 적용
+- 문자열 숫자 파싱용 `parseFiniteNumber` helper 적용
+- 후보 필터의 빈 값 유지 변환을 `blankToNumberFilter`로 정리
+- alert rule, candidate filter, margin calculator, wholesale upload의 기존 validation 정책 유지
+- `docs/beta/P15_VALIDATION_PATTERN_CLEANUP.md` 문서 추가
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 12단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+- P15-004 Chart Lazy Loading: 완료
+- P15-005 API/Error UX Hardening: 완료
+- P15-006 Route UX Hardening: 완료
+- P15-007 DataTable empty/loading structure: 완료
+- P15-008 Dashboard summary UX: 완료
+- P15-009 Form validation UX: 완료
+- P15-010 Candidate filter validation UX: 완료
+- P15-011 Margin calculator validation UX: 완료
+- P15-012 Frontend validation pattern cleanup: 완료
+```
+
+다음: P15-013 P15 closeout review
+
+---

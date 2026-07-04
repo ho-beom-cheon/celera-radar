@@ -19,6 +19,7 @@ import {
   ProductCard,
   StatusBadge
 } from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
 
 interface KeywordDetailPageProps {
   keywordId: number;
@@ -62,7 +63,7 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
         }
       }
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -97,7 +98,7 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
       );
       setNotice(response.cached ? '오늘 저장된 쇼핑 스냅샷을 재사용했습니다.' : '쇼핑 분석이 완료되었습니다.');
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setAnalyzing(false);
     }
@@ -236,11 +237,4 @@ function formatDateTime(value: string | null) {
 
 function isAnalysisNotReady(error: unknown) {
   return error instanceof ApiRequestError && error.code === 'ANALYSIS_NOT_READY';
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
-  }
-  return '요청을 처리하지 못했습니다.';
 }

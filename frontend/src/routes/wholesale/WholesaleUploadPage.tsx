@@ -1,5 +1,5 @@
 import { FormEvent, useId, useMemo, useState } from 'react';
-import { ApiRequestError, getAccessToken } from '../../api/httpClient';
+import { getAccessToken } from '../../api/httpClient';
 import {
   CsvEncoding,
   WholesaleColumnMapping,
@@ -9,7 +9,17 @@ import {
   confirmWholesaleUpload,
   previewWholesaleUpload
 } from '../../api/wholesale';
-import { DataTable, EmptyState, ErrorState, HelpTooltip, LoadingState, MetricCard } from '../../components/ui';
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  FieldMessage,
+  HelpTooltip,
+  LoadingState,
+  MetricCard
+} from '../../components/ui';
+import { formatApiError } from '../../lib/apiError';
+import { hasFormErrors } from '../../lib/formValidation';
 import type { HelpContentKey } from '../../lib/helpContent';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
@@ -19,6 +29,16 @@ const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
 ];
 
 const previewRowLimit = 20;
+
+interface UploadFormErrors {
+  file?: string;
+}
+
+interface MappingFormErrors {
+  form?: string;
+  productName?: string;
+  supplyPrice?: string;
+}
 
 export function WholesaleUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,14 +53,26 @@ export function WholesaleUploadPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [uploadFormErrors, setUploadFormErrors] = useState<UploadFormErrors>({});
+  const [mappingFormErrors, setMappingFormErrors] = useState<MappingFormErrors>({});
 
+  const hasAccessToken = Boolean(getAccessToken());
   const headers = preview?.preview.headers ?? [];
   const previewRows = useMemo(() => preview?.preview.rows.slice(0, previewRowLimit) ?? [], [preview]);
-  const canConfirm = preview !== null && mapping.productName !== '' && mapping.supplyPrice !== '' && !loading;
+  const fileFieldError = uploadFormErrors.file ?? getInlineFileError(selectedFile);
+  const productNameFieldError =
+    mappingFormErrors.productName ?? (preview && !mapping.productName ? '상품명 컬럼을 선택하세요.' : undefined);
+  const supplyPriceFieldError =
+    mappingFormErrors.supplyPrice ?? (preview && !mapping.supplyPrice ? '공급가 컬럼을 선택하세요.' : undefined);
+  const previewDisabledReason = getPreviewDisabledReason(hasAccessToken, selectedFile, loading);
+  const confirmDisabledReason = getConfirmDisabledReason(hasAccessToken, preview, mapping, loading);
+  const canConfirm = confirmDisabledReason === '';
 
   async function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedFile || loading) {
+    const nextErrors = validateUploadForm(selectedFile);
+    setUploadFormErrors(nextErrors);
+    if (!hasAccessToken || loading || hasFormErrors(nextErrors) || !selectedFile) {
       return;
     }
     setLoading(true);
@@ -48,20 +80,24 @@ export function WholesaleUploadPage() {
     setError('');
     setPreview(null);
     setConfirmResult(null);
+    setMappingFormErrors({});
     try {
       const response = await previewWholesaleUpload(selectedFile, encoding, sourceName);
       setPreview(response);
       setMapping(defaultMapping(response.preview.headers));
+      setUploadFormErrors({});
       setMessage(`${response.preview.originalFilename} preview가 준비됐습니다.`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
   }
 
   async function handleConfirm() {
-    if (!preview || !canConfirm) {
+    const nextErrors = validateMappingForm(preview, mapping);
+    setMappingFormErrors(nextErrors);
+    if (!hasAccessToken || loading || hasFormErrors(nextErrors) || !preview) {
       return;
     }
     setLoading(true);
@@ -73,7 +109,7 @@ export function WholesaleUploadPage() {
       setConfirmResult(response);
       setMessage(`저장 완료: 정상 ${response.successCount}건, 오류 ${response.failureCount}건`);
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(formatApiError(requestError));
     } finally {
       setLoading(false);
     }
@@ -83,6 +119,11 @@ export function WholesaleUploadPage() {
     setMapping((current) => ({
       ...current,
       [field]: value
+    }));
+    setMappingFormErrors((current) => ({
+      ...current,
+      [field]: undefined,
+      form: undefined
     }));
   }
 
@@ -120,9 +161,20 @@ export function WholesaleUploadPage() {
                 id="wholesale-upload-file"
                 type="file"
                 accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                disabled={!getAccessToken() || loading}
+                onChange={(event) => {
+                  setSelectedFile(event.target.files?.[0] ?? null);
+                  setUploadFormErrors({});
+                }}
+                disabled={!hasAccessToken || loading}
+                aria-invalid={Boolean(fileFieldError)}
+                aria-describedby="wholesale-upload-file-message"
               />
+              <FieldMessage
+                id="wholesale-upload-file-message"
+                tone={fileFieldError ? 'error' : 'hint'}
+              >
+                {fileFieldError ?? 'CSV 또는 XLSX 파일을 선택하세요.'}
+              </FieldMessage>
             </div>
             <div className="field">
               <div className="field-label-row">
@@ -148,9 +200,14 @@ export function WholesaleUploadPage() {
             </label>
           </div>
           <div className="button-row">
-            <button type="submit" className="primary-button" disabled={!getAccessToken() || !selectedFile || loading}>
-              Preview
+            <button type="submit" className="primary-button" disabled={Boolean(previewDisabledReason)}>
+              {loading ? 'Preview 중' : 'Preview'}
             </button>
+            {previewDisabledReason ? (
+              <p className={`form-action-hint ${fileFieldError ? 'form-action-hint-error' : ''}`}>
+                {previewDisabledReason}
+              </p>
+            ) : null}
           </div>
         </form>
 
@@ -168,6 +225,8 @@ export function WholesaleUploadPage() {
               columns={headers}
               onChange={(value) => updateMapping('productName', value)}
               helpKey="requiredColumns"
+              message={productNameFieldError ?? '필수 컬럼입니다.'}
+              tone={productNameFieldError ? 'error' : 'hint'}
               required
             />
             <ColumnSelect
@@ -176,6 +235,8 @@ export function WholesaleUploadPage() {
               columns={headers}
               onChange={(value) => updateMapping('supplyPrice', value)}
               helpKey="requiredColumns"
+              message={supplyPriceFieldError ?? '필수 컬럼입니다.'}
+              tone={supplyPriceFieldError ? 'error' : 'hint'}
               required
             />
             <ColumnSelect
@@ -191,8 +252,13 @@ export function WholesaleUploadPage() {
           </div>
           <div className="button-row">
             <button type="button" className="primary-button" onClick={() => void handleConfirm()} disabled={!canConfirm}>
-              저장 확정
+              {loading ? '저장 중' : '저장 확정'}
             </button>
+            {confirmDisabledReason ? (
+              <p className={`form-action-hint ${productNameFieldError || supplyPriceFieldError ? 'form-action-hint-error' : ''}`}>
+                {confirmDisabledReason}
+              </p>
+            ) : null}
           </div>
         </section>
       </section>
@@ -251,7 +317,7 @@ export function WholesaleUploadPage() {
       ) : null}
 
       {loading ? <LoadingState>처리 중입니다.</LoadingState> : null}
-      {!loading && !getAccessToken() ? <EmptyState>계정 연결 후 도매 파일을 업로드할 수 있습니다.</EmptyState> : null}
+      {!loading && !hasAccessToken ? <EmptyState>계정 연결 후 도매 파일을 업로드할 수 있습니다.</EmptyState> : null}
     </div>
   );
 }
@@ -261,12 +327,15 @@ interface ColumnSelectProps {
   value: string;
   columns: string[];
   helpKey?: HelpContentKey;
+  message?: string;
+  tone?: 'hint' | 'error';
   required?: boolean;
   onChange: (value: string) => void;
 }
 
-function ColumnSelect({ label, value, columns, helpKey, required, onChange }: ColumnSelectProps) {
+function ColumnSelect({ label, value, columns, helpKey, message, tone = 'hint', required, onChange }: ColumnSelectProps) {
   const selectId = useId();
+  const messageId = `${selectId}-message`;
 
   return (
     <div className="field">
@@ -277,7 +346,14 @@ function ColumnSelect({ label, value, columns, helpKey, required, onChange }: Co
         </label>
         {helpKey ? <HelpTooltip contentKey={helpKey} compact /> : null}
       </div>
-      <select id={selectId} value={value} onChange={(event) => onChange(event.target.value)} disabled={columns.length === 0}>
+      <select
+        id={selectId}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={columns.length === 0}
+        aria-invalid={tone === 'error'}
+        aria-describedby={message ? messageId : undefined}
+      >
         <option value="">선택 안 함</option>
         {columns.map((column) => (
           <option key={column} value={column}>
@@ -285,6 +361,9 @@ function ColumnSelect({ label, value, columns, helpKey, required, onChange }: Co
           </option>
         ))}
       </select>
+      <FieldMessage id={messageId} tone={tone}>
+        {message}
+      </FieldMessage>
     </div>
   );
 }
@@ -362,9 +441,73 @@ function emptyToUndefined(value?: string) {
   return value?.trim() ? value.trim() : undefined;
 }
 
-function errorMessage(error: unknown) {
-  if (error instanceof ApiRequestError) {
-    return error.message;
+function validateUploadForm(file: File | null): UploadFormErrors {
+  if (!file) {
+    return { file: 'CSV 또는 XLSX 파일을 선택하세요.' };
   }
-  return '요청을 처리하지 못했습니다.';
+  if (!isSupportedWholesaleFile(file)) {
+    return { file: 'CSV 또는 XLSX 파일만 preview할 수 있습니다.' };
+  }
+  return {};
+}
+
+function getInlineFileError(file: File | null) {
+  if (file && !isSupportedWholesaleFile(file)) {
+    return 'CSV 또는 XLSX 파일만 preview할 수 있습니다.';
+  }
+  return undefined;
+}
+
+function validateMappingForm(
+  preview: WholesaleUploadPreview | null,
+  mapping: WholesaleColumnMapping
+): MappingFormErrors {
+  if (!preview) {
+    return { form: '파일 preview 후 필수 컬럼을 선택하세요.' };
+  }
+  const errors: MappingFormErrors = {};
+  if (!mapping.productName) {
+    errors.productName = '상품명 컬럼을 선택하세요.';
+  }
+  if (!mapping.supplyPrice) {
+    errors.supplyPrice = '공급가 컬럼을 선택하세요.';
+  }
+  return errors;
+}
+
+function getPreviewDisabledReason(hasAccessToken: boolean, file: File | null, loading: boolean) {
+  if (!hasAccessToken) {
+    return '계정 연결 후 preview할 수 있습니다.';
+  }
+  if (loading) {
+    return '파일을 처리하는 중입니다.';
+  }
+  return validateUploadForm(file).file ?? '';
+}
+
+function getConfirmDisabledReason(
+  hasAccessToken: boolean,
+  preview: WholesaleUploadPreview | null,
+  mapping: WholesaleColumnMapping,
+  loading: boolean
+) {
+  if (!hasAccessToken) {
+    return '계정 연결 후 저장할 수 있습니다.';
+  }
+  if (loading) {
+    return '처리 중입니다.';
+  }
+  const errors = validateMappingForm(preview, mapping);
+  if (errors.form) {
+    return errors.form;
+  }
+  if (errors.productName || errors.supplyPrice) {
+    return '필수 컬럼을 선택해야 저장할 수 있습니다.';
+  }
+  return '';
+}
+
+function isSupportedWholesaleFile(file: File) {
+  const normalizedName = file.name.toLowerCase();
+  return normalizedName.endsWith('.csv') || normalizedName.endsWith('.xlsx');
 }
