@@ -1552,3 +1552,59 @@ P15 프로젝트 고도화: 2단계 완료
 다음: P15-003
 
 ---
+
+## 최신 진행: P15-003 Chart/KPI Visualization 완료
+
+`docs/beta/P15_PROJECT_BASELINE_ANALYSIS.md`와 P15-002 후속 제안 기준으로 `P15-003 Chart/KPI Visualization`을 완료했다.
+
+반영 내용:
+
+- `recharts` 의존성 추가
+- `KpiBarChart`, `KpiDonutChart` 공통 UI 컴포넌트 추가
+- 마진 계산기에 총 원가, 권장 판매가, 입력 판매가, 입력 마진 비교 차트 추가
+- 후보 상세에 점수 구성 차트 추가
+- 내 상품 마진 화면에 위험/주의/안전/원가 미설정 도넛 차트 추가
+- 키워드 상세에 최저가, 평균가, 최고가 가격대 비교 차트 추가
+- `docs/beta/P15_CHART_KPI_VISUALIZATION.md` 문서 추가
+
+제외:
+
+- backend/API/DB migration 변경
+- 외부 API 키 적용
+- 네이버/데이터랩/스마트스토어 실제 연동 변경
+- Apps in Toss Lite 구현
+
+검증:
+
+```text
+cd frontend && npm.cmd run build
+BUILD SUCCESSFUL
+
+cd backend && .\gradlew.bat test
+BUILD SUCCESSFUL
+
+Playwright browser smoke
+- /margin chart 렌더링 확인
+- /store/margins chart empty state 확인
+- 390px width horizontal overflow 없음
+```
+
+주의:
+
+```text
+Recharts 도입 후 Vite/Rolldown chunk size warning 발생
+이번 PR에서는 build 실패가 아니므로 기록만 남기고, 다음 성능 정리에서 chart lazy loading 검토
+```
+
+진행률:
+
+```text
+P15 프로젝트 고도화: 3단계 완료
+- P15-001 프로젝트 기준선 분석: 완료
+- P15-002 디자인/도움말 고도화: 완료
+- P15-003 Chart/KPI Visualization: 완료
+```
+
+다음: P15-004 API/Error UX Hardening 또는 Chart Lazy Loading 검토
+
+---
