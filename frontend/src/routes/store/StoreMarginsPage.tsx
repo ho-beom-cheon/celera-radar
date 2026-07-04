@@ -11,7 +11,7 @@ import {
   EmptyState,
   ErrorState,
   HelpTooltip,
-  KpiDonutChart,
+  LazyKpiDonutChart,
   LoadingState,
   MetricCard,
   StatusBadge
@@ -121,7 +121,7 @@ export function StoreMarginsPage() {
         <MetricCard label="원가 미설정" value={String(counts.unset)} helpKey="riskLevel" />
       </section>
 
-      <KpiDonutChart
+      <LazyKpiDonutChart
         title="마진 위험 분포"
         description="동기화된 상품을 원가와 목표 마진 기준으로 나눈 검토용 분포입니다."
         data={riskChartData}

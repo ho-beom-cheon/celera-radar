@@ -8,7 +8,7 @@ export interface KpiBarChartItem {
   color?: string;
 }
 
-interface KpiBarChartProps {
+export interface KpiBarChartProps {
   title: string;
   description?: string;
   data: KpiBarChartItem[];

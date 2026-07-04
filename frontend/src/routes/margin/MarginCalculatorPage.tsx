@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { HelpTooltip, KpiBarChart, MetricCard } from '../../components/ui';
+import { HelpTooltip, LazyKpiBarChart, MetricCard } from '../../components/ui';
 
 export function MarginCalculatorPage() {
   const [supplyPrice, setSupplyPrice] = useState(12000);
@@ -174,7 +174,7 @@ export function MarginCalculatorPage() {
         </section>
       </section>
 
-      <KpiBarChart
+      <LazyKpiBarChart
         title="판매가와 마진 비교"
         description="입력 판매가가 총 원가와 목표 기준 권장 판매가 대비 어느 위치인지 비교합니다."
         data={marginChartData}

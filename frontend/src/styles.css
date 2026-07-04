@@ -375,6 +375,14 @@ h2 {
   min-width: 0;
 }
 
+.chart-loading {
+  min-height: 240px;
+  place-items: center;
+  color: var(--sr-color-text-secondary);
+  font-size: var(--sr-font-size-sm);
+  font-weight: var(--sr-font-weight-semibold);
+}
+
 .donut-chart-layout {
   display: grid;
   grid-template-columns: minmax(180px, 260px) minmax(220px, 1fr);

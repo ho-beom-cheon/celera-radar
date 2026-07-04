@@ -6,7 +6,7 @@ export interface KpiDonutChartItem {
   color: string;
 }
 
-interface KpiDonutChartProps {
+export interface KpiDonutChartProps {
   title: string;
   description?: string;
   data: KpiDonutChartItem[];

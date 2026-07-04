@@ -12,7 +12,7 @@ import {
 } from '../../api/candidates';
 import { categoryOptions } from '../../api/keywords';
 import { ApiRequestError, getAccessToken } from '../../api/httpClient';
-import { ErrorState, KpiBarChart, LoadingState } from '../../components/ui';
+import { ErrorState, LazyKpiBarChart, LoadingState } from '../../components/ui';
 
 interface CandidateDetailPageProps {
   candidateId: number;
@@ -129,7 +129,7 @@ export function CandidateDetailPage({ candidateId }: CandidateDetailPageProps) {
             </div>
           </section>
 
-          <KpiBarChart
+          <LazyKpiBarChart
             title="점수 구성 차트"
             description="검토 후보 점수의 구성 요소를 비교합니다. 점수는 검토 우선순위이며 판매 가능성을 보장하지 않습니다."
             data={scoreChartItems(candidate.scoreBreakdown)}

@@ -13,7 +13,7 @@ import {
   EmptyState,
   ErrorState,
   HelpTooltip,
-  KpiBarChart,
+  LazyKpiBarChart,
   LoadingState,
   MetricCard,
   ProductCard,
@@ -164,7 +164,7 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
             />
           </section>
 
-          <KpiBarChart
+          <LazyKpiBarChart
             title="가격대 비교"
             description="저장된 쇼핑 스냅샷의 최저가, 평균가, 최고가를 비교합니다."
             data={priceChartItems(snapshot)}
