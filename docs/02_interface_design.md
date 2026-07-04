@@ -51,6 +51,8 @@ MVP Web SaaS는 JWT Bearer 토큰을 사용한다.
 Authorization: Bearer {accessToken}
 ```
 
+P8 이후 Web SaaS API는 `X-USER-ID` 임시 헤더를 사용하지 않는다. 서버는 JWT에서 식별한 인증 사용자 기준으로 keyword, upload, candidate, alert 데이터를 조회/변경한다.
+
 앱인토스 Lite는 추후 토스 로그인 식별값과 내부 user_id를 매핑한다. 초기 v1.0 전까지는 Web 계정과 분리할 수 있다.
 
 ### 3.3 응답 Envelope

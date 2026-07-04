@@ -120,6 +120,29 @@ class WholesaleFileControllerIntegrationTest {
 	}
 
 	@Test
+	void wholesaleFileDetailAndRowsDoNotExposeOtherUsersFile() throws Exception {
+		AuthResponse ownerAuth = signup("wholesale-private-owner@example.com");
+		AuthResponse otherAuth = signup("wholesale-private-other@example.com");
+		Long fileId = upload(ownerAuth, """
+				productName,supplyPrice,shippingFee,category
+				car brush,4200,3000,car
+				""");
+		mapAndParse(ownerAuth, fileId);
+
+		mockMvc.perform(get("/api/v1/wholesale-files/{fileId}", fileId)
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.WHOLESALE_FILE_NOT_FOUND.name()));
+
+		mockMvc.perform(get("/api/v1/wholesale-files/{fileId}/rows", fileId)
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.WHOLESALE_FILE_NOT_FOUND.name()));
+	}
+
+	@Test
 	void previewUploadReturnsUploadIdAndCsvPreview() throws Exception {
 		AuthResponse auth = signup("wholesale-preview@example.com");
 		MockMultipartFile file = csvFile("items.csv", """

@@ -22,6 +22,7 @@ import com.sellerradar.candidate.domain.ProductCandidate;
 import com.sellerradar.candidate.domain.RiskLevel;
 import com.sellerradar.candidate.repository.ProductCandidateRepository;
 import com.sellerradar.category.domain.CategoryCode;
+import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.scoring.CandidateGrade;
 import com.sellerradar.scoring.ScoringBreakdown;
 import com.sellerradar.user.domain.User;
@@ -142,6 +143,38 @@ class AlertControllerIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.status").value(AlertStatus.READ.name()))
 				.andExpect(jsonPath("$.data.readAt").isNotEmpty());
+	}
+
+	@Test
+	void alertsDoNotExposeOtherUsersAlerts() throws Exception {
+		AuthResponse ownerAuth = signup("alert-private-owner@example.com");
+		AuthResponse otherAuth = signup("alert-private-other@example.com");
+		User owner = userRepository.findById(ownerAuth.userId()).orElseThrow();
+		createCandidate(owner, "private pouch", CategoryCode.CAMPING_PICNIC, 84, new BigDecimal("29.00"), RiskLevel.LOW);
+		createRule(ownerAuth, new AlertRuleCreateRequest(
+				"score over 80",
+				80,
+				new BigDecimal("20"),
+				List.of(CategoryCode.CAMPING_PICNIC),
+				true,
+				AlertFrequency.DAILY_SUMMARY
+		));
+		alertGenerationService.generateDaily();
+		Long alertId = alertRepository.findAll().getFirst().getId();
+
+		mockMvc.perform(get("/api/v1/alerts")
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.items.length()").value(0))
+				.andExpect(jsonPath("$.data.totalElements").value(0));
+
+		mockMvc.perform(patch("/api/v1/alerts/{alertId}/read", alertId)
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.ALERT_NOT_FOUND.name()));
+
+		assertThat(alertRepository.findById(alertId).orElseThrow().getStatus()).isEqualTo(AlertStatus.UNREAD);
 	}
 
 	private void createRule(AuthResponse auth, AlertRuleCreateRequest request) throws Exception {

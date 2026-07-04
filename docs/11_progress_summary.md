@@ -692,12 +692,46 @@ constraint: ck_users_role
 진행률:
 
 ```text
-P8 Web SaaS 하드닝: 1/2 완료
+P8 Web SaaS 하드닝: 2/2 진행 중
 - P8-001 Auth 최소 구현: 완료
-- P8-002 User Data Isolation 적용: 다음
+- P8-002 User Data Isolation 적용: 완료 예정
 ```
 
-다음: P8-002
+다음: P9-001
+
+---
+
+## 최신 진행: P8-002 구현 완료
+
+`docs/07_codex_execution_plan_v2.md` 기준으로 `P8-002 User Data Isolation 적용`의 남은 테스트와 문서 정합성을 보강했다.
+
+반영 내용:
+
+- backend/frontend 애플리케이션 코드에 `X-USER-ID` 임시 헤더 사용 경로가 없는지 확인
+- keyword, wholesale upload, candidate, alert controller가 JWT 인증 사용자 기준으로 userId를 전달하는 흐름 확인
+- 도매 파일 상세/row 조회에서 다른 사용자의 fileId 접근 시 `WHOLESALE_FILE_NOT_FOUND`를 반환하는 통합 테스트 추가
+- 알림 목록/read 처리에서 다른 사용자의 alert가 노출되거나 변경되지 않는 통합 테스트 추가
+- `docs/02_interface_design.md`에 P8 이후 `X-USER-ID` 임시 헤더 미사용 기준 추가
+
+검증:
+
+```text
+cd backend && .\gradlew.bat test --rerun-tasks
+BUILD SUCCESSFUL
+
+rg "X-USER-ID|x-user-id|X_USER_ID" backend/src/main/java frontend/src
+no matches
+```
+
+진행률:
+
+```text
+P8 Web SaaS 하드닝: 2/2 완료
+- P8-001 Auth 최소 구현: 완료
+- P8-002 User Data Isolation 적용: 완료
+```
+
+다음: P9-001
 
 ---
 
