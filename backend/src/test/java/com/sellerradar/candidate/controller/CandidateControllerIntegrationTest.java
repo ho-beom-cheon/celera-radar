@@ -150,6 +150,8 @@ class CandidateControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.candidateId").value(candidate.getId()))
 				.andExpect(jsonPath("$.data.status").value(CandidateStatus.ACTIVE.name()))
 				.andExpect(jsonPath("$.data.scoreBreakdown.trendScore").value(20))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceBandScore").value(7))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceScore").value(7))
 				.andExpect(jsonPath("$.data.scoreBreakdown.riskPenalty").value(0))
 				.andExpect(jsonPath("$.data.reasons[0]").value("steady trend"))
 				.andExpect(jsonPath("$.data.warnings[0]").value("review competition before sourcing"));

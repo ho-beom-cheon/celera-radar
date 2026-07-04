@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS batch_job_history (
     finished_at TIMESTAMPTZ,
     error_message VARCHAR(500),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT ck_batch_job_history_job_type CHECK (job_type IN ('SHOPPING_SEARCH_DAILY','ALERT_GENERATE_DAILY')),
+    CONSTRAINT ck_batch_job_history_job_type CHECK (job_type IN ('SHOPPING_SEARCH_DAILY','DATALAB_TREND_DAILY','ALERT_GENERATE_DAILY')),
     CONSTRAINT ck_batch_job_history_trigger_type CHECK (trigger_type IN ('MANUAL','SCHEDULED')),
     CONSTRAINT ck_batch_job_history_status CHECK (status IN ('RUNNING','SUCCESS','PARTIAL_SUCCESS','FAILED'))
 );

@@ -215,8 +215,8 @@ candidate score 생성
 | shopping_top_item | 쇼핑 검색 상위 상품 |
 | trend_snapshot | 데이터랩 트렌드 스냅샷 |
 | keyword_analysis_summary | 키워드별 최신 분석 요약 |
-| wholesale_file | CSV 업로드 파일 |
-| wholesale_product | CSV 파싱 상품 |
+| wholesale_uploads | CSV 업로드 파일 |
+| wholesale_products | CSV 파싱 상품 |
 | product_candidate | 추천 후보 |
 | candidate_score | 추천점수와 이유 |
 | margin_calculation | 빠른 마진 계산 저장 |
@@ -325,7 +325,7 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 - 기준일에 정확한 ratio가 없으면 그 이전의 가장 가까운 period를 사용한다.
 - 데이터랩 ratio는 검색 클릭 추이 기반이며 실제 판매량이 아니라는 warning reason을 포함한다.
 
-### wholesale_file
+### wholesale_uploads
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -348,15 +348,15 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 | created_at | timestamp | 생성일 |
 | updated_at | timestamp | 수정일 |
 
-### wholesale_product
+### wholesale_products
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | id | bigint PK | 상품 ID |
-| file_id | bigint FK | 업로드 파일 |
+| upload_id | bigint FK | 업로드 파일 |
 | row_no | int | CSV 행 번호 |
 | product_name | varchar | 상품명 |
-| normalized_name | varchar | 정규화명 |
+| normalized_product_name | varchar | 정규화명 |
 | supply_price | int | 공급가 |
 | shipping_fee | int | 배송비 |
 | source_category | varchar | 원본 카테고리 |
@@ -489,7 +489,9 @@ overall_score = trend_score + competition_score + margin_score + price_band_scor
 - trend_score는 DataLab trend_score 계산 결과를 0~30으로 제한한다.
 - competition_score는 검색 결과 수가 적을수록 높게 주고, 상위 가격대 편차가 크면 감점한다.
 - margin_score는 예상 판매가, 공급가, 배송비 기준 예상 마진율로 계산한다.
+- 빠른 마진 계산은 공급가, 배송비, 플랫폼 수수료율, 광고비, 쿠폰비, 기타 비용까지 총 비용에 포함한다.
 - price_band_score는 9,900~49,900원을 10점, 인접 가격대를 5점으로 계산한다.
+- API breakdown에서는 기존 `priceBandScore`를 유지하고 설계 용어 호환을 위해 `priceScore`도 함께 반환한다.
 - supply_score는 공급가와 배송비가 유효하면 5점으로 계산한다.
 - risk_penalty는 안전 0점, 주의 -15점, 제외 -40점으로 계산한다.
 - 위험 카테고리 제외 룰에 매칭되면 overall_score와 별개로 grade를 EXCLUDED로 강제한다.

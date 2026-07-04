@@ -7,13 +7,17 @@ import { CandidatesPage } from '../routes/candidates/CandidatesPage';
 import { KeywordDetailPage } from '../routes/keywords/KeywordDetailPage';
 import { KeywordsPage } from '../routes/keywords/KeywordsPage';
 import { MarginCalculatorPage } from '../routes/margin/MarginCalculatorPage';
+import { StoreMarginsPage } from '../routes/store/StoreMarginsPage';
 import { WholesalePage } from '../routes/wholesale/WholesalePage';
+import { WholesaleUploadPage } from '../routes/wholesale/WholesaleUploadPage';
+import { MetricCard } from '../components/ui';
 
 const navigationItems = [
   { label: '대시보드', href: '/' },
   { label: '키워드 레이더', href: '/keywords' },
   { label: '상품 후보', href: '/candidates' },
-  { label: '도매 CSV', href: '/wholesale' },
+  { label: '도매 업로드', href: '/wholesale/uploads' },
+  { label: '내 상품 마진', href: '/store/margins' },
   { label: '마진 계산기', href: '/margin' },
   { label: '알림', href: '/alerts' }
 ];
@@ -52,7 +56,9 @@ export function App() {
           <CandidateDetailPage candidateId={Number(candidateDetailMatch[1])} />
         ) : null}
         {path === '/candidates' ? <CandidatesPage /> : null}
+        {path === '/wholesale/uploads' ? <WholesaleUploadPage /> : null}
         {path === '/wholesale' ? <WholesalePage /> : null}
+        {path === '/store/margins' ? <StoreMarginsPage /> : null}
         {path === '/margin' ? <MarginCalculatorPage /> : null}
         {path === '/alerts' ? <AlertsPage mode="list" /> : null}
         {path === '/alert-rules' ? <AlertsPage mode="rules" /> : null}
@@ -127,10 +133,7 @@ function Dashboard() {
 
       <section className="summary-grid" aria-label="분석 상태 요약">
         {statusItems.map((item) => (
-          <article key={item.label} className="summary-card">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </article>
+          <MetricCard key={item.label} label={item.label} value={item.value} />
         ))}
       </section>
 
@@ -146,7 +149,7 @@ function Dashboard() {
             <a className="primary-button" href="/keywords">
               키워드 등록
             </a>
-            <a className="secondary-button" href="/wholesale">
+            <a className="secondary-button" href="/wholesale/uploads">
               CSV 업로드
             </a>
             <a className="secondary-button" href="/candidates">

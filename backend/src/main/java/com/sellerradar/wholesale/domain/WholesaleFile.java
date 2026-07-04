@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "wholesale_file")
+@Table(name = "wholesale_uploads")
 public class WholesaleFile {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,14 +31,17 @@ public class WholesaleFile {
 	@Column(name = "source_name", length = 100)
 	private String sourceName;
 
-	@Column(name = "original_filename", nullable = false, length = 255)
+	@Column(name = "original_file_name", nullable = false, length = 255)
 	private String originalFilename;
 
-	@Column(name = "stored_path", nullable = false, length = 1000)
+	@Column(name = "file_path", nullable = false, length = 1000)
 	private String storedPath;
 
 	@Column(name = "file_size", nullable = false)
 	private long fileSize;
+
+	@Column(name = "file_type", nullable = false, length = 20)
+	private String fileType;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "requested_encoding", nullable = false, length = 20)
@@ -48,7 +51,7 @@ public class WholesaleFile {
 	@Column(name = "detected_encoding", nullable = false, length = 20)
 	private CsvEncoding detectedEncoding;
 
-	@Column(name = "row_count", nullable = false)
+	@Column(name = "total_rows", nullable = false)
 	private int rowCount;
 
 	@Column(name = "detected_columns", nullable = false, length = 1000)
@@ -65,6 +68,9 @@ public class WholesaleFile {
 
 	@Column(name = "mapping_category", length = 255)
 	private String mappingCategory;
+
+	@Column(name = "mapping_image_url", length = 255)
+	private String mappingImageUrl;
 
 	@Column(name = "mapping_product_url", length = 255)
 	private String mappingProductUrl;
@@ -88,6 +94,7 @@ public class WholesaleFile {
 			String originalFilename,
 			String storedPath,
 			long fileSize,
+			String fileType,
 			CsvEncoding requestedEncoding,
 			CsvEncoding detectedEncoding,
 			int rowCount,
@@ -98,6 +105,7 @@ public class WholesaleFile {
 		this.originalFilename = originalFilename;
 		this.storedPath = storedPath;
 		this.fileSize = fileSize;
+		this.fileType = fileType;
 		this.requestedEncoding = requestedEncoding;
 		this.detectedEncoding = detectedEncoding;
 		this.rowCount = rowCount;
@@ -111,6 +119,7 @@ public class WholesaleFile {
 			String originalFilename,
 			String storedPath,
 			long fileSize,
+			String fileType,
 			CsvEncoding requestedEncoding,
 			CsvEncoding detectedEncoding,
 			int rowCount,
@@ -122,6 +131,32 @@ public class WholesaleFile {
 				originalFilename,
 				storedPath,
 				fileSize,
+				fileType,
+				requestedEncoding,
+				detectedEncoding,
+				rowCount,
+				detectedColumns
+		);
+	}
+
+	public static WholesaleFile uploaded(
+			User user,
+			String sourceName,
+			String originalFilename,
+			String storedPath,
+			long fileSize,
+			CsvEncoding requestedEncoding,
+			CsvEncoding detectedEncoding,
+			int rowCount,
+			List<String> detectedColumns
+	) {
+		return uploaded(
+				user,
+				sourceName,
+				originalFilename,
+				storedPath,
+				fileSize,
+				"CSV",
 				requestedEncoding,
 				detectedEncoding,
 				rowCount,
@@ -136,10 +171,22 @@ public class WholesaleFile {
 			String category,
 			String productUrl
 	) {
+		updateMapping(productName, supplyPrice, shippingFee, category, null, productUrl);
+	}
+
+	public void updateMapping(
+			String productName,
+			String supplyPrice,
+			String shippingFee,
+			String category,
+			String imageUrl,
+			String productUrl
+	) {
 		this.mappingProductName = productName;
 		this.mappingSupplyPrice = supplyPrice;
 		this.mappingShippingFee = shippingFee;
 		this.mappingCategory = category;
+		this.mappingImageUrl = imageUrl;
 		this.mappingProductUrl = productUrl;
 		this.status = WholesaleFileStatus.MAPPED;
 	}
@@ -205,6 +252,10 @@ public class WholesaleFile {
 		return fileSize;
 	}
 
+	public String getFileType() {
+		return fileType;
+	}
+
 	public CsvEncoding getRequestedEncoding() {
 		return requestedEncoding;
 	}
@@ -231,6 +282,10 @@ public class WholesaleFile {
 
 	public String getMappingCategory() {
 		return mappingCategory;
+	}
+
+	public String getMappingImageUrl() {
+		return mappingImageUrl;
 	}
 
 	public String getMappingProductUrl() {

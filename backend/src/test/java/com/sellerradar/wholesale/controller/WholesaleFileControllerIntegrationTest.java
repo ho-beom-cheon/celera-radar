@@ -19,12 +19,20 @@ import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
 import com.sellerradar.wholesale.domain.WholesaleFileStatus;
+import com.sellerradar.wholesale.domain.WholesaleProduct;
 import com.sellerradar.wholesale.domain.WholesaleProductParseStatus;
 import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
+import com.sellerradar.wholesale.dto.WholesaleUploadConfirmRequest;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
 import com.sellerradar.wholesale.repository.WholesaleProductRepository;
-import java.time.LocalDate;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.Arrays;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,6 +120,162 @@ class WholesaleFileControllerIntegrationTest {
 	}
 
 	@Test
+	void wholesaleFileDetailAndRowsDoNotExposeOtherUsersFile() throws Exception {
+		AuthResponse ownerAuth = signup("wholesale-private-owner@example.com");
+		AuthResponse otherAuth = signup("wholesale-private-other@example.com");
+		Long fileId = upload(ownerAuth, """
+				productName,supplyPrice,shippingFee,category
+				car brush,4200,3000,car
+				""");
+		mapAndParse(ownerAuth, fileId);
+
+		mockMvc.perform(get("/api/v1/wholesale-files/{fileId}", fileId)
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.WHOLESALE_FILE_NOT_FOUND.name()));
+
+		mockMvc.perform(get("/api/v1/wholesale-files/{fileId}/rows", fileId)
+						.header("Authorization", bearer(otherAuth)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.WHOLESALE_FILE_NOT_FOUND.name()));
+	}
+
+	@Test
+	void previewUploadReturnsUploadIdAndCsvPreview() throws Exception {
+		AuthResponse auth = signup("wholesale-preview@example.com");
+		MockMultipartFile file = csvFile("items.csv", """
+				productName,supplyPrice,shippingFee,imageUrl,category
+				car brush,"1,200 원",3000,https://example.com/a.jpg,car
+				""");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(file)
+						.param("encoding", "AUTO")
+						.param("sourceName", "preview supplier")
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.uploadId").isNumber())
+				.andExpect(jsonPath("$.data.fileType").value("CSV"))
+				.andExpect(jsonPath("$.data.preview.rowCount").value(1))
+				.andExpect(jsonPath("$.data.preview.headers[0]").value("productName"))
+				.andExpect(jsonPath("$.data.preview.rows[0].cells[1].longValue").value(1200));
+
+		assertThat(wholesaleFileRepository.findAll()).hasSize(1);
+	}
+
+	@Test
+	void previewUploadSupportsXlsx() throws Exception {
+		AuthResponse auth = signup("wholesale-preview-xlsx@example.com");
+		MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"items.xlsx",
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				xlsxBytes()
+		);
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(file)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.fileType").value("XLSX"))
+				.andExpect(jsonPath("$.data.preview.headers[0]").value("productName"))
+				.andExpect(jsonPath("$.data.preview.rows[0].cells[1].longValue").value(4500));
+	}
+
+	@Test
+	void confirmUploadStoresParsedAndInvalidRows() throws Exception {
+		AuthResponse auth = signup("wholesale-confirm@example.com");
+		Long uploadId = previewUpload(auth, """
+				productName,supplyPrice,shippingFee,imageUrl,productUrl,category
+				car brush,4200,3000,https://example.com/a.jpg,https://example.com/a,car
+				desk tray,not-number,2500,https://example.com/b.jpg,https://example.com/b,office
+				""");
+
+		mockMvc.perform(post("/api/v1/wholesale-uploads/{uploadId}/confirm", uploadId)
+						.header("Authorization", bearer(auth))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new WholesaleUploadConfirmRequest(
+								new WholesaleUploadConfirmRequest.Mapping(
+										"productName",
+										"supplyPrice",
+										"shippingFee",
+										"imageUrl",
+										"productUrl",
+										"category"
+								)
+						))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.uploadId").value(uploadId))
+				.andExpect(jsonPath("$.data.successCount").value(1))
+				.andExpect(jsonPath("$.data.failureCount").value(1))
+				.andExpect(jsonPath("$.data.failureReasons[0].rowNo").value(3));
+
+		WholesaleProduct parsedProduct = wholesaleProductRepository.findAll().stream()
+				.filter(product -> product.getParseStatus() == WholesaleProductParseStatus.PARSED)
+				.findFirst()
+				.orElseThrow();
+		assertThat(parsedProduct.getImageUrl()).isEqualTo("https://example.com/a.jpg");
+		assertThat(parsedProduct.getProductUrl()).isEqualTo("https://example.com/a");
+		assertThat(parsedProduct.getSourceCategory()).isEqualTo("car");
+		assertThat(wholesaleFileRepository.findById(uploadId).orElseThrow().getStatus())
+				.isEqualTo(WholesaleFileStatus.PARSED);
+	}
+
+	@Test
+	void previewUploadRejectsUnsupportedExtension() throws Exception {
+		AuthResponse auth = signup("wholesale-preview-extension@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile("file", "items.txt", "text/plain", "a,b".getBytes(StandardCharsets.UTF_8)))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()))
+				.andExpect(jsonPath("$.error.field").value("file"));
+	}
+
+	@Test
+	void previewUploadRejectsFileSizeLimit() throws Exception {
+		AuthResponse auth = signup("wholesale-preview-size@example.com");
+		byte[] bytes = new byte[5 * 1024 * 1024 + 1];
+		Arrays.fill(bytes, (byte) 'a');
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile("file", "items.csv", "text/csv", bytes))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_FILE_SIZE_EXCEEDED.name()))
+				.andExpect(jsonPath("$.error.field").value("file"));
+	}
+
+	@Test
+	void confirmUploadRejectsMissingMappedColumn() throws Exception {
+		AuthResponse auth = signup("wholesale-confirm-mapping-error@example.com");
+		Long uploadId = previewUpload(auth, """
+				productName,supplyPrice
+				car brush,4200
+				""");
+
+		mockMvc.perform(post("/api/v1/wholesale-uploads/{uploadId}/confirm", uploadId)
+						.header("Authorization", bearer(auth))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new WholesaleUploadConfirmRequest(
+								new WholesaleUploadConfirmRequest.Mapping(
+										"missingName",
+										"supplyPrice",
+										null,
+										null,
+										null,
+										null
+								)
+						))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_REQUIRED_COLUMN_MISSING.name()))
+				.andExpect(jsonPath("$.error.field").value("productName"));
+	}
+
+	@Test
 	void mappingAndParseStoreParsedAndInvalidRows() throws Exception {
 		AuthResponse auth = signup("wholesale-parse@example.com");
 		Long fileId = upload(auth, """
@@ -151,6 +315,15 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.items[1].parseStatus").value(WholesaleProductParseStatus.INVALID.name()))
 				.andExpect(jsonPath("$.data.items[1].errorMessage").value("supplyPrice must be a positive number."))
 				.andExpect(jsonPath("$.data.items[2].parseStatus").value(WholesaleProductParseStatus.INVALID.name()));
+
+		WholesaleProduct parsedProduct = wholesaleProductRepository.findAll().stream()
+				.filter(product -> product.getParseStatus() == WholesaleProductParseStatus.PARSED)
+				.findFirst()
+				.orElseThrow();
+		assertThat(parsedProduct.getUser().getId()).isEqualTo(auth.userId());
+		assertThat(parsedProduct.getSourceName()).isNull();
+		assertThat(parsedProduct.getSourceCategory()).isEqualTo("car");
+		assertThat(parsedProduct.isSoldOut()).isFalse();
 	}
 
 	@Test
@@ -216,15 +389,36 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.generatedCount").value(0))
 				.andExpect(jsonPath("$.data.skippedCount").value(1));
 
-		mockMvc.perform(get("/api/v1/candidates")
+		MvcResult listResult = mockMvc.perform(get("/api/v1/candidates")
 						.header("Authorization", bearer(auth))
 						.param("source", "CSV"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.items.length()").value(1))
 				.andExpect(jsonPath("$.data.items[0].name").value("car brush set"))
 				.andExpect(jsonPath("$.data.items[0].categoryCode").value(CategoryCode.CAR_ACCESSORY.name()))
+				.andExpect(jsonPath("$.data.items[0].score").value(70))
+				.andExpect(jsonPath("$.data.items[0].grade").value("REVIEW"))
 				.andExpect(jsonPath("$.data.items[0].expectedSalePrice").value(12900))
-				.andExpect(jsonPath("$.data.items[0].expectedMarginRate").value(44.19));
+				.andExpect(jsonPath("$.data.items[0].expectedMarginRate").value(44.19))
+				.andReturn();
+		Long candidateId = objectMapper.readTree(listResult.getResponse().getContentAsByteArray())
+				.get("data")
+				.get("items")
+				.get(0)
+				.get("candidateId")
+				.asLong();
+
+		mockMvc.perform(get("/api/v1/candidates/{candidateId}", candidateId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.scoreBreakdown.trendScore").value(0))
+				.andExpect(jsonPath("$.data.scoreBreakdown.competitionScore").value(25))
+				.andExpect(jsonPath("$.data.scoreBreakdown.marginScore").value(30))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceBandScore").value(10))
+				.andExpect(jsonPath("$.data.scoreBreakdown.priceScore").value(10))
+				.andExpect(jsonPath("$.data.scoreBreakdown.supplyScore").value(5))
+				.andExpect(jsonPath("$.data.scoreBreakdown.riskPenalty").value(0))
+				.andExpect(jsonPath("$.data.warnings[0]").value("데이터 기반 검토 후보이며 판매나 수익을 보장하지 않습니다."));
 	}
 
 	private Long upload(AuthResponse auth, String content) throws Exception {
@@ -236,6 +430,18 @@ class WholesaleFileControllerIntegrationTest {
 		return objectMapper.readTree(result.getResponse().getContentAsByteArray())
 				.get("data")
 				.get("fileId")
+				.asLong();
+	}
+
+	private Long previewUpload(AuthResponse auth, String content) throws Exception {
+		MvcResult result = mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(csvFile("items.csv", content))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andReturn();
+		return objectMapper.readTree(result.getResponse().getContentAsByteArray())
+				.get("data")
+				.get("uploadId")
 				.asLong();
 	}
 
@@ -265,6 +471,21 @@ class WholesaleFileControllerIntegrationTest {
 				"text/csv",
 				content.getBytes(StandardCharsets.UTF_8)
 		);
+	}
+
+	private byte[] xlsxBytes() throws Exception {
+		try (Workbook workbook = new XSSFWorkbook();
+				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			Sheet sheet = workbook.createSheet("items");
+			Row header = sheet.createRow(0);
+			header.createCell(0).setCellValue("productName");
+			header.createCell(1).setCellValue("supplyPrice");
+			Row row = sheet.createRow(1);
+			row.createCell(0).setCellValue("desk tray");
+			row.createCell(1).setCellValue("4,500 \uC6D0");
+			workbook.write(output);
+			return output.toByteArray();
+		}
 	}
 
 	private AuthResponse signup(String email) throws Exception {
