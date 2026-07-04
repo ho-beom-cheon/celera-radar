@@ -26,6 +26,7 @@ import {
   LoadingState
 } from '../../components/ui';
 import { formatApiError } from '../../lib/apiError';
+import { blankToNumberFilter, hasFormErrors, isBlank, parseFiniteNumber } from '../../lib/formValidation';
 
 const gradeOptions: Array<{ value: CandidateGrade; label: string }> = [
   { value: 'RECOMMENDED', label: '추천 검토' },
@@ -90,8 +91,8 @@ export function CandidatesPage() {
         grade,
         categoryCode,
         source,
-        minScore: minScore.trim() === '' ? '' : Number(minScore),
-        minMarginRate: minMarginRate.trim() === '' ? '' : Number(minMarginRate),
+        minScore: blankToNumberFilter(minScore),
+        minMarginRate: blankToNumberFilter(minMarginRate),
         page: 0,
         size: 50
       });
@@ -508,13 +509,13 @@ function formatPercent(value: number | null) {
 
 function validateCandidateFilterForm(minScore: string, minMarginRate: string): CandidateFilterErrors {
   const errors: CandidateFilterErrors = {};
-  const parsedMinScore = Number(minScore);
-  const parsedMinMarginRate = Number(minMarginRate);
+  const parsedMinScore = parseFiniteNumber(minScore);
+  const parsedMinMarginRate = parseFiniteNumber(minMarginRate);
 
-  if (minScore.trim() && (!Number.isFinite(parsedMinScore) || parsedMinScore < 0 || parsedMinScore > 100)) {
+  if (!isBlank(minScore) && (parsedMinScore === undefined || parsedMinScore < 0 || parsedMinScore > 100)) {
     errors.minScore = '최소 점수는 0~100 사이여야 합니다.';
   }
-  if (minMarginRate.trim() && (!Number.isFinite(parsedMinMarginRate) || parsedMinMarginRate < 0)) {
+  if (!isBlank(minMarginRate) && (parsedMinMarginRate === undefined || parsedMinMarginRate < 0)) {
     errors.minMarginRate = '최소 마진율은 0 이상이어야 합니다.';
   }
   return errors;
@@ -534,8 +535,4 @@ function getCandidateFilterSubmitReason(
   }
   const errors = validateCandidateFilterForm(minScore, minMarginRate);
   return errors.minScore ?? errors.minMarginRate ?? '';
-}
-
-function hasFormErrors(errors: CandidateFilterErrors) {
-  return Object.values(errors).some(Boolean);
 }

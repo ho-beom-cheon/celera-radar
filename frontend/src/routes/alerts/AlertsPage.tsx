@@ -20,6 +20,7 @@ import {
   StatusBadge
 } from '../../components/ui';
 import { authRequiredMessage, formatApiError } from '../../lib/apiError';
+import { hasFormErrors, isBlank, parseFiniteNumber } from '../../lib/formValidation';
 
 const categoryOptions: Array<{ value: CategoryCode; label: string }> = [
   { value: 'CAR_ACCESSORY', label: '차량용품' },
@@ -398,20 +399,20 @@ interface AlertRuleFormValues {
 
 function validateAlertRuleForm(values: AlertRuleFormValues): AlertRuleFormErrors {
   const errors: AlertRuleFormErrors = {};
-  const minScore = Number(values.minScore);
-  const minMarginRate = Number(values.minMarginRate);
+  const minScore = parseFiniteNumber(values.minScore);
+  const minMarginRate = parseFiniteNumber(values.minMarginRate);
 
-  if (!values.name.trim()) {
+  if (isBlank(values.name)) {
     errors.name = '조건명을 입력하세요.';
   }
-  if (!values.minScore.trim()) {
+  if (isBlank(values.minScore)) {
     errors.minScore = '최소 점수를 입력하세요.';
-  } else if (!Number.isFinite(minScore) || minScore < 0 || minScore > 100) {
+  } else if (minScore === undefined || minScore < 0 || minScore > 100) {
     errors.minScore = '최소 점수는 0~100 사이여야 합니다.';
   }
-  if (!values.minMarginRate.trim()) {
+  if (isBlank(values.minMarginRate)) {
     errors.minMarginRate = '최소 예상 마진율을 입력하세요.';
-  } else if (!Number.isFinite(minMarginRate) || minMarginRate < 0) {
+  } else if (minMarginRate === undefined || minMarginRate < 0) {
     errors.minMarginRate = '최소 예상 마진율은 0 이상이어야 합니다.';
   }
   if (values.categoryCodes.length === 0) {
@@ -433,8 +434,4 @@ function getRuleSubmitReason(
   }
   const errors = validateAlertRuleForm(values);
   return errors.name ?? errors.minScore ?? errors.minMarginRate ?? errors.categoryCodes ?? '';
-}
-
-function hasFormErrors(errors: AlertRuleFormErrors) {
-  return Object.values(errors).some(Boolean);
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FieldMessage, HelpTooltip, LazyKpiBarChart, MetricCard } from '../../components/ui';
+import { hasFormErrors, isBlank, parseFiniteNumber } from '../../lib/formValidation';
 
 interface MarginFormErrors {
   supplyPrice?: string;
@@ -23,12 +24,12 @@ export function MarginCalculatorPage() {
   const calculationReady = !hasFormErrors(formErrors);
 
   const calculated = useMemo(() => {
-    const safeSupply = parseRequiredNumber(supplyPrice) ?? 0;
+    const safeSupply = parseFiniteNumber(supplyPrice) ?? 0;
     const safeShipping = parseOptionalNumber(shippingFee) ?? 0;
     const totalCost = safeSupply + safeShipping;
-    const targetRatio = (parseRequiredNumber(targetMarginRate) ?? 1) / 100;
+    const targetRatio = (parseFiniteNumber(targetMarginRate) ?? 1) / 100;
     const recommendedSalePrice = totalCost > 0 ? roundUpToHundred(totalCost / (1 - targetRatio)) : 0;
-    const manualSalePrice = parseRequiredNumber(salePrice) ?? 0;
+    const manualSalePrice = parseFiniteNumber(salePrice) ?? 0;
     const marginAmount = manualSalePrice - totalCost;
     const marginRate = manualSalePrice > 0 ? (marginAmount / manualSalePrice) * 100 : 0;
     const recommendedMarginAmount = recommendedSalePrice - totalCost;
@@ -50,7 +51,7 @@ export function MarginCalculatorPage() {
     () => [
       { label: '총 원가', value: calculated.totalCost, color: 'var(--sr-color-danger-muted)' },
       { label: '권장 판매가', value: calculated.recommendedSalePrice, color: 'var(--sr-color-brand)' },
-      { label: '입력 판매가', value: parseRequiredNumber(salePrice) ?? 0, color: 'var(--sr-color-accent)' },
+      { label: '입력 판매가', value: parseFiniteNumber(salePrice) ?? 0, color: 'var(--sr-color-accent)' },
       { label: '입력 마진', value: Math.max(0, calculated.marginAmount), color: 'var(--sr-color-success)' }
     ],
     [calculated.marginAmount, calculated.recommendedSalePrice, calculated.totalCost, salePrice]
@@ -272,11 +273,11 @@ function validateMarginForm(values: {
 }
 
 function validateRequiredPositiveNumber(value: string, label: string) {
-  if (!value.trim()) {
+  if (isBlank(value)) {
     return `${label}를 입력하세요.`;
   }
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) {
+  const numberValue = parseFiniteNumber(value);
+  if (numberValue === undefined) {
     return `${label}는 숫자로 입력하세요.`;
   }
   if (numberValue <= 0) {
@@ -286,11 +287,11 @@ function validateRequiredPositiveNumber(value: string, label: string) {
 }
 
 function validateOptionalNonNegativeNumber(value: string, label: string) {
-  if (!value.trim()) {
+  if (isBlank(value)) {
     return undefined;
   }
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) {
+  const numberValue = parseFiniteNumber(value);
+  if (numberValue === undefined) {
     return `${label}는 숫자로 입력하세요.`;
   }
   if (numberValue < 0) {
@@ -300,11 +301,11 @@ function validateOptionalNonNegativeNumber(value: string, label: string) {
 }
 
 function validateTargetMarginRate(value: string) {
-  if (!value.trim()) {
+  if (isBlank(value)) {
     return '목표 마진율을 입력하세요.';
   }
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) {
+  const numberValue = parseFiniteNumber(value);
+  if (numberValue === undefined) {
     return '목표 마진율은 숫자로 입력하세요.';
   }
   if (numberValue < 1 || numberValue > 90) {
@@ -313,16 +314,11 @@ function validateTargetMarginRate(value: string) {
   return undefined;
 }
 
-function parseRequiredNumber(value: string) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : undefined;
-}
-
 function parseOptionalNumber(value: string) {
-  if (!value.trim()) {
+  if (isBlank(value)) {
     return 0;
   }
-  return parseRequiredNumber(value);
+  return parseFiniteNumber(value);
 }
 
 function getApplyRecommendedPriceReason(errors: MarginFormErrors, recommendedSalePrice: number) {
@@ -336,9 +332,6 @@ function getApplyRecommendedPriceReason(errors: MarginFormErrors, recommendedSal
   return '';
 }
 
-function hasFormErrors(errors: MarginFormErrors) {
-  return Object.values(errors).some(Boolean);
-}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('ko-KR', {

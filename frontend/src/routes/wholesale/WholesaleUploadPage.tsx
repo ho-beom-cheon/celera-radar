@@ -19,6 +19,7 @@ import {
   MetricCard
 } from '../../components/ui';
 import { formatApiError } from '../../lib/apiError';
+import { hasFormErrors } from '../../lib/formValidation';
 import type { HelpContentKey } from '../../lib/helpContent';
 
 const encodingOptions: Array<{ value: CsvEncoding; label: string }> = [
@@ -509,8 +510,4 @@ function getConfirmDisabledReason(
 function isSupportedWholesaleFile(file: File) {
   const normalizedName = file.name.toLowerCase();
   return normalizedName.endsWith('.csv') || normalizedName.endsWith('.xlsx');
-}
-
-function hasFormErrors(errors: UploadFormErrors | MappingFormErrors) {
-  return Object.values(errors).some(Boolean);
 }
