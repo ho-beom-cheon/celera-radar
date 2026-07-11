@@ -4,9 +4,9 @@ import com.sellerradar.auth.dto.AuthResponse;
 import com.sellerradar.auth.dto.LoginRequest;
 import com.sellerradar.auth.dto.RefreshTokenRequest;
 import com.sellerradar.auth.dto.SignupRequest;
-import com.sellerradar.auth.jwt.JwtClaims;
 import com.sellerradar.auth.jwt.JwtTokenProvider;
-import com.sellerradar.auth.jwt.TokenPair;
+import com.sellerradar.auth.session.AuthSessionService;
+import com.sellerradar.auth.session.IssuedRefreshSession;
 import com.sellerradar.common.error.BusinessException;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.user.domain.User;
@@ -21,15 +21,18 @@ public class AuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AuthSessionService authSessionService;
 
 	public AuthService(
 			UserRepository userRepository,
 			PasswordEncoder passwordEncoder,
-			JwtTokenProvider jwtTokenProvider
+			JwtTokenProvider jwtTokenProvider,
+			AuthSessionService authSessionService
 	) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.authSessionService = authSessionService;
 	}
 
 	@Transactional
@@ -39,33 +42,39 @@ public class AuthService {
 			throw new BusinessException(ErrorCode.DUPLICATED_EMAIL, ErrorCode.DUPLICATED_EMAIL.defaultMessage(), "email");
 		}
 		User user = userRepository.save(User.create(email, passwordEncoder.encode(request.password())));
-		return toAuthResponse(user, jwtTokenProvider.issueTokenPair(user));
+		return toAuthResponse(authSessionService.issue(user));
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public AuthResponse login(LoginRequest request) {
 		String email = normalizeEmail(request.email());
 		User user = userRepository.findByEmail(email)
+				.filter(User::isActive)
 				.filter(foundUser -> passwordEncoder.matches(request.password(), foundUser.getPasswordHash()))
 				.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
-		return toAuthResponse(user, jwtTokenProvider.issueTokenPair(user));
+		return toAuthResponse(authSessionService.issue(user));
 	}
 
-	@Transactional(readOnly = true)
 	public AuthResponse refresh(RefreshTokenRequest request) {
-		JwtClaims claims = jwtTokenProvider.parseRefreshToken(request.refreshToken());
-		User user = userRepository.findById(claims.userId())
-				.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
-		return toAuthResponse(user, jwtTokenProvider.issueTokenPair(user));
+		return toAuthResponse(authSessionService.rotate(request.refreshToken()));
 	}
 
-	private AuthResponse toAuthResponse(User user, TokenPair tokenPair) {
+	public void logout(RefreshTokenRequest request) {
+		authSessionService.logout(request.refreshToken());
+	}
+
+	public void logoutAll(Long userId) {
+		authSessionService.logoutAll(userId);
+	}
+
+	private AuthResponse toAuthResponse(IssuedRefreshSession refreshSession) {
+		User user = refreshSession.user();
 		return new AuthResponse(
 				user.getId(),
 				user.getEmail(),
 				user.getPlanCode(),
-				tokenPair.accessToken(),
-				tokenPair.refreshToken()
+				jwtTokenProvider.issueAccessToken(user),
+				refreshSession.refreshToken()
 		);
 	}
 
