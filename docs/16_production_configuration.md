@@ -54,6 +54,14 @@ management:
 - Actuator는 `health`만 외부 노출 대상으로 둔다.
 - 오류 응답에 내부 message, binding detail, stack trace를 포함하지 않는다.
 
+### 4.1 인증 요청 제한
+
+인증 요청 제한은 기본적으로 로그인 계정 5회/IP 20회/15분, 회원가입 계정 3회/IP 10회/1시간을 적용한다. 비밀번호 재설정 액션은 엔드포인트 도입 전까지 정책만 준비하며 계정 3회/IP 10회/1시간으로 설정한다.
+
+현재 카운터는 단일 애플리케이션 인스턴스의 bounded in-memory 저장소를 사용한다. 수평 확장 전에는 sticky routing으로 보안 경계가 약화되지 않도록 단일 인스턴스로 운영하고, 다중 인스턴스 전환 시 중앙 저장소 기반 limiter로 교체한다. 최대 추적 키 수를 넘으면 새 키를 허용하지 않는 fail-closed 정책을 사용한다.
+
+클라이언트 IP는 애플리케이션 서버가 관측한 원격 주소를 사용한다. reverse proxy의 전달 헤더를 사용할 때는 신뢰 가능한 proxy 대역과 Spring forwarded-header 전략을 함께 구성한 뒤 별도 검증한다.
+
 ## 5. 배포 절차
 
 1. 배포 플랫폼의 secret manager에 환경별 credential을 등록한다.
