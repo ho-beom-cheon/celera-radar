@@ -324,6 +324,7 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 - 점수 범위는 0~30으로 제한한다.
 - 기준일에 정확한 ratio가 없으면 그 이전의 가장 가까운 period를 사용한다.
 - 점수 계산과 화면 조회는 가장 최근 `snapshot_date`의 point만 사용한다. 이전 수집분과 합치지 않는다.
+- Shopping Insight 배치는 내부 카테고리를 NAVER 대분류 코드로 변환한다. 차량·생활·청소·반려동물·주방은 생활/건강, 홈수납은 가구/인테리어, 여행정리는 패션잡화, 캠핑·홈트레이닝은 스포츠/레저를 사용한다.
 - 데이터랩 ratio는 검색 클릭 추이 기반이며 실제 판매량이 아니라는 warning reason을 포함한다.
 
 ### wholesale_uploads
