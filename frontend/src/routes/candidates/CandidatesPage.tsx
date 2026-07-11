@@ -221,7 +221,7 @@ export function CandidatesPage() {
             type="button"
             className="primary-button"
             onClick={() => void handleRecalculate()}
-            disabled={!hasAccessToken || loading || recalculating || totalElements === 0}
+            disabled={!hasAccessToken || loading || recalculating}
           >
             {recalculating ? '점수 갱신 중' : '최신 트렌드로 점수 갱신'}
           </button>
