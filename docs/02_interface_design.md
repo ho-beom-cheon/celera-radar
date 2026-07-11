@@ -960,6 +960,25 @@ Response:
 
 ## 5. 외부 API 인터페이스
 
+## 5.0 Provider capability 조회
+
+### GET /api/v1/external/providers/naver/capabilities
+
+인증된 사용자가 현재 서버에 설정된 네이버 provider mode와 사용 가능한 capability를 조회한다. 이 요청은 외부 API를 호출하지 않으며 credential이나 endpoint 원문을 반환하지 않는다.
+
+```json
+{
+  "provider": "NAVER",
+  "mode": "HUB",
+  "capabilities": ["SHOPPING_INSIGHT"]
+}
+```
+
+- mode는 `LEGACY`, `HUB`, `DISABLED` 중 하나다.
+- capability는 유효한 credential과 해당 기능의 명시적 endpoint가 모두 있을 때만 노출한다.
+- `DISABLED` 또는 불완전한 설정에서는 빈 capability 목록을 반환하고 실제 기능 호출은 `EXTERNAL_API_UNAVAILABLE`로 종료한다.
+- 프론트엔드는 capability를 기능 노출 판단에 사용할 수 있지만 외부 API를 직접 호출해서는 안 된다.
+
 ## 5.1 네이버 쇼핑 검색 API
 
 ### 용도
@@ -983,6 +1002,9 @@ X-Naver-Client-Secret: {clientSecret}
 3. 응답 원문 일부를 JSONB로 저장한다.
 4. 실패 시 마지막 성공 snapshot을 사용한다.
 5. 429/403/500은 api_call_log와 external_api_error_log에 기록한다.
+6. `LEGACY` mode는 기존 개발자센터 endpoint와 `X-Naver-Client-Id` 계열 header를 사용한다.
+7. `HUB` mode는 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` header를 사용하며 공식 확인한 endpoint를 환경변수로 명시한 경우에만 활성화한다.
+8. 코드가 NAVER API HUB 쇼핑 검색 endpoint를 추측하거나 기본값으로 제공해서는 안 된다.
 
 ### 저장 테이블
 
@@ -1037,6 +1059,7 @@ Content-Type: application/json
 - v0.2 운영 기준: HIGH 우선순위 키워드 300~500개 일 1회
 - LOW 우선순위 키워드는 주 1~2회 순환 분석
 - 사용자 키워드는 등록 즉시 분석하지 않고 다음 배치에 반영
+- provider mode와 인증 header 정책은 쇼핑 검색과 같고, HUB mode에서는 `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT`를 명시해야 한다.
 
 ---
 

@@ -14,7 +14,7 @@
 | `DB_PASSWORD` | 애플리케이션 DB 비밀번호 | 개발 기본값과 공통 비밀번호 금지 |
 | `JWT_SECRET` | JWT HMAC key | UTF-8 기준 32바이트 이상, 환경별 분리 |
 
-NAVER credential은 provider 전환 작업에서 capability와 함께 별도로 검증한다. R0-02에서는 외부 provider가 비활성 또는 미설정이어도 핵심 애플리케이션이 기동될 수 있도록 범위를 분리한다.
+NAVER 외부 provider는 production에서 기본 `DISABLED`다. 운영 연동이 필요할 때만 `NAVER_PROVIDER_MODE=HUB`와 API HUB 전용 credential을 secret manager에서 주입하고, 공식 확인한 기능별 endpoint를 환경변수로 명시한다. credential과 endpoint가 완전한 기능만 capability로 활성화되며 나머지는 외부 호출 없이 fail-closed 처리한다.
 
 ## 3. fail-fast 정책
 
@@ -95,6 +95,21 @@ management:
 - `VITE_API_BASE_URL`이 없거나 유효한 HTTP(S) URL이 아니면 정적 CSP의 `connect-src`는 `'self'`만 허용해 외부 연결을 fail-closed로 차단한다.
 - credentialed CORS에 `*`를 설정하면 애플리케이션이 기동을 거부한다. production origin은 `https://` 정확한 origin 단위로 지정한다.
 - 외부 상품 링크와 이미지는 backend 저장 경계와 frontend 렌더링 경계에서 `http`/`https`만 허용하며 user-info URL을 거부한다.
+
+### 4.4 NAVER 외부 provider
+
+| 환경변수 | 기본값 | 운영 기준 |
+|---|---|---|
+| `NAVER_PROVIDER_MODE` | prod `DISABLED` | 연동 승인 후에만 `HUB` |
+| `NAVER_API_HUB_CLIENT_ID` | 빈 값 | secret manager 주입 |
+| `NAVER_API_HUB_CLIENT_SECRET` | 빈 값 | secret manager 주입 |
+| `NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT` | 빈 값 | 공식 확인 전 비활성 유지 |
+| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | 빈 값 | 공식 전체 HTTP(S) endpoint만 허용 |
+
+- `LEGACY`는 기존 개발 호환 mode이며 신규 production 기본값으로 사용하지 않는다.
+- endpoint는 host가 있는 absolute HTTP(S) URL이어야 하고 user-info URL은 거부한다.
+- 설정 여부는 인증된 capability 조회 API로 확인하며 credential 원문을 로그나 응답에 노출하지 않는다.
+- 설정 변경 후 snapshot cache와 `api_call_log`가 기존 원칙대로 동작하는지 staging에서 확인한다.
 
 ## 5. 배포 절차
 
