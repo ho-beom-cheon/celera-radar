@@ -26,6 +26,7 @@ import com.sellerradar.trend.client.NaverDataLabTrendPoint;
 import com.sellerradar.trend.domain.TrendSnapshot;
 import com.sellerradar.trend.domain.TrendTimeUnit;
 import com.sellerradar.trend.repository.TrendSnapshotRepository;
+import com.sellerradar.trend.port.ShoppingInsightProvider;
 import com.sellerradar.user.domain.User;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -45,7 +46,7 @@ class TrendSnapshotServiceTest {
 	private KeywordRepository keywordRepository;
 	private TrendSnapshotRepository trendSnapshotRepository;
 	private ApiCallLogRepository apiCallLogRepository;
-	private NaverDataLabClient naverDataLabClient;
+	private ShoppingInsightProvider shoppingInsightProvider;
 	private TrendSnapshotService service;
 	private Keyword keyword;
 
@@ -54,12 +55,12 @@ class TrendSnapshotServiceTest {
 		keywordRepository = mock(KeywordRepository.class);
 		trendSnapshotRepository = mock(TrendSnapshotRepository.class);
 		apiCallLogRepository = mock(ApiCallLogRepository.class);
-		naverDataLabClient = mock(NaverDataLabClient.class);
+		shoppingInsightProvider = mock(ShoppingInsightProvider.class);
 		service = new TrendSnapshotService(
 				keywordRepository,
 				trendSnapshotRepository,
 				apiCallLogRepository,
-				naverDataLabClient,
+				shoppingInsightProvider,
 				new TrendScoreCalculator()
 		);
 		User user = User.create("seller@example.com", "{bcrypt}hash");
@@ -76,7 +77,7 @@ class TrendSnapshotServiceTest {
 
 	@Test
 	void collectKeywordTrendStoresSnapshotsAndReturnsScore() {
-		when(naverDataLabClient.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
+		when(shoppingInsightProvider.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
 				.thenReturn(keywordTrendResponse());
 		when(trendSnapshotRepository.findByKeyword_IdAndSnapshotDateAndDataPeriodAndTimeUnit(any(), any(), any(), any()))
 				.thenReturn(Optional.empty());
@@ -101,7 +102,7 @@ class TrendSnapshotServiceTest {
 
 		ArgumentCaptor<NaverDataLabKeywordTrendRequest> requestCaptor =
 				ArgumentCaptor.forClass(NaverDataLabKeywordTrendRequest.class);
-		verify(naverDataLabClient).searchKeywordTrend(requestCaptor.capture());
+		verify(shoppingInsightProvider).searchKeywordTrend(requestCaptor.capture());
 		assertThat(requestCaptor.getValue().category()).isEqualTo(NAVER_CATEGORY_CODE);
 		assertThat(requestCaptor.getValue().keyword()).isEqualTo("차량용 수납함");
 
@@ -135,7 +136,7 @@ class TrendSnapshotServiceTest {
 				TrendTimeUnit.DATE,
 				new BigDecimal("10.0000")
 		);
-		when(naverDataLabClient.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
+		when(shoppingInsightProvider.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
 				.thenReturn(new NaverDataLabKeywordTrendResponse(
 						"2026-07-01",
 						"2026-07-01",
@@ -163,7 +164,7 @@ class TrendSnapshotServiceTest {
 
 	@Test
 	void collectKeywordTrendStoresFailureLogWhenClientFails() {
-		when(naverDataLabClient.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
+		when(shoppingInsightProvider.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
 				.thenThrow(new BusinessException(ErrorCode.EXTERNAL_API_RATE_LIMIT));
 
 		assertThatThrownBy(() -> service.collectKeywordTrend(

@@ -19,6 +19,9 @@ spring:
       max-request-size: 10MB
 
 seller-radar:
+  external:
+    naver:
+      mode: LEGACY
   web-security:
     csp-enforce: false
     csp-policy: "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
@@ -30,6 +33,15 @@ seller-radar:
     secret: test-only-jwt-secret-for-seller-radar-auth-tests-32-bytes
     access-token-ttl: PT30M
     refresh-token-ttl: P14D
+  naver:
+    client-id:
+    client-secret:
+    datalab-daily-quota: 1000
+  naver-api-hub:
+    client-id:
+    client-secret:
+    shopping-search-endpoint:
+    shopping-insight-endpoint:
   auth:
     rate-limit:
       login-account-limit: 1000
