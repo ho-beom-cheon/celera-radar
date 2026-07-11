@@ -27,15 +27,21 @@ import com.sellerradar.wholesale.repository.WholesaleFileRepository;
 import com.sellerradar.wholesale.repository.WholesaleProductRepository;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -45,7 +51,10 @@ import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+		"seller-radar.wholesale.upload-security.quarantine-directory=./build/test-quarantine/wholesale-controller",
+		"seller-radar.wholesale.upload-security.max-file-size=64KB"
+})
 @AutoConfigureMockMvc
 class WholesaleFileControllerIntegrationTest {
 	private static final String PASSWORD = "password1234";
@@ -71,10 +80,19 @@ class WholesaleFileControllerIntegrationTest {
 	@Autowired
 	private ShoppingPriceSnapshotRepository snapshotRepository;
 
+	@Value("${seller-radar.wholesale.upload-security.quarantine-directory}")
+	private String quarantineDirectory;
+
 	@BeforeEach
-	void setUp() {
+	void setUp() throws Exception {
 		wholesaleProductRepository.deleteAll();
 		wholesaleFileRepository.deleteAll();
+		clearQuarantine();
+	}
+
+	@AfterEach
+	void tearDown() throws Exception {
+		clearQuarantine();
 	}
 
 	@Test
@@ -100,6 +118,12 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.storedPath").doesNotExist());
 
 		assertThat(wholesaleFileRepository.findAll()).hasSize(1);
+		Path storedPath = Path.of(wholesaleFileRepository.findAll().getFirst().getStoredPath());
+		assertThat(storedPath).exists();
+		assertThat(storedPath.getParent()).isEqualTo(quarantineRoot());
+		assertThat(storedPath.getFileName().toString())
+				.matches("[0-9a-f-]{36}\\.csv")
+				.doesNotContain("items");
 	}
 
 	@Test
@@ -238,7 +262,7 @@ class WholesaleFileControllerIntegrationTest {
 	@Test
 	void previewUploadRejectsFileSizeLimit() throws Exception {
 		AuthResponse auth = signup("wholesale-preview-size@example.com");
-		byte[] bytes = new byte[5 * 1024 * 1024 + 1];
+		byte[] bytes = new byte[64 * 1024 + 1];
 		Arrays.fill(bytes, (byte) 'a');
 
 		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
@@ -247,6 +271,117 @@ class WholesaleFileControllerIntegrationTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_FILE_SIZE_EXCEEDED.name()))
 				.andExpect(jsonPath("$.error.field").value("file"));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void legacyUploadRejectsOversizedFileBeforeParsing() throws Exception {
+		AuthResponse auth = signup("wholesale-legacy-size@example.com");
+		byte[] bytes = new byte[64 * 1024 + 1];
+		Arrays.fill(bytes, (byte) 'a');
+
+		mockMvc.perform(multipart("/api/v1/wholesale-files")
+						.file(new MockMultipartFile("file", "items.csv", "text/csv", bytes))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_FILE_SIZE_EXCEEDED.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRejectsExecutableRenamedAsCsv() throws Exception {
+		AuthResponse auth = signup("wholesale-renamed-executable@example.com");
+		byte[] executable = new byte[] {'M', 'Z', 0x01, 0x02, 0x03};
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile("file", "report.csv", "text/csv", executable))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRejectsXlsxRenamedAsCsv() throws Exception {
+		AuthResponse auth = signup("wholesale-xlsx-renamed-csv@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile("file", "report.csv", "text/csv", xlsxBytes()))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRejectsCsvRenamedAsXlsx() throws Exception {
+		AuthResponse auth = signup("wholesale-csv-renamed-xlsx@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile(
+								"file",
+								"report.xlsx",
+								"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+								"productName,supplyPrice\nitem,1000".getBytes(StandardCharsets.UTF_8)
+						))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRejectsZeroByteFile() throws Exception {
+		AuthResponse auth = signup("wholesale-empty-upload@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile("file", "empty.csv", "text/csv", new byte[0]))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRemovesQuarantineObjectWhenParsingFails() throws Exception {
+		AuthResponse auth = signup("wholesale-invalid-header@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile(
+								"file",
+								"invalid.csv",
+								"text/csv",
+								"   \n".getBytes(StandardCharsets.UTF_8)
+						))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
+	}
+
+	@Test
+	void previewUploadRejectsContentTypeThatConflictsWithExtension() throws Exception {
+		AuthResponse auth = signup("wholesale-content-type@example.com");
+
+		mockMvc.perform(multipart("/api/v1/wholesale-uploads/preview")
+						.file(new MockMultipartFile(
+								"file",
+								"items.csv",
+								"application/pdf",
+								"productName,supplyPrice\nitem,1000".getBytes(StandardCharsets.UTF_8)
+						))
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.CSV_INVALID_FORMAT.name()));
+
+		assertRejectedUploadLeavesNoArtifacts();
 	}
 
 	@Test
@@ -486,6 +621,37 @@ class WholesaleFileControllerIntegrationTest {
 			workbook.write(output);
 			return output.toByteArray();
 		}
+	}
+
+	private void assertRejectedUploadLeavesNoArtifacts() throws Exception {
+		assertThat(wholesaleFileRepository.count()).isZero();
+		assertThat(quarantineFiles()).isEmpty();
+	}
+
+	private List<Path> quarantineFiles() throws Exception {
+		Path root = quarantineRoot();
+		if (Files.notExists(root)) {
+			return List.of();
+		}
+		try (var paths = Files.list(root)) {
+			return paths.filter(Files::isRegularFile).toList();
+		}
+	}
+
+	private void clearQuarantine() throws Exception {
+		Path root = quarantineRoot();
+		if (Files.notExists(root)) {
+			return;
+		}
+		try (var paths = Files.walk(root)) {
+			for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+				Files.deleteIfExists(path);
+			}
+		}
+	}
+
+	private Path quarantineRoot() {
+		return Path.of(quarantineDirectory).toAbsolutePath().normalize();
 	}
 
 	private AuthResponse signup(String email) throws Exception {

@@ -10,28 +10,28 @@ import com.sellerradar.wholesale.dto.WholesaleFileResponse;
 import com.sellerradar.wholesale.dto.WholesaleFilePreviewResponse;
 import com.sellerradar.wholesale.dto.WholesaleUploadPreviewResponse;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
-import java.io.IOException;
-import java.nio.file.Files;
+import com.sellerradar.wholesale.upload.AcceptedUpload;
+import com.sellerradar.wholesale.upload.UploadAdmissionService;
+import com.sellerradar.wholesale.upload.UploadFileType;
+import com.sellerradar.wholesale.upload.UploadQuarantineStorage;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
+import java.util.EnumSet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class WholesaleFileService {
-	private static final long DEFAULT_MAX_UPLOAD_SIZE_BYTES = 5L * 1024 * 1024;
-
 	private final WholesaleFileRepository wholesaleFileRepository;
 	private final UserRepository userRepository;
 	private final CsvEncodingDetector encodingDetector;
 	private final SimpleCsvParser csvParser;
 	private final WholesaleFileParser fileParser;
 	private final WholesaleFilePreviewService previewService;
-	private final Path uploadRoot;
-	private final long maxUploadSizeBytes;
+	private final UploadAdmissionService uploadAdmissionService;
+	private final UploadQuarantineStorage quarantineStorage;
 
 	public WholesaleFileService(
 			WholesaleFileRepository wholesaleFileRepository,
@@ -40,8 +40,8 @@ public class WholesaleFileService {
 			SimpleCsvParser csvParser,
 			WholesaleFileParser fileParser,
 			WholesaleFilePreviewService previewService,
-			@Value("${seller-radar.upload-dir:uploads}") String uploadDir,
-			@Value("${seller-radar.wholesale.max-upload-size-bytes:" + DEFAULT_MAX_UPLOAD_SIZE_BYTES + "}") long maxUploadSizeBytes
+			UploadAdmissionService uploadAdmissionService,
+			UploadQuarantineStorage quarantineStorage
 	) {
 		this.wholesaleFileRepository = wholesaleFileRepository;
 		this.userRepository = userRepository;
@@ -49,8 +49,8 @@ public class WholesaleFileService {
 		this.csvParser = csvParser;
 		this.fileParser = fileParser;
 		this.previewService = previewService;
-		this.uploadRoot = Path.of(uploadDir).toAbsolutePath().normalize();
-		this.maxUploadSizeBytes = maxUploadSizeBytes;
+		this.uploadAdmissionService = uploadAdmissionService;
+		this.quarantineStorage = quarantineStorage;
 	}
 
 	@Transactional
@@ -60,19 +60,14 @@ public class WholesaleFileService {
 			CsvEncoding requestedEncoding,
 			String sourceName
 	) {
-		if (file == null || file.isEmpty()) {
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "CSV file is required.", "file");
-		}
-		String originalFilename = sanitizeFilename(file.getOriginalFilename());
-		if (!originalFilename.toLowerCase(Locale.ROOT).endsWith(".csv")) {
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "Only .csv files are supported.", "file");
-		}
+		AcceptedUpload accepted = uploadAdmissionService.admit(file, EnumSet.of(UploadFileType.CSV));
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+		Path storedPath = quarantineStorage.store(accepted);
+		registerQuarantineCleanup(storedPath);
 		try {
-			byte[] bytes = file.getBytes();
-			CsvEncoding encoding = encodingDetector.detect(bytes, requestedEncoding);
-			CsvDocument document = csvParser.parse(encodingDetector.decode(bytes, encoding));
+			CsvEncoding encoding = encodingDetector.detect(accepted.bytes(), requestedEncoding);
+			CsvDocument document = csvParser.parse(encodingDetector.decode(accepted.bytes(), encoding));
 			if (document.header().isEmpty()) {
 				throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "CSV header is required.", "file");
 			}
@@ -84,21 +79,21 @@ public class WholesaleFileService {
 						"file"
 				);
 			}
-			Path storedPath = store(bytes, originalFilename);
 			WholesaleFile uploaded = WholesaleFile.uploaded(
 					user,
 					sourceName,
-					originalFilename,
+					accepted.originalFilename(),
 					storedPath.toString(),
-					bytes.length,
+					accepted.bytes().length,
 					requestedEncoding,
 					encoding,
 					rowCount,
 					document.header()
 			);
 			return WholesaleFileResponse.from(wholesaleFileRepository.save(uploaded));
-		} catch (IOException exception) {
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "CSV file could not be read.", "file");
+		} catch (RuntimeException exception) {
+			quarantineStorage.deleteQuietly(storedPath);
+			throw exception;
 		}
 	}
 
@@ -114,16 +109,20 @@ public class WholesaleFileService {
 			CsvEncoding requestedEncoding,
 			String sourceName
 	) {
-		if (file == null || file.isEmpty()) {
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "Upload file is required.", "file");
-		}
-		String originalFilename = sanitizeFilename(file.getOriginalFilename());
+		AcceptedUpload accepted = uploadAdmissionService.admit(
+				file,
+				EnumSet.of(UploadFileType.CSV, UploadFileType.XLSX)
+		);
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+		Path storedPath = quarantineStorage.store(accepted);
+		registerQuarantineCleanup(storedPath);
 		try {
-			byte[] bytes = file.getBytes();
-			validateFileSize(bytes.length);
-			ParsedWholesaleFile parsedFile = fileParser.parse(originalFilename, bytes, requestedEncoding);
+			ParsedWholesaleFile parsedFile = fileParser.parse(
+					accepted.originalFilename(),
+					accepted.bytes(),
+					requestedEncoding
+			);
 			CsvDocument document = parsedFile.document();
 			int rowCount = document.rows().size();
 			if (rowCount > user.getPlanCode().csvRowLimit()) {
@@ -133,13 +132,12 @@ public class WholesaleFileService {
 						"file"
 				);
 			}
-			Path storedPath = store(bytes, originalFilename);
 			WholesaleFile uploaded = WholesaleFile.uploaded(
 					user,
 					sourceName,
-					originalFilename,
+					accepted.originalFilename(),
 					storedPath.toString(),
-					bytes.length,
+					accepted.bytes().length,
 					parsedFile.fileType(),
 					requestedEncoding,
 					parsedFile.detectedEncoding(),
@@ -147,10 +145,11 @@ public class WholesaleFileService {
 					document.header()
 			);
 			WholesaleFile saved = wholesaleFileRepository.save(uploaded);
-			WholesaleFilePreviewResponse preview = previewService.toResponse(originalFilename, parsedFile);
+			WholesaleFilePreviewResponse preview = previewService.toResponse(accepted.originalFilename(), parsedFile);
 			return WholesaleUploadPreviewResponse.from(saved, preview);
-		} catch (IOException exception) {
-			throw new BusinessException(ErrorCode.CSV_INVALID_FORMAT, "Upload file could not be read.", "file");
+		} catch (RuntimeException exception) {
+			quarantineStorage.deleteQuietly(storedPath);
+			throw exception;
 		}
 	}
 
@@ -160,31 +159,17 @@ public class WholesaleFileService {
 				.orElseThrow(() -> new BusinessException(ErrorCode.WHOLESALE_FILE_NOT_FOUND));
 	}
 
-	private void validateFileSize(long fileSize) {
-		if (fileSize > maxUploadSizeBytes) {
-			throw new BusinessException(
-					ErrorCode.CSV_FILE_SIZE_EXCEEDED,
-					"Upload file exceeds max size " + maxUploadSizeBytes + " bytes.",
-					"file"
-			);
+	private void registerQuarantineCleanup(Path storedPath) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			return;
 		}
-	}
-
-	private Path store(byte[] bytes, String originalFilename) throws IOException {
-		Files.createDirectories(uploadRoot);
-		String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
-		Path storedPath = uploadRoot.resolve(UUID.randomUUID() + extension).normalize();
-		if (!storedPath.startsWith(uploadRoot)) {
-			throw new IOException("Invalid upload path");
-		}
-		Files.write(storedPath, bytes);
-		return storedPath;
-	}
-
-	private String sanitizeFilename(String filename) {
-		if (filename == null || filename.isBlank()) {
-			return "upload.csv";
-		}
-		return Path.of(filename).getFileName().toString();
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCompletion(int status) {
+				if (status != TransactionSynchronization.STATUS_COMMITTED) {
+					quarantineStorage.deleteQuietly(storedPath);
+				}
+			}
+		});
 	}
 }
