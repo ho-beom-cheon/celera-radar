@@ -323,6 +323,7 @@ trend_score = round(clamp_positive(trend_delta_7d, 0, 100) * 0.15
 
 - 점수 범위는 0~30으로 제한한다.
 - 기준일에 정확한 ratio가 없으면 그 이전의 가장 가까운 period를 사용한다.
+- 점수 계산과 화면 조회는 가장 최근 `snapshot_date`의 point만 사용한다. 이전 수집분과 합치지 않는다.
 - 데이터랩 ratio는 검색 클릭 추이 기반이며 실제 판매량이 아니라는 warning reason을 포함한다.
 
 ### wholesale_uploads
@@ -487,6 +488,8 @@ overall_score = trend_score + competition_score + margin_score + price_band_scor
 세부 계산:
 
 - trend_score는 DataLab trend_score 계산 결과를 0~30으로 제한한다.
+- CSV 후보 생성 시 연결 키워드의 최신 저장 trend_score를 즉시 반영한다. 키워드나 스냅샷이 없으면 0점으로 처리한다.
+- 기존 후보는 사용자 전용 재계산 API로 최신 trend/search snapshot을 다시 적용하며, 제외 후보와 키워드 미연결 후보는 변경하지 않는다.
 - competition_score는 검색 결과 수가 적을수록 높게 주고, 상위 가격대 편차가 크면 감점한다.
 - margin_score는 예상 판매가, 공급가, 배송비 기준 예상 마진율로 계산한다.
 - 빠른 마진 계산은 공급가, 배송비, 플랫폼 수수료율, 광고비, 쿠폰비, 기타 비용까지 총 비용에 포함한다.

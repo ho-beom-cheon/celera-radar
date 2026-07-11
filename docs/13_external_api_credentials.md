@@ -170,3 +170,9 @@ Commerce API 실제 연동 작업을 시작할 때 별도 이슈에서 다음을
 신규 운영 연동은 NAVER API HUB 기준으로 진행한다. production은 provider가 기본 `DISABLED`이므로, API HUB credential과 공식 확인한 기능별 endpoint를 모두 주입한 capability만 활성화된다.
 
 기존 개발자센터 key는 로컬 호환을 위한 `LEGACY` mode에서만 사용한다. 쇼핑 검색 HUB endpoint가 공식적으로 확인되기 전에는 값을 추측하지 않고 capability를 비활성으로 유지한다.
+
+## 9. 로컬 응답 확인 시 인코딩 주의
+
+PowerShell에서 한글 JSON을 문자열로 전달하면 실행 환경에 따라 keyword가 `?`로 변환되어 정상 credential에서도 빈 `data`가 반환될 수 있다. 실제 API 장애나 quota 문제로 판단하기 전에 UTF-8 byte body로 재확인한다.
+
+UTF-8 요청으로 Shopping Insight의 일별 상대 지수가 정상 반환되는 것을 확인했으며, 이 값은 검색 클릭 추이이지 판매량이 아니다. 애플리케이션은 원본 응답을 프론트에 직접 노출하지 않고 PostgreSQL snapshot에 저장한 뒤 최신 기준일 묶음만 추천 점수와 키워드 상세 화면에 사용한다.
