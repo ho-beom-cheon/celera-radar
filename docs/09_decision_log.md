@@ -254,3 +254,31 @@ Codex가 기능 구현 중 임의로 테이블 구조를 확장하는 것을 방
 P1~P3 구현 전 docs/10_database_design.md를 확인한다.
 Migration 파일명, 인덱스, FK, unique 제약은 해당 문서를 우선한다.
 ```
+
+---
+
+## D-013. NAVER API HUB 우선 전환과 capability 기반 활성화
+
+결정:
+
+```text
+신규 운영 연동은 NAVER API HUB를 우선한다.
+기존 개발자센터 방식과 HUB 방식의 credential, header, endpoint를 분리한다.
+기능은 유효한 설정으로 확인된 capability 단위로만 활성화한다.
+```
+
+이유:
+
+```text
+개발자센터 API의 이관 일정에 대응하면서 기존 개발 환경의 호환성을 유지한다.
+공식 확인 전 HUB 쇼핑 검색 endpoint를 추측해 운영 호출하는 위험을 막는다.
+credential이 없거나 일부만 설정된 운영 환경에서 외부 network 호출을 fail-closed로 차단한다.
+```
+
+영향:
+
+```text
+production의 기본 provider mode는 DISABLED다.
+HUB mode는 공통 credential과 기능별 명시 endpoint가 모두 있어야 capability가 활성화된다.
+서비스는 concrete client가 아니라 provider port를 통해 외부 API를 호출한다.
+```

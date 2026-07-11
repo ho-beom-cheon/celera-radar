@@ -13,6 +13,11 @@
 | `NAVER_CLIENT_ID` | `backend/src/main/resources/application.yml` | 네이버 개발자센터 방식 Search API / DataLab API client id |
 | `NAVER_CLIENT_SECRET` | `backend/src/main/resources/application.yml` | 네이버 개발자센터 방식 Search API / DataLab API client secret |
 | `NAVER_DATALAB_DAILY_QUOTA` | `backend/src/main/resources/application.yml` | DataLab 일일 호출 제한 기본값 |
+| `NAVER_PROVIDER_MODE` | 일반 기본 `LEGACY`, 운영 기본 `DISABLED` | `LEGACY`, `HUB`, `DISABLED` 중 선택 |
+| `NAVER_API_HUB_CLIENT_ID` | API HUB mode 전용 | `X-NCP-APIGW-API-KEY-ID` 값 |
+| `NAVER_API_HUB_CLIENT_SECRET` | API HUB mode 전용 | `X-NCP-APIGW-API-KEY` 값 |
+| `NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT` | API HUB 쇼핑 검색 capability | 공식 확인한 전체 HTTP(S) endpoint |
+| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | API HUB 쇼핑인사이트 capability | 공식 확인한 전체 HTTP(S) endpoint |
 
 샘플 값 위치:
 
@@ -38,7 +43,7 @@ backend/src/main/resources/application.yml
 
 따라서 새 운영 연동은 NAVER API HUB 기준으로 검토한다. 기존 개발자센터 key는 2026-07-31 이전 발급분에 한해 유예 기간 동안 사용할 수 있지만, 2027-06-30 이후에는 차단될 수 있다.
 
-현재 코드의 `NaverShoppingClient`, `NaverDataLabClient`는 `openapi.naver.com`과 개발자센터 방식 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 기준으로 되어 있다. NAVER API HUB를 기준으로 전환할 경우 별도 구현 작업에서 endpoint, 인증 header, quota 정책을 다시 확인해야 한다.
+현재 코드는 provider port와 capability router를 통해 `LEGACY`, `HUB`, `DISABLED` mode를 분리한다. HUB adapter는 전용 credential과 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` header를 사용한다. 기능별 endpoint가 명시되지 않으면 해당 capability는 비활성 상태이며 외부 network를 호출하지 않는다.
 
 ## 3. 네이버 Search / Shopping Insight 준비
 
@@ -48,7 +53,8 @@ backend/src/main/resources/application.yml
 2. NAVER API HUB 서비스를 신청한다.
 3. Search API, Search Trend API, Shopping Insight API 사용 가능 여부와 요금제를 확인한다.
 4. API HUB 발급 key와 호출 방식 문서를 별도 보안 저장소에 기록한다.
-5. 프로젝트 코드 전환 작업 전까지는 API HUB key를 현재 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 억지로 매핑하지 않는다.
+5. API HUB key를 기존 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 매핑하지 않는다.
+6. 공식 문서에서 확인한 기능별 전체 endpoint만 전용 환경변수에 주입한다. 쇼핑 검색 endpoint가 확인되지 않았다면 해당 변수는 비워 둔다.
 
 ### 3.2 기존 개발자센터 key가 있는 경우
 
@@ -124,7 +130,10 @@ Commerce API 실제 연동 작업을 시작할 때 별도 이슈에서 다음을
 
 ## 6. 다음 구현 전 체크리스트
 
-- [ ] 사용할 API가 개발자센터 방식인지 NAVER API HUB 방식인지 결정
+- [x] 신규 운영은 NAVER API HUB 우선, 기존 개발 호환은 LEGACY mode로 분리
+- [x] provider mode와 capability 기반 활성화 구현
+- [ ] 공식 NAVER API HUB 쇼핑 검색 endpoint 확인 후 환경별 주입
+- [ ] 공식 NAVER API HUB 쇼핑인사이트 endpoint 확인 후 환경별 주입
 - [ ] 운영 계정 소유자를 개인 계정이 아닌 조직/단체 계정으로 정리
 - [ ] 로컬, staging, production key를 분리
 - [ ] 호출 quota와 비용 상한 확인
@@ -144,6 +153,6 @@ Commerce API 실제 연동 작업을 시작할 때 별도 이슈에서 다음을
 
 ## 8. 결론
 
-다음 외부 API 작업은 바로 구현하지 말고, 먼저 `NAVER API HUB 기준으로 갈지`, `기존 개발자센터 key 유예 기간을 사용할지`를 결정해야 한다.
+신규 운영 연동은 NAVER API HUB 기준으로 진행한다. production은 provider가 기본 `DISABLED`이므로, API HUB credential과 공식 확인한 기능별 endpoint를 모두 주입한 capability만 활성화된다.
 
-현재 날짜 기준 신규 신청을 염두에 두면 NAVER API HUB 기준 전환 설계를 먼저 잡는 것이 안전하다.
+기존 개발자센터 key는 로컬 호환을 위한 `LEGACY` mode에서만 사용한다. 쇼핑 검색 HUB endpoint가 공식적으로 확인되기 전에는 값을 추측하지 않고 capability를 비활성으로 유지한다.

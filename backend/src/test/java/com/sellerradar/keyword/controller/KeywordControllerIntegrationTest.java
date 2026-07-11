@@ -19,13 +19,13 @@ import com.sellerradar.common.external.repository.ApiCallLogRepository;
 import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.repository.KeywordRepository;
-import com.sellerradar.shopping.client.NaverShoppingClient;
 import com.sellerradar.shopping.client.NaverShoppingSearchItem;
 import com.sellerradar.shopping.client.NaverShoppingSearchRequest;
 import com.sellerradar.shopping.client.NaverShoppingSearchResponse;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.domain.ShoppingTopItem;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
+import com.sellerradar.shopping.port.ShoppingSearchProvider;
 import com.sellerradar.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -68,7 +68,7 @@ class KeywordControllerIntegrationTest {
 	private ApiCallLogRepository apiCallLogRepository;
 
 	@MockitoBean
-	private NaverShoppingClient naverShoppingClient;
+	private ShoppingSearchProvider shoppingSearchProvider;
 
 	@BeforeEach
 	void setUp() {
@@ -366,7 +366,7 @@ class KeywordControllerIntegrationTest {
 	void analyzeShoppingStoresSnapshotAndReusesSameDateCache() throws Exception {
 		AuthResponse auth = signup();
 		Long keywordId = createKeyword(auth, "car storage box", "Car Gear");
-		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponse(11));
+		when(shoppingSearchProvider.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponse(11));
 
 		mockMvc.perform(post("/api/v1/keywords/{keywordId}/analyze/shopping", keywordId)
 						.header("Authorization", bearer(auth)))
@@ -397,7 +397,7 @@ class KeywordControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.cached").value(true))
 				.andExpect(jsonPath("$.data.topItems.length()").value(10));
 
-		verify(naverShoppingClient, times(1)).search(any(NaverShoppingSearchRequest.class));
+		verify(shoppingSearchProvider, times(1)).search(any(NaverShoppingSearchRequest.class));
 		assertThat(snapshotRepository.count()).isEqualTo(1);
 		assertThat(apiCallLogRepository.count()).isEqualTo(1);
 		var keyword = keywordRepository.findById(keywordId).orElseThrow();

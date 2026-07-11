@@ -28,6 +28,9 @@ management:
         include: health,info
 
 seller-radar:
+  external:
+    naver:
+      mode: ${NAVER_PROVIDER_MODE:LEGACY}
   web-security:
     csp-enforce: ${CSP_ENFORCE:false}
     csp-policy: "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
@@ -37,6 +40,11 @@ seller-radar:
     client-id: ${NAVER_CLIENT_ID:}
     client-secret: ${NAVER_CLIENT_SECRET:}
     datalab-daily-quota: ${NAVER_DATALAB_DAILY_QUOTA:1000}
+  naver-api-hub:
+    client-id: ${NAVER_API_HUB_CLIENT_ID:}
+    client-secret: ${NAVER_API_HUB_CLIENT_SECRET:}
+    shopping-search-endpoint: ${NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT:}
+    shopping-insight-endpoint: ${NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT:}
   batch:
     datalab-daily-target-limit: ${DATALAB_DAILY_TARGET_LIMIT:50}
   jwt:

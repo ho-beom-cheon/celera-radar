@@ -20,12 +20,12 @@ import com.sellerradar.keyword.domain.AnalysisStatus;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.keyword.domain.KeywordPriority;
 import com.sellerradar.keyword.repository.KeywordRepository;
-import com.sellerradar.shopping.client.NaverShoppingClient;
 import com.sellerradar.shopping.client.NaverShoppingSearchItem;
 import com.sellerradar.shopping.client.NaverShoppingSearchRequest;
 import com.sellerradar.shopping.client.NaverShoppingSearchResponse;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
+import com.sellerradar.shopping.port.ShoppingSearchProvider;
 import com.sellerradar.user.domain.User;
 import java.time.Clock;
 import java.time.Instant;
@@ -47,7 +47,7 @@ class ShoppingSearchSnapshotServiceTest {
 	private KeywordRepository keywordRepository;
 	private ShoppingPriceSnapshotRepository snapshotRepository;
 	private ApiCallLogRepository apiCallLogRepository;
-	private NaverShoppingClient naverShoppingClient;
+	private ShoppingSearchProvider shoppingSearchProvider;
 	private ShoppingSearchSnapshotService service;
 	private Keyword keyword;
 
@@ -56,12 +56,12 @@ class ShoppingSearchSnapshotServiceTest {
 		keywordRepository = mock(KeywordRepository.class);
 		snapshotRepository = mock(ShoppingPriceSnapshotRepository.class);
 		apiCallLogRepository = mock(ApiCallLogRepository.class);
-		naverShoppingClient = mock(NaverShoppingClient.class);
+		shoppingSearchProvider = mock(ShoppingSearchProvider.class);
 		service = new ShoppingSearchSnapshotService(
 				keywordRepository,
 				snapshotRepository,
 				apiCallLogRepository,
-				naverShoppingClient,
+				shoppingSearchProvider,
 				new CompetitionAnalyzer(),
 				new ObjectMapper(),
 				FIXED_CLOCK
@@ -99,7 +99,7 @@ class ShoppingSearchSnapshotServiceTest {
 		assertThat(keyword.getAnalysisStatus()).isEqualTo(AnalysisStatus.SUCCESS);
 		assertThat(keyword.getLastAnalyzedAt()).isNotNull();
 		assertThat(keyword.getLastSnapshotDate()).isEqualTo(BASE_DATE);
-		verifyNoInteractions(naverShoppingClient);
+		verifyNoInteractions(shoppingSearchProvider);
 		verify(apiCallLogRepository, never()).save(any());
 		verify(keywordRepository).save(keyword);
 	}
@@ -109,7 +109,7 @@ class ShoppingSearchSnapshotServiceTest {
 		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
 				.thenReturn(Optional.empty());
 		when(keywordRepository.findById(KEYWORD_ID)).thenReturn(Optional.of(keyword));
-		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponse());
+		when(shoppingSearchProvider.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponse());
 		when(snapshotRepository.saveAndFlush(any(ShoppingPriceSnapshot.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -145,7 +145,7 @@ class ShoppingSearchSnapshotServiceTest {
 		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
 				.thenReturn(Optional.empty());
 		when(keywordRepository.findById(KEYWORD_ID)).thenReturn(Optional.of(keyword));
-		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponseWithPrices(
+		when(shoppingSearchProvider.search(any(NaverShoppingSearchRequest.class))).thenReturn(shoppingResponseWithPrices(
 				10_000L,
 				List.of("0", "", "1000", "3000")
 		));
@@ -167,7 +167,7 @@ class ShoppingSearchSnapshotServiceTest {
 		when(snapshotRepository.findByKeyword_IdAndSearchDateAndSortType(KEYWORD_ID, BASE_DATE, "sim"))
 				.thenReturn(Optional.empty());
 		when(keywordRepository.findById(KEYWORD_ID)).thenReturn(Optional.of(keyword));
-		when(naverShoppingClient.search(any(NaverShoppingSearchRequest.class)))
+		when(shoppingSearchProvider.search(any(NaverShoppingSearchRequest.class)))
 				.thenThrow(new BusinessException(ErrorCode.EXTERNAL_API_RATE_LIMIT));
 
 		assertThatThrownBy(() -> service.collect(KEYWORD_ID, BASE_DATE))
