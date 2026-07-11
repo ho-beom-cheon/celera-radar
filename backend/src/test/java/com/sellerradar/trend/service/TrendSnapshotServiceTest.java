@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -180,6 +181,37 @@ class TrendSnapshotServiceTest {
 		verify(apiCallLogRepository).save(logCaptor.capture());
 		assertThat(logCaptor.getValue().getStatus()).isEqualTo(ApiCallStatus.FAILED);
 		assertThat(logCaptor.getValue().getErrorCode()).isEqualTo(ErrorCode.EXTERNAL_API_RATE_LIMIT.name());
+	}
+
+	@Test
+	void collectKeywordTrendTreatsEmptyHubDataAsSuccessfulZeroResult() {
+		when(shoppingInsightProvider.searchKeywordTrend(any(NaverDataLabKeywordTrendRequest.class)))
+				.thenReturn(new NaverDataLabKeywordTrendResponse(
+						"2026-06-01",
+						"2026-07-01",
+						"date",
+						List.of(new NaverDataLabKeywordTrendResult(
+								"차량용 수납함",
+								null,
+								null
+						))
+				));
+
+		TrendSnapshotCollectResult result = service.collectKeywordTrend(
+				KEYWORD_ID,
+				NAVER_CATEGORY_CODE,
+				START_DATE,
+				END_DATE,
+				NaverDataLabTimeUnit.DATE
+		);
+
+		assertThat(result.savedCount()).isZero();
+		assertThat(result.points()).isEmpty();
+		assertThat(result.score().trendScore()).isZero();
+		verify(trendSnapshotRepository, never()).save(any(TrendSnapshot.class));
+		ArgumentCaptor<ApiCallLog> logCaptor = ArgumentCaptor.forClass(ApiCallLog.class);
+		verify(apiCallLogRepository).save(logCaptor.capture());
+		assertThat(logCaptor.getValue().getStatus()).isEqualTo(ApiCallStatus.SUCCESS);
 	}
 
 	private NaverDataLabKeywordTrendResponse keywordTrendResponse() {
