@@ -507,6 +507,14 @@ Form fields:
 | encoding | AUTO/UTF_8/CP949. XLSX에서는 무시 |
 | sourceName | 도매처명 |
 
+업로드 admission 정책:
+
+- multipart request와 단일 파일 모두 plan과 무관하게 10 MB를 초과할 수 없다.
+- `.csv`, `.xlsx` 확장자만 허용하며 확장자, Content-Type, magic signature를 교차 검증한다.
+- XLSX는 ZIP signature가 필요하고 CSV는 실행 파일, ZIP, PDF, 이미지 등 명백한 binary signature를 거부한다.
+- 승인된 파일만 webroot 외부 private quarantine에 UUID object key로 저장한다.
+- 검증·파싱·DB transaction 실패 시 생성된 quarantine 파일과 metadata를 남기지 않는다.
+
 Response:
 
 ```json
@@ -585,6 +593,8 @@ Form fields:
 | file | CSV 파일 |
 | encoding | auto/utf-8/cp949 |
 | sourceName | 도매처명 |
+
+이 legacy endpoint는 CSV만 허용하며 크기, 파일명, Content-Type, signature, quarantine 정책은 preview endpoint와 동일하다.
 
 Response:
 

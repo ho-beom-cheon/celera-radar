@@ -62,6 +62,19 @@ management:
 
 클라이언트 IP는 애플리케이션 서버가 관측한 원격 주소를 사용한다. reverse proxy의 전달 헤더를 사용할 때는 신뢰 가능한 proxy 대역과 Spring forwarded-header 전략을 함께 구성한 뒤 별도 검증한다.
 
+### 4.2 업로드 quarantine
+
+| 환경변수 | 기본값 | 운영 기준 |
+|---|---|---|
+| `UPLOAD_MAX_FILE_SIZE` | `10MB` | Spring multipart와 service admission에 동일하게 적용 |
+| `UPLOAD_MAX_REQUEST_SIZE` | `10MB` | edge/proxy도 같거나 더 작은 값으로 설정 |
+| `UPLOAD_QUARANTINE_DIR` | `./data/quarantine` | webroot 밖의 전용 private volume 절대 경로 권장 |
+
+- quarantine volume은 애플리케이션 runtime identity만 읽고 쓸 수 있게 권한을 제한한다.
+- 정적 파일 serving 경로와 같은 volume 또는 하위 경로를 사용하지 않는다.
+- 외부 object storage로 전환할 때도 bucket/object는 public access를 차단하고 UUID key를 유지한다.
+- R0-06 전까지는 단일 인스턴스 local volume을 기준으로 하며 자동 lifecycle 삭제와 DB/object reconciliation은 후속 작업에서 추가한다.
+
 ## 5. 배포 절차
 
 1. 배포 플랫폼의 secret manager에 환경별 credential을 등록한다.

@@ -478,7 +478,9 @@ Unique: `(keyword_id, analysis_date)`.
 | `user_id` | `BIGINT` | FK |
 | `source_name` | `VARCHAR(100)` | 도매매, 오너클랜, CUSTOM 등 |
 | `original_file_name` | `VARCHAR(255)` | 원본 파일명 |
-| `file_type` | `VARCHAR(20)` | CSV, XLSX, XLS |
+| `file_type` | `VARCHAR(20)` | CSV, XLSX |
+| `file_path` | `VARCHAR(1000)` | private quarantine의 UUID object 경로, API 비노출 |
+| `file_size` | `BIGINT` | admission 완료 파일 크기 |
 | `status` | `VARCHAR(30)` | 업로드 상태 |
 | `total_rows` | `INT` | 전체 row 수 |
 | `success_rows` | `INT` | 성공 row 수 |
@@ -486,6 +488,8 @@ Unique: `(keyword_id, analysis_date)`.
 | `error_summary` | `TEXT` | 오류 요약 |
 | `column_mapping` | `JSONB` | 컬럼 매핑 정보 |
 | `created_at` | `TIMESTAMPTZ` | 업로드일 |
+
+`original_file_name`은 client path와 제어 문자를 제거한 basename만 저장한다. 파일 검증 또는 transaction이 실패하면 DB row와 quarantine object를 함께 남기지 않는다.
 
 ---
 
