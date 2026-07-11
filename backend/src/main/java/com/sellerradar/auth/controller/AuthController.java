@@ -4,6 +4,8 @@ import com.sellerradar.auth.dto.AuthResponse;
 import com.sellerradar.auth.dto.LoginRequest;
 import com.sellerradar.auth.dto.RefreshTokenRequest;
 import com.sellerradar.auth.dto.SignupRequest;
+import com.sellerradar.auth.ratelimit.AuthRateLimitAction;
+import com.sellerradar.auth.ratelimit.AuthRateLimitService;
 import com.sellerradar.auth.security.AuthenticatedUser;
 import com.sellerradar.auth.service.AuthService;
 import com.sellerradar.common.api.ApiResponse;
@@ -20,9 +22,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 	private final AuthService authService;
+	private final AuthRateLimitService authRateLimitService;
 
-	public AuthController(AuthService authService) {
+	public AuthController(AuthService authService, AuthRateLimitService authRateLimitService) {
 		this.authService = authService;
+		this.authRateLimitService = authRateLimitService;
 	}
 
 	@PostMapping("/signup")
@@ -30,6 +34,7 @@ public class AuthController {
 			@Valid @RequestBody SignupRequest request,
 			HttpServletRequest servletRequest
 	) {
+		authRateLimitService.check(AuthRateLimitAction.SIGNUP, servletRequest.getRemoteAddr(), request.email());
 		return ApiResponse.success(authService.signup(request), RequestContext.requestId(servletRequest));
 	}
 
@@ -38,6 +43,7 @@ public class AuthController {
 			@Valid @RequestBody LoginRequest request,
 			HttpServletRequest servletRequest
 	) {
+		authRateLimitService.check(AuthRateLimitAction.LOGIN, servletRequest.getRemoteAddr(), request.email());
 		return ApiResponse.success(authService.login(request), RequestContext.requestId(servletRequest));
 	}
 

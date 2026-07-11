@@ -1,5 +1,6 @@
 package com.sellerradar.common.web;
 
+import com.sellerradar.auth.ratelimit.AuthRateLimitExceededException;
 import com.sellerradar.common.api.ApiError;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.api.FieldViolation;
@@ -10,6 +11,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -32,6 +34,18 @@ public class GlobalExceptionHandler {
 		ErrorCode errorCode = exception.errorCode();
 		ApiError error = ApiError.of(errorCode, exception.getMessage(), exception.field());
 		return errorResponse(errorCode.status(), error, request);
+	}
+
+	@ExceptionHandler(AuthRateLimitExceededException.class)
+	public ResponseEntity<ApiResponse<Void>> handleAuthRateLimitExceeded(
+			AuthRateLimitExceededException exception,
+			HttpServletRequest request
+	) {
+		ApiError error = ApiError.of(exception.errorCode(), exception.getMessage(), exception.field());
+		return ResponseEntity
+				.status(exception.errorCode().status())
+				.header(HttpHeaders.RETRY_AFTER, Long.toString(exception.retryAfterSeconds()))
+				.body(ApiResponse.failure(error, RequestContext.requestId(request)));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

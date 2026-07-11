@@ -212,6 +212,18 @@ Authorization: Bearer {accessToken}
 
 비활성화되거나 삭제된 사용자는 login, refresh, 기존 access token을 사용한 보호 API 접근이 모두 거부된다.
 
+### 인증 API rate limit
+
+`POST /auth/login`과 `POST /auth/signup`은 서버가 관측한 원격 주소와 정규화한 이메일을 각각 키로 고정 구간 요청 횟수를 제한한다. 프록시 신뢰 구성이 도입되기 전에는 클라이언트가 조작할 수 있는 `X-Forwarded-For`를 사용하지 않는다.
+
+| 액션 | 계정 기준 | IP 기준 | 구간 |
+|---|---:|---:|---:|
+| 로그인 | 5회 | 20회 | 15분 |
+| 회원가입 | 3회 | 10회 | 1시간 |
+| 비밀번호 재설정 액션 | 3회 | 10회 | 1시간 |
+
+한도를 초과하면 `429 AUTH_RATE_LIMITED`와 초 단위 `Retry-After` 헤더를 반환한다. 비밀번호 재설정 엔드포인트는 아직 제공하지 않지만 동일 정책을 적용할 수 있도록 액션을 사전 정의한다. 차단 보안 이벤트에는 이메일과 IP 원문 대신 SHA-256 hash만 저장한다.
+
 ---
 
 ## 4.2 Keyword API
@@ -1077,6 +1089,7 @@ Content-Type: application/json
 | DUPLICATED_EMAIL | 409 | 이미 가입된 이메일 |
 | INVALID_CREDENTIALS | 401 | 로그인 정보 불일치 |
 | INVALID_REFRESH_TOKEN | 401 | Refresh token 오류 |
+| AUTH_RATE_LIMITED | 429 | 인증 API 요청 한도 초과 (`Retry-After` 헤더 포함) |
 | USER_NOT_FOUND | 404 | 사용자 없음 |
 | KEYWORD_NOT_FOUND | 404 | 키워드 없음 |
 | CANDIDATE_NOT_FOUND | 404 | 후보 없음 |

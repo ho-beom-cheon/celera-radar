@@ -25,8 +25,9 @@ class PostgreSqlUpgradeMigrationTest {
 		latest.migrate();
 
 		assertThat(latest.validateWithResult().validationSuccessful).isTrue();
-		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("014");
+		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("015");
 		assertThat(tableExists("product_candidate")).isTrue();
+		assertThat(tableExists("auth_security_events")).isTrue();
 		assertThat(foreignKeyExists("fk_alert_candidate")).isTrue();
 	}
 

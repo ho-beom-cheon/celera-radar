@@ -34,3 +34,15 @@ seller-radar:
     secret: ${JWT_SECRET:}
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT30M}
     refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:P14D}
+  auth:
+    rate-limit:
+      login-account-limit: ${AUTH_LOGIN_ACCOUNT_LIMIT:5}
+      login-ip-limit: ${AUTH_LOGIN_IP_LIMIT:20}
+      login-window: ${AUTH_LOGIN_WINDOW:PT15M}
+      signup-account-limit: ${AUTH_SIGNUP_ACCOUNT_LIMIT:3}
+      signup-ip-limit: ${AUTH_SIGNUP_IP_LIMIT:10}
+      signup-window: ${AUTH_SIGNUP_WINDOW:PT1H}
+      password-reset-account-limit: ${AUTH_PASSWORD_RESET_ACCOUNT_LIMIT:3}
+      password-reset-ip-limit: ${AUTH_PASSWORD_RESET_IP_LIMIT:10}
+      password-reset-window: ${AUTH_PASSWORD_RESET_WINDOW:PT1H}
+      max-tracked-keys: ${AUTH_RATE_LIMIT_MAX_TRACKED_KEYS:100000}
