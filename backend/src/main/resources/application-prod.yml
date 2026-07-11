@@ -29,6 +29,8 @@ management:
       show-details: never
 
 seller-radar:
+  features:
+    smartstore-mock-enabled: ${SMARTSTORE_MOCK_ENABLED:false}
   external:
     naver:
       mode: ${NAVER_PROVIDER_MODE:DISABLED}

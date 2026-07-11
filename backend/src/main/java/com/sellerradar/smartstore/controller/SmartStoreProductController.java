@@ -12,6 +12,7 @@ import com.sellerradar.smartstore.service.StoreProductCostService;
 import com.sellerradar.smartstore.service.SmartStoreProductSyncService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -27,6 +28,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/smartstore")
+@ConditionalOnProperty(
+		prefix = "seller-radar.features",
+		name = "smartstore-mock-enabled",
+		havingValue = "true"
+)
 public class SmartStoreProductController {
 	private static final int DEFAULT_PAGE = 0;
 	private static final int DEFAULT_SIZE = 20;

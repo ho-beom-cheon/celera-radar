@@ -28,6 +28,8 @@ management:
         include: health,info
 
 seller-radar:
+  features:
+    smartstore-mock-enabled: ${SMARTSTORE_MOCK_ENABLED:true}
   external:
     naver:
       mode: ${NAVER_PROVIDER_MODE:LEGACY}
