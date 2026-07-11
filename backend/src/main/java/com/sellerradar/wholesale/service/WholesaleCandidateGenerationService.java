@@ -18,6 +18,8 @@ import com.sellerradar.scoring.ScoringInput;
 import com.sellerradar.scoring.ScoringResult;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
+import com.sellerradar.trend.domain.TrendTimeUnit;
+import com.sellerradar.trend.service.TrendSnapshotService;
 import com.sellerradar.wholesale.domain.WholesaleFile;
 import com.sellerradar.wholesale.domain.WholesaleProduct;
 import com.sellerradar.wholesale.domain.WholesaleProductParseStatus;
@@ -37,6 +39,7 @@ public class WholesaleCandidateGenerationService {
 	private final ProductCandidateRepository candidateRepository;
 	private final KeywordRepository keywordRepository;
 	private final ShoppingPriceSnapshotRepository snapshotRepository;
+	private final TrendSnapshotService trendSnapshotService;
 	private final RiskCategoryService riskCategoryService;
 	private final CandidateScoreCalculator candidateScoreCalculator;
 	private final MarginCalculator marginCalculator;
@@ -48,6 +51,7 @@ public class WholesaleCandidateGenerationService {
 			ProductCandidateRepository candidateRepository,
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
+			TrendSnapshotService trendSnapshotService,
 			RiskCategoryService riskCategoryService,
 			CandidateScoreCalculator candidateScoreCalculator,
 			MarginCalculator marginCalculator,
@@ -58,6 +62,7 @@ public class WholesaleCandidateGenerationService {
 		this.candidateRepository = candidateRepository;
 		this.keywordRepository = keywordRepository;
 		this.snapshotRepository = snapshotRepository;
+		this.trendSnapshotService = trendSnapshotService;
 		this.riskCategoryService = riskCategoryService;
 		this.candidateScoreCalculator = candidateScoreCalculator;
 		this.marginCalculator = marginCalculator;
@@ -107,8 +112,11 @@ public class WholesaleCandidateGenerationService {
 				.map(Keyword::getCategoryCode)
 				.orElseGet(() -> categoryCodeResolver.resolve(product.getSourceCategory()));
 		RiskCategoryDecision riskDecision = riskCategoryService.evaluate(product.getSourceCategory());
+		int trendScore = matchedKeyword
+				.map(keyword -> trendSnapshotService.calculateSavedTrendScore(keyword.getId(), TrendTimeUnit.DATE).trendScore())
+				.orElse(0);
 		ScoringResult result = candidateScoreCalculator.calculate(new ScoringInput(
-				0,
+				trendScore,
 				latestSnapshot.map(ShoppingPriceSnapshot::getTotalResults).orElse(0L),
 				latestSnapshot.map(ShoppingPriceSnapshot::getMinPrice).orElse(expectedSalePrice),
 				latestSnapshot.map(ShoppingPriceSnapshot::getMaxPrice).orElse(expectedSalePrice),

@@ -15,5 +15,14 @@ public interface TrendSnapshotRepository extends JpaRepository<TrendSnapshot, Lo
 			TrendTimeUnit timeUnit
 	);
 
-	List<TrendSnapshot> findByKeyword_IdAndTimeUnitOrderByDataPeriodAsc(Long keywordId, TrendTimeUnit timeUnit);
+	Optional<TrendSnapshot> findFirstByKeyword_IdAndTimeUnitOrderBySnapshotDateDesc(
+			Long keywordId,
+			TrendTimeUnit timeUnit
+	);
+
+	List<TrendSnapshot> findByKeyword_IdAndSnapshotDateAndTimeUnitOrderByDataPeriodAsc(
+			Long keywordId,
+			LocalDate snapshotDate,
+			TrendTimeUnit timeUnit
+	);
 }

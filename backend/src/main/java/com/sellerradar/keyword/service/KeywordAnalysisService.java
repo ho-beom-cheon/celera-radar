@@ -15,6 +15,9 @@ import com.sellerradar.shopping.domain.ShoppingTopItem;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.shopping.service.ShoppingSearchSnapshotService;
 import com.sellerradar.shopping.service.ShoppingSnapshotCollectResult;
+import com.sellerradar.trend.domain.TrendTimeUnit;
+import com.sellerradar.trend.dto.TrendAnalysisResponse;
+import com.sellerradar.trend.service.TrendSnapshotService;
 import java.time.Clock;
 import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,26 +29,30 @@ public class KeywordAnalysisService {
 	private final KeywordRepository keywordRepository;
 	private final ShoppingPriceSnapshotRepository snapshotRepository;
 	private final ShoppingSearchSnapshotService shoppingSearchSnapshotService;
+	private final TrendSnapshotService trendSnapshotService;
 	private final Clock clock;
 
 	@Autowired
 	public KeywordAnalysisService(
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
-			ShoppingSearchSnapshotService shoppingSearchSnapshotService
+			ShoppingSearchSnapshotService shoppingSearchSnapshotService,
+			TrendSnapshotService trendSnapshotService
 	) {
-		this(keywordRepository, snapshotRepository, shoppingSearchSnapshotService, Clock.systemDefaultZone());
+		this(keywordRepository, snapshotRepository, shoppingSearchSnapshotService, trendSnapshotService, Clock.systemDefaultZone());
 	}
 
 	KeywordAnalysisService(
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			ShoppingSearchSnapshotService shoppingSearchSnapshotService,
+			TrendSnapshotService trendSnapshotService,
 			Clock clock
 	) {
 		this.keywordRepository = keywordRepository;
 		this.snapshotRepository = snapshotRepository;
 		this.shoppingSearchSnapshotService = shoppingSearchSnapshotService;
+		this.trendSnapshotService = trendSnapshotService;
 		this.clock = clock;
 	}
 
@@ -55,13 +62,15 @@ public class KeywordAnalysisService {
 		ShoppingAnalysisResponse shopping = snapshotRepository.findFirstByKeyword_IdOrderBySearchDateDesc(keywordId)
 				.map(this::toShoppingAnalysisResponse)
 				.orElse(null);
+		TrendAnalysisResponse trend = trendSnapshotService.getLatestAnalysis(keywordId, TrendTimeUnit.DATE)
+				.orElse(null);
 		return new KeywordAnalysisResponse(
 				keyword.getId(),
 				keyword.getKeyword(),
 				keyword.getAnalysisStatus(),
 				keyword.getLastAnalyzedAt(),
 				shopping,
-				null,
+				trend,
 				null
 		);
 	}

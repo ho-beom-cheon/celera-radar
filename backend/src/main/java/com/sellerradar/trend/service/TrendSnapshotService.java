@@ -15,11 +15,14 @@ import com.sellerradar.trend.client.NaverDataLabTimeUnit;
 import com.sellerradar.trend.client.NaverDataLabTrendPoint;
 import com.sellerradar.trend.domain.TrendSnapshot;
 import com.sellerradar.trend.domain.TrendTimeUnit;
+import com.sellerradar.trend.dto.TrendAnalysisResponse;
+import com.sellerradar.trend.dto.TrendPointResponse;
 import com.sellerradar.trend.repository.TrendSnapshotRepository;
 import com.sellerradar.trend.port.ShoppingInsightProvider;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,11 +79,46 @@ public class TrendSnapshotService {
 
 	@Transactional(readOnly = true)
 	public TrendScoreResult calculateSavedTrendScore(Long keywordId, TrendTimeUnit timeUnit) {
-		List<TrendPoint> points = trendSnapshotRepository.findByKeyword_IdAndTimeUnitOrderByDataPeriodAsc(keywordId, timeUnit)
-				.stream()
+		return latestSnapshotPoints(keywordId, timeUnit)
+				.map(points -> trendScoreCalculator.calculate(toTrendPoints(points)))
+				.orElseGet(() -> trendScoreCalculator.calculate(List.of()));
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<TrendAnalysisResponse> getLatestAnalysis(Long keywordId, TrendTimeUnit timeUnit) {
+		return latestSnapshotPoints(keywordId, timeUnit).map(snapshots -> {
+			List<TrendPoint> points = toTrendPoints(snapshots);
+			TrendScoreResult score = trendScoreCalculator.calculate(points);
+			TrendSnapshot first = snapshots.getFirst();
+			TrendSnapshot latest = snapshots.getLast();
+			return new TrendAnalysisResponse(
+					first.getSnapshotDate(),
+					first.getPeriodStart(),
+					first.getPeriodEnd(),
+					latest.getRatio(),
+					score.trendDelta7d(),
+					score.trendDelta30d(),
+					score.trendScore(),
+					points.stream().map(point -> new TrendPointResponse(point.period(), point.ratio())).toList(),
+					score.warnings()
+			);
+		});
+	}
+
+	private Optional<List<TrendSnapshot>> latestSnapshotPoints(Long keywordId, TrendTimeUnit timeUnit) {
+		return trendSnapshotRepository.findFirstByKeyword_IdAndTimeUnitOrderBySnapshotDateDesc(keywordId, timeUnit)
+				.map(latest -> trendSnapshotRepository.findByKeyword_IdAndSnapshotDateAndTimeUnitOrderByDataPeriodAsc(
+						keywordId,
+						latest.getSnapshotDate(),
+						timeUnit
+				))
+				.filter(points -> !points.isEmpty());
+	}
+
+	private List<TrendPoint> toTrendPoints(List<TrendSnapshot> snapshots) {
+		return snapshots.stream()
 				.map(snapshot -> new TrendPoint(snapshot.getDataPeriod(), snapshot.getRatio()))
 				.toList();
-		return trendScoreCalculator.calculate(points);
 	}
 
 	private NaverDataLabKeywordTrendResponse requestTrend(

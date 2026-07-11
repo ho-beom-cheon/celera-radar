@@ -103,6 +103,27 @@ public class CandidateScore {
 		return new CandidateScore(breakdown, overallScore, grade, riskLevel, reasons, warnings);
 	}
 
+	public void update(
+			ScoringBreakdown breakdown,
+			int overallScore,
+			CandidateGrade grade,
+			RiskLevel riskLevel,
+			List<String> reasons,
+			List<String> warnings
+	) {
+		this.trendScore = breakdown.trendScore();
+		this.competitionScore = breakdown.competitionScore();
+		this.marginScore = breakdown.marginScore();
+		this.priceBandScore = breakdown.priceBandScore();
+		this.supplyScore = breakdown.supplyScore();
+		this.riskPenalty = breakdown.riskPenalty();
+		this.overallScore = overallScore;
+		this.grade = grade;
+		this.riskLevel = riskLevel;
+		this.reasons = joinLines(reasons);
+		this.warnings = joinLines(warnings);
+	}
+
 	void attachTo(ProductCandidate candidate) {
 		this.candidate = candidate;
 	}

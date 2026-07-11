@@ -4,6 +4,8 @@ import com.sellerradar.auth.security.AuthenticatedUser;
 import com.sellerradar.candidate.domain.CandidateSourceType;
 import com.sellerradar.candidate.dto.CandidateDetailResponse;
 import com.sellerradar.candidate.dto.CandidateListResponse;
+import com.sellerradar.candidate.dto.CandidateRecalculationResponse;
+import com.sellerradar.candidate.service.CandidateRecalculationService;
 import com.sellerradar.candidate.service.CandidateService;
 import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.common.api.ApiResponse;
@@ -31,9 +33,22 @@ public class CandidateController {
 	private static final int MAX_SIZE = 100;
 
 	private final CandidateService candidateService;
+	private final CandidateRecalculationService candidateRecalculationService;
 
-	public CandidateController(CandidateService candidateService) {
+	public CandidateController(CandidateService candidateService, CandidateRecalculationService candidateRecalculationService) {
 		this.candidateService = candidateService;
+		this.candidateRecalculationService = candidateRecalculationService;
+	}
+
+	@PostMapping("/recalculate")
+	public ApiResponse<CandidateRecalculationResponse> recalculate(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			HttpServletRequest request
+	) {
+		return ApiResponse.success(
+				candidateRecalculationService.recalculate(user.userId()),
+				RequestContext.requestId(request)
+		);
 	}
 
 	@GetMapping
