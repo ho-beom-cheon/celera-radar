@@ -57,7 +57,7 @@ class ProductionProfilePostgreSqlTest {
 		assertThat(context.getEnvironment().getProperty("seller-radar.features.smartstore-mock-enabled"))
 				.isEqualTo("false");
 			assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
-					.isEqualTo("017");
+					.isEqualTo("018");
 
 			assertRefreshReuseRevokesFamily(context);
 		}

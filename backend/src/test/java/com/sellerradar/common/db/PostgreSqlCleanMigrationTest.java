@@ -39,7 +39,7 @@ class PostgreSqlCleanMigrationTest {
 
 	@Test
 	void migratesEmptyPostgreSqlAndValidatesHibernateSchema() throws Exception {
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("017");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("018");
 		try (var connection = dataSource.getConnection();
 				var statement = connection.prepareStatement("SELECT to_regclass('public.candidate_score')" );
 				var result = statement.executeQuery()) {
@@ -67,6 +67,17 @@ class PostgreSqlCleanMigrationTest {
 				var result = statement.executeQuery()) {
 			assertThat(result.next()).isTrue();
 			assertThat(result.getBoolean(1)).isFalse();
+		}
+		try (var connection = dataSource.getConnection();
+				var statement = connection.prepareStatement(
+						"SELECT column_name, data_type FROM information_schema.columns "
+								+ "WHERE table_name = 'candidate_score' AND column_name IN ('reasons', 'warnings') "
+								+ "ORDER BY column_name");
+				var result = statement.executeQuery()) {
+			assertThat(result.next()).isTrue();
+			assertThat(result.getString("data_type")).isEqualTo("text");
+			assertThat(result.next()).isTrue();
+			assertThat(result.getString("data_type")).isEqualTo("text");
 		}
 	}
 }
