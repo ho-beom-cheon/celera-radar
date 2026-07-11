@@ -2,6 +2,7 @@ package com.sellerradar.wholesale.service;
 
 import com.sellerradar.common.error.BusinessException;
 import com.sellerradar.common.error.ErrorCode;
+import com.sellerradar.common.security.ExternalUrlPolicy;
 import com.sellerradar.wholesale.domain.WholesaleFile;
 import com.sellerradar.wholesale.domain.WholesaleProduct;
 import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
@@ -30,17 +31,20 @@ public class WholesaleParsingService {
 	private final WholesaleProductRepository wholesaleProductRepository;
 	private final WholesaleFileParser fileParser;
 	private final ProductNameNormalizer productNameNormalizer;
+	private final ExternalUrlPolicy externalUrlPolicy;
 
 	public WholesaleParsingService(
 			WholesaleFileRepository wholesaleFileRepository,
 			WholesaleProductRepository wholesaleProductRepository,
 			WholesaleFileParser fileParser,
-			ProductNameNormalizer productNameNormalizer
+			ProductNameNormalizer productNameNormalizer,
+			ExternalUrlPolicy externalUrlPolicy
 	) {
 		this.wholesaleFileRepository = wholesaleFileRepository;
 		this.wholesaleProductRepository = wholesaleProductRepository;
 		this.fileParser = fileParser;
 		this.productNameNormalizer = productNameNormalizer;
+		this.externalUrlPolicy = externalUrlPolicy;
 	}
 
 	@Transactional
@@ -145,8 +149,8 @@ public class WholesaleParsingService {
 		String supplyPriceRaw = value(row, columnIndex, file.getMappingSupplyPrice());
 		String shippingFeeRaw = value(row, columnIndex, file.getMappingShippingFee());
 		String category = value(row, columnIndex, file.getMappingCategory());
-		String imageUrl = value(row, columnIndex, file.getMappingImageUrl());
-		String productUrl = value(row, columnIndex, file.getMappingProductUrl());
+		String imageUrl = externalUrlPolicy.normalize(value(row, columnIndex, file.getMappingImageUrl())).orElse(null);
+		String productUrl = externalUrlPolicy.normalize(value(row, columnIndex, file.getMappingProductUrl())).orElse(null);
 		if (productName.isBlank()) {
 			return WholesaleProduct.invalid(file, row.rowNo(), "productName is required.");
 		}
@@ -169,8 +173,8 @@ public class WholesaleParsingService {
 				supplyPrice,
 				shippingFee,
 				category.isBlank() ? null : category,
-				imageUrl.isBlank() ? null : imageUrl,
-				productUrl.isBlank() ? null : productUrl
+				imageUrl,
+				productUrl
 		);
 	}
 

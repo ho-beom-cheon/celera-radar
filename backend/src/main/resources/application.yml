@@ -28,6 +28,11 @@ management:
         include: health,info
 
 seller-radar:
+  web-security:
+    csp-enforce: ${CSP_ENFORCE:false}
+    csp-policy: "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
+    csp-report-uri: ${CSP_REPORT_URI:}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
   naver:
     client-id: ${NAVER_CLIENT_ID:}
     client-secret: ${NAVER_CLIENT_SECRET:}
