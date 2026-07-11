@@ -69,6 +69,7 @@ Java 21이 필요합니다.
 `JWT_SECRET`은 32바이트 이상 값으로 환경변수에 설정합니다.
 네이버 API 연동 기능을 실행할 때는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 환경변수로 설정합니다.
 발급 경로와 적용 위치는 `docs/13_external_api_credentials.md`를 먼저 확인합니다.
+운영 배포 전에는 `docs/16_production_configuration.md`의 prod profile과 secret fail-fast 기준을 확인합니다.
 
 ```bash
 cd backend
