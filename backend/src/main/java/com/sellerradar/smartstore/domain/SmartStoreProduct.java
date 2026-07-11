@@ -9,13 +9,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "naver_store_products")
@@ -38,8 +39,7 @@ public class SmartStoreProduct {
 	@Column(name = "origin_product_no", length = 100)
 	private String originProductNo;
 
-	@Lob
-	@Column(name = "product_name", nullable = false)
+	@Column(name = "product_name", nullable = false, columnDefinition = "TEXT")
 	private String productName;
 
 	@Column(name = "sale_price", nullable = false, precision = 14, scale = 2)
@@ -48,14 +48,13 @@ public class SmartStoreProduct {
 	@Column(name = "sale_status", nullable = false, length = 50)
 	private String saleStatus;
 
-	@Lob
-	@Column(name = "image_url")
+	@Column(name = "image_url", columnDefinition = "TEXT")
 	private String imageUrl;
 
 	@Column(name = "category_name", length = 300)
 	private String categoryName;
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "raw_payload")
 	private String rawPayload;
 

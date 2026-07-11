@@ -7,11 +7,11 @@ spring:
     password: ${DB_PASSWORD:seller}
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
-    baseline-on-migrate: true
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
     baseline-version: 0
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     open-in-view: false
 
 server:

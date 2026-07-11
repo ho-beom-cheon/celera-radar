@@ -11,7 +11,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -40,8 +39,7 @@ public class AlertRule {
 	@Column(name = "min_margin_rate", nullable = false, precision = 6, scale = 2)
 	private BigDecimal minMarginRate;
 
-	@Lob
-	@Column(name = "category_codes", nullable = false)
+	@Column(name = "category_codes", nullable = false, columnDefinition = "TEXT")
 	private String categoryCodes;
 
 	@Column(name = "risk_excluded", nullable = false)
