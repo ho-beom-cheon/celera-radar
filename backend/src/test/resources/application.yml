@@ -19,6 +19,13 @@ spring:
       max-request-size: 10MB
 
 seller-radar:
+  web-security:
+    csp-enforce: false
+    csp-policy: "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
+    csp-report-uri:
+    allowed-origins:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
   jwt:
     secret: test-only-jwt-secret-for-seller-radar-auth-tests-32-bytes
     access-token-ttl: PT30M

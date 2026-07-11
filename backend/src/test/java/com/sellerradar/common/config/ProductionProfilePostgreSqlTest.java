@@ -48,6 +48,10 @@ class ProductionProfilePostgreSqlTest {
 					.isEqualTo("false");
 			assertThat(context.getEnvironment().getProperty("management.endpoints.web.exposure.include"))
 					.isEqualTo("health");
+			assertThat(context.getEnvironment().getProperty("seller-radar.web-security.csp-enforce"))
+					.isEqualTo("true");
+			assertThat(context.getEnvironment().getProperty("seller-radar.web-security.allowed-origins"))
+					.isEmpty();
 			assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
 					.isEqualTo("016");
 

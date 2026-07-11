@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ShoppingSnapshotItem } from '../../api/keywords';
+import { safeExternalUrl } from '../../security/safeExternalUrl';
 
 interface ProductCardProps {
   item: ShoppingSnapshotItem;
@@ -9,12 +10,20 @@ export function ProductCard({ item }: ProductCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const title = stripTags(item.title);
   const category = categoryPath(item);
+  const imageUrl = safeExternalUrl(item.imageUrl);
+  const productUrl = safeExternalUrl(item.productUrl);
 
   return (
     <article className="product-card">
       <div className="product-card-image">
-        {item.imageUrl && !imageFailed ? (
-          <img src={item.imageUrl} alt="" loading="lazy" onError={() => setImageFailed(true)} />
+        {imageUrl && !imageFailed ? (
+          <img
+            src={imageUrl}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setImageFailed(true)}
+          />
         ) : (
           <span>No image</span>
         )}
@@ -36,8 +45,13 @@ export function ProductCard({ item }: ProductCardProps) {
             <dd>{category}</dd>
           </div>
         </dl>
-        {item.productUrl ? (
-          <a className="secondary-button product-card-link" href={item.productUrl} target="_blank" rel="noreferrer">
+        {productUrl ? (
+          <a
+            className="secondary-button product-card-link"
+            href={productUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             원본 보기
           </a>
         ) : null}
