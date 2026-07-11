@@ -69,11 +69,15 @@ management:
 | `UPLOAD_MAX_FILE_SIZE` | `10MB` | Spring multipart와 service admission에 동일하게 적용 |
 | `UPLOAD_MAX_REQUEST_SIZE` | `10MB` | edge/proxy도 같거나 더 작은 값으로 설정 |
 | `UPLOAD_QUARANTINE_DIR` | `./data/quarantine` | webroot 밖의 전용 private volume 절대 경로 권장 |
+| `UPLOAD_RAW_RETENTION` | `P7D` | 원본 파일 보관 기간 |
+| `UPLOAD_RAW_CLEANUP_BATCH_SIZE` | `100` | 일일 cleanup 한 번에 처리할 metadata 수 |
 
 - quarantine volume은 애플리케이션 runtime identity만 읽고 쓸 수 있게 권한을 제한한다.
 - 정적 파일 serving 경로와 같은 volume 또는 하위 경로를 사용하지 않는다.
 - 외부 object storage로 전환할 때도 bucket/object는 public access를 차단하고 UUID key를 유지한다.
-- R0-06 전까지는 단일 인스턴스 local volume을 기준으로 하며 자동 lifecycle 삭제와 DB/object reconciliation은 후속 작업에서 추가한다.
+- 매일 UTC 03:00 cleanup이 만료 원본을 삭제한다. 실패 시 `raw_delete_failed_at`을 기록하고 다음 실행에서 재시도한다.
+- XLSX parser hard limit 기본값은 ZIP entry 1,000개, 압축 해제 50 MB, inflate ratio 0.01, sheet 10개, row 20,000개, column 100개, cell 10,000자, 추출 text 20 MB다.
+- local volume을 공유하지 않는 다중 인스턴스 배포 전에는 object storage로 전환하거나 cleanup 작업이 object 소유 인스턴스에 라우팅되도록 보장한다.
 
 ## 5. 배포 절차
 

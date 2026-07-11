@@ -514,6 +514,8 @@ Form fields:
 - XLSX는 ZIP signature가 필요하고 CSV는 실행 파일, ZIP, PDF, 이미지 등 명백한 binary signature를 거부한다.
 - 승인된 파일만 webroot 외부 private quarantine에 UUID object key로 저장한다.
 - 검증·파싱·DB transaction 실패 시 생성된 quarantine 파일과 metadata를 남기지 않는다.
+- XLSX는 ZIP entry 1,000개, 압축 해제 50 MB, inflate ratio 0.01, sheet 10개, row 20,000개, column 100개, cell 10,000자, 추출 text 20 MB를 hard limit으로 적용한다.
+- XLSX 첫 sheet는 SAX/event parser로 읽으며 formula나 external link를 실행하지 않는다.
 
 Response:
 
@@ -609,7 +611,11 @@ Response:
 
 ### GET /wholesale-files/{fileId}
 
-업로드 파일 메타를 조회한다. `storedPath` 같은 서버 내부 저장 경로는 응답하지 않는다.
+업로드 파일 메타를 조회한다. `storedPath` 같은 서버 내부 저장 경로는 응답하지 않는다. `rawExpiresAt`은 원본 자동 삭제 예정 시각, `rawDeletedAt`은 실제 삭제 완료 시각이다.
+
+### DELETE /wholesale-files/{fileId}/raw
+
+인증 사용자가 소유한 업로드 원본을 즉시 삭제한다. DB의 업로드 metadata와 이미 파싱된 상품 row는 유지한다. object가 이미 없으면 정합성이 맞춰진 것으로 보고 삭제 완료 처리한다. 다른 사용자 파일은 `404 WHOLESALE_FILE_NOT_FOUND`, I/O 또는 quarantine 경로 검증 실패는 `503 UPLOAD_RAW_DELETE_FAILED`를 반환한다.
 
 ### POST /wholesale-files/{fileId}/column-mapping
 
@@ -1112,8 +1118,10 @@ Content-Type: application/json
 | KEYWORD_LIMIT_EXCEEDED | 400 | 요금제 키워드 한도 초과 |
 | DUPLICATED_KEYWORD | 409 | 중복 키워드 |
 | CSV_INVALID_FORMAT | 400 | CSV 형식 오류 |
+| CSV_FILE_SIZE_EXCEEDED | 400 | CSV/XLSX 보안 크기 한도 초과 |
 | CSV_REQUIRED_COLUMN_MISSING | 400 | 필수 컬럼 누락 |
 | CSV_ROW_LIMIT_EXCEEDED | 400 | 요금제 CSV 행 수 초과 |
+| UPLOAD_RAW_DELETE_FAILED | 503 | 업로드 원본 삭제 실패 |
 | EXTERNAL_API_RATE_LIMIT | 429 | 외부 API 한도 초과 |
 | EXTERNAL_API_UNAVAILABLE | 503 | 외부 API 장애 |
 | ANALYSIS_NOT_READY | 202 | 분석 대기 중 |
@@ -1125,7 +1133,7 @@ Content-Type: application/json
 
 1. 네이버 API 키는 서버 환경변수로만 관리한다.
 2. 프론트엔드에 외부 API 키를 노출하지 않는다.
-3. CSV 업로드 파일은 원본 저장 기간을 제한한다. MVP 기준 30일 후 삭제 가능하게 설계한다.
+3. CSV/XLSX 원본은 기본 7일 후 자동 삭제하며 사용자가 즉시 삭제할 수 있다.
 4. 사용자 업로드 파일 URL은 외부에 공개하지 않는다.
 5. 로그에는 API Secret, JWT, 개인정보를 남기지 않는다.
 

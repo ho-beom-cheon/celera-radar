@@ -35,14 +35,18 @@ public class UploadQuarantineStorage {
 		if (storedPath == null) {
 			return;
 		}
+		try {
+			delete(storedPath);
+		} catch (IOException ignored) {
+			// Transaction rollback cleanup is best effort; persisted objects use the lifecycle retry path.
+		}
+	}
+
+	public void delete(Path storedPath) throws IOException {
 		Path normalized = storedPath.toAbsolutePath().normalize();
 		if (!normalized.startsWith(quarantineRoot)) {
-			return;
+			throw new IOException("Raw upload path escaped the quarantine root.");
 		}
-		try {
-			Files.deleteIfExists(normalized);
-		} catch (IOException ignored) {
-			// R0-06 adds lifecycle reconciliation and deletion observability.
-		}
+		Files.deleteIfExists(normalized);
 	}
 }

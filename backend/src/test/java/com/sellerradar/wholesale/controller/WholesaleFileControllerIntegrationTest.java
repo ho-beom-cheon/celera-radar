@@ -1,6 +1,7 @@
 package com.sellerradar.wholesale.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,8 @@ import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
 import com.sellerradar.user.domain.User;
 import com.sellerradar.user.repository.UserRepository;
+import com.sellerradar.wholesale.domain.CsvEncoding;
+import com.sellerradar.wholesale.domain.WholesaleFile;
 import com.sellerradar.wholesale.domain.WholesaleFileStatus;
 import com.sellerradar.wholesale.domain.WholesaleProduct;
 import com.sellerradar.wholesale.domain.WholesaleProductParseStatus;
@@ -25,11 +28,14 @@ import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
 import com.sellerradar.wholesale.dto.WholesaleUploadConfirmRequest;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
 import com.sellerradar.wholesale.repository.WholesaleProductRepository;
+import com.sellerradar.wholesale.service.RawUploadLifecycleService;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -80,6 +86,9 @@ class WholesaleFileControllerIntegrationTest {
 	@Autowired
 	private ShoppingPriceSnapshotRepository snapshotRepository;
 
+	@Autowired
+	private RawUploadLifecycleService rawUploadLifecycleService;
+
 	@Value("${seller-radar.wholesale.upload-security.quarantine-directory}")
 	private String quarantineDirectory;
 
@@ -124,6 +133,97 @@ class WholesaleFileControllerIntegrationTest {
 		assertThat(storedPath.getFileName().toString())
 				.matches("[0-9a-f-]{36}\\.csv")
 				.doesNotContain("items");
+	}
+
+	@Test
+	void ownerCanDeleteRawFileWithoutDeletingUploadMetadata() throws Exception {
+		AuthResponse auth = signup("wholesale-raw-delete@example.com");
+		Long fileId = upload(auth, "productName,supplyPrice\nitem,1000");
+		Path storedPath = Path.of(wholesaleFileRepository.findById(fileId).orElseThrow().getStoredPath());
+		assertThat(storedPath).exists();
+
+		mockMvc.perform(delete("/api/v1/wholesale-files/{fileId}/raw", fileId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.fileId").value(fileId))
+				.andExpect(jsonPath("$.data.rawDeletedAt").isNotEmpty());
+
+		assertThat(storedPath).doesNotExist();
+		WholesaleFile upload = wholesaleFileRepository.findById(fileId).orElseThrow();
+		assertThat(upload.getRawDeletedAt()).isNotNull();
+		assertThat(upload.getRawDeleteFailedAt()).isNull();
+	}
+
+	@Test
+	void rawFileDeleteDoesNotExposeAnotherUsersUpload() throws Exception {
+		AuthResponse owner = signup("wholesale-raw-owner@example.com");
+		AuthResponse other = signup("wholesale-raw-other@example.com");
+		Long fileId = upload(owner, "productName,supplyPrice\nitem,1000");
+		Path storedPath = Path.of(wholesaleFileRepository.findById(fileId).orElseThrow().getStoredPath());
+
+		mockMvc.perform(delete("/api/v1/wholesale-files/{fileId}/raw", fileId)
+						.header("Authorization", bearer(other)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.WHOLESALE_FILE_NOT_FOUND.name()));
+
+		assertThat(storedPath).exists();
+	}
+
+	@Test
+	void rawFileDeleteReconcilesAlreadyMissingObject() throws Exception {
+		AuthResponse auth = signup("wholesale-raw-missing@example.com");
+		Long fileId = upload(auth, "productName,supplyPrice\nitem,1000");
+		Path storedPath = Path.of(wholesaleFileRepository.findById(fileId).orElseThrow().getStoredPath());
+		Files.delete(storedPath);
+
+		mockMvc.perform(delete("/api/v1/wholesale-files/{fileId}/raw", fileId)
+						.header("Authorization", bearer(auth)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.rawDeletedAt").isNotEmpty());
+
+		assertThat(wholesaleFileRepository.findById(fileId).orElseThrow().getRawDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void cleanupDeletesExpiredRawObjectAndMarksMetadata() throws Exception {
+		AuthResponse auth = signup("wholesale-raw-expired@example.com");
+		Long fileId = upload(auth, "productName,supplyPrice\nitem,1000");
+		WholesaleFile upload = wholesaleFileRepository.findById(fileId).orElseThrow();
+		Path storedPath = Path.of(upload.getStoredPath());
+		upload.configureRawRetention(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
+		wholesaleFileRepository.saveAndFlush(upload);
+
+		rawUploadLifecycleService.cleanupExpired();
+
+		assertThat(storedPath).doesNotExist();
+		WholesaleFile cleaned = wholesaleFileRepository.findById(fileId).orElseThrow();
+		assertThat(cleaned.getRawDeletedAt()).isNotNull();
+		assertThat(cleaned.getRawDeleteFailedAt()).isNull();
+	}
+
+	@Test
+	void cleanupRecordsFailureWhenMetadataPathEscapesQuarantine() throws Exception {
+		AuthResponse auth = signup("wholesale-raw-failure@example.com");
+		User user = userRepository.findById(auth.userId()).orElseThrow();
+		WholesaleFile upload = WholesaleFile.uploaded(
+				user,
+				null,
+				"outside.csv",
+				quarantineRoot().getParent().resolve("outside.csv").toString(),
+				10,
+				CsvEncoding.AUTO,
+				CsvEncoding.UTF_8,
+				0,
+				List.of("productName")
+		);
+		upload.configureRawRetention(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
+		Long fileId = wholesaleFileRepository.saveAndFlush(upload).getId();
+
+		rawUploadLifecycleService.cleanupExpired();
+
+		WholesaleFile failed = wholesaleFileRepository.findById(fileId).orElseThrow();
+		assertThat(failed.getRawDeletedAt()).isNull();
+		assertThat(failed.getRawDeleteFailedAt()).isNotNull();
 	}
 
 	@Test

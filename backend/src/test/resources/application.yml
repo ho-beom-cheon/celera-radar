@@ -39,3 +39,15 @@ seller-radar:
     upload-security:
       quarantine-directory: ./build/test-quarantine
       max-file-size: 10MB
+    xlsx-security:
+      max-zip-entries: 1000
+      max-uncompressed-size: 50MB
+      min-inflate-ratio: 0.01
+      max-sheets: 10
+      max-rows: 20000
+      max-columns: 100
+      max-cell-length: 10000
+      max-extracted-text-size: 20MB
+    raw-lifecycle:
+      retention: P7D
+      cleanup-batch-size: 100

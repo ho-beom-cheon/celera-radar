@@ -14,7 +14,9 @@ public record WholesaleFileResponse(
 		String sourceName,
 		String originalFilename,
 		CsvEncoding detectedEncoding,
-		OffsetDateTime createdAt
+		OffsetDateTime createdAt,
+		OffsetDateTime rawExpiresAt,
+		OffsetDateTime rawDeletedAt
 ) {
 	public static WholesaleFileResponse from(WholesaleFile file) {
 		return new WholesaleFileResponse(
@@ -25,7 +27,9 @@ public record WholesaleFileResponse(
 				file.getSourceName(),
 				file.getOriginalFilename(),
 				file.getDetectedEncoding(),
-				file.getCreatedAt()
+				file.getCreatedAt(),
+				file.getRawExpiresAt(),
+				file.getRawDeletedAt()
 		);
 	}
 }

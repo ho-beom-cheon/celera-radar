@@ -488,6 +488,9 @@ Unique: `(keyword_id, analysis_date)`.
 | `error_summary` | `TEXT` | 오류 요약 |
 | `column_mapping` | `JSONB` | 컬럼 매핑 정보 |
 | `created_at` | `TIMESTAMPTZ` | 업로드일 |
+| `raw_expires_at` | `TIMESTAMPTZ` | 원본 lifecycle 만료 시각, 기본 업로드 후 7일 |
+| `raw_deleted_at` | `TIMESTAMPTZ` | quarantine object 삭제 완료 시각 |
+| `raw_delete_failed_at` | `TIMESTAMPTZ` | 최근 삭제 실패 시각, cleanup 재시도 대상 |
 
 `original_file_name`은 client path와 제어 문자를 제거한 basename만 저장한다. 파일 검증 또는 transaction이 실패하면 DB row와 quarantine object를 함께 남기지 않는다.
 
@@ -953,6 +956,7 @@ V012__create_naver_order_settlement_snapshots.sql
 V013__create_canonical_domain_tables.sql
 V014__create_auth_sessions.sql
 V015__create_auth_security_events.sql
+V016__add_wholesale_raw_file_lifecycle.sql
 ```
 
 ## 12.2 작성 원칙
@@ -974,6 +978,7 @@ V015__create_auth_security_events.sql
 - V013은 기존 migration에 누락됐던 `subscription_plan`, `user_subscription`, `category_master`, `risk_category_rule`, `product_candidate`, `candidate_score`를 정의한다.
 - V014는 opaque refresh token의 hash, rotation family, 폐기와 재사용 탐지 이력을 저장하는 `auth_sessions`를 정의한다.
 - V015는 인증 요청 제한 차단 이력을 원문 식별자 없이 저장하는 `auth_security_events`를 정의한다.
+- V016은 업로드 원본 만료, 삭제 완료, 삭제 실패 이력을 additive column으로 추가한다.
 - PostgreSQL clean migration과 V012 upgrade migration을 Testcontainers 기반 테스트로 검증한다.
 
 ---
