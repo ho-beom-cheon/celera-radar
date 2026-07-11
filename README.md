@@ -67,7 +67,7 @@ docker compose -f infra/docker-compose.yml up -d db
 
 Java 21이 필요합니다.
 `JWT_SECRET`은 32바이트 이상 값으로 환경변수에 설정합니다.
-네이버 API 연동 기능은 `NAVER_PROVIDER_MODE`로 `LEGACY`, `HUB`, `DISABLED`를 선택합니다. 기존 개발자센터 방식은 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, API HUB 방식은 별도 HUB credential과 공식 확인한 기능별 endpoint를 환경변수로 설정합니다. production 기본값은 `DISABLED`입니다.
+네이버 신규 연동은 `NAVER_PROVIDER_MODE=HUB`와 API HUB 전용 credential을 사용합니다. production 기본값은 `DISABLED`입니다.
 SmartStore 화면과 API는 mock 검증 기능이며 production에서는 backend와 frontend feature flag가 모두 기본 비활성화됩니다.
 발급 경로와 적용 위치는 `docs/13_external_api_credentials.md`를 먼저 확인합니다.
 운영 배포 전에는 `docs/16_production_configuration.md`의 prod profile과 secret fail-fast 기준을 확인합니다.
@@ -77,14 +77,11 @@ cd backend
 ./gradlew bootRun
 ```
 
-Windows PowerShell:
+로컬에서는 프로젝트 루트의 `.env`를 선택적으로 자동 로드합니다. `.env.example`을 `.env`로 복사한 뒤 실제 API HUB credential과 로컬 JWT secret을 입력합니다. `.env`는 Git에서 제외됩니다.
 
 ```powershell
+Copy-Item .env.example .env
 cd backend
-$env:JWT_SECRET="replace-with-at-least-32-byte-local-secret"
-$env:NAVER_CLIENT_ID=""
-$env:NAVER_CLIENT_SECRET=""
-$env:NAVER_DATALAB_DAILY_QUOTA="1000"
 .\gradlew.bat bootRun
 ```
 

@@ -546,11 +546,13 @@ TrendSnapshotService          -> ShoppingInsightProvider -> LEGACY | HUB | DISAB
 | `HUB` | API HUB credential과 기능별 유효한 HTTP(S) endpoint 존재 | 해당 capability의 HUB adapter만 사용 |
 | `DISABLED` | 기본 운영값 또는 명시적 비활성 | 외부 network 호출 없이 unavailable 응답 |
 
-capability descriptor는 credential/endpoint 값을 노출하지 않고 `SHOPPING_SEARCH`, `SHOPPING_INSIGHT` 지원 여부만 제공한다. 운영은 기본 `DISABLED`로 fail-closed하며, HUB endpoint는 공식 문서에서 확인한 값을 환경변수로 주입한다. 확인되지 않은 endpoint를 코드에서 추측하지 않는다.
+capability descriptor는 credential/endpoint 값을 노출하지 않고 `SHOPPING_SEARCH`, `SHOPPING_INSIGHT` 지원 여부만 제공한다. 운영은 기본 `DISABLED`로 fail-closed한다. 공식 확인된 Shopping Insight endpoint는 안전한 기본값으로 제공하되, 확인되지 않은 Shopping Search endpoint는 코드에서 추측하지 않는다.
 
 ## 10.2 데이터랩 한도 대응
 
-네이버 데이터랩 쇼핑인사이트 API는 하루 1,000회 호출 한도가 있으므로 다음 제한을 둔다.
+네이버 데이터랩 쇼핑인사이트 호출량을 통제하기 위해 애플리케이션 자체 일일 상한을 기본 1,000회로 둔다. API HUB 콘솔 한도가 더 낮으면 운영 설정도 그 이하로 낮춘다.
+
+API HUB가 HTTP 200과 빈 `results[].data`를 반환할 수 있으므로 이를 외부 장애로 간주하지 않는다. 성공 호출 로그는 남기되 snapshot은 생성하지 않고 점수는 데이터 없음 상태로 유지한다.
 
 | 단계 | 키워드 수 | 전략 |
 |---|---:|---|
