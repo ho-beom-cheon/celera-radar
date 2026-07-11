@@ -137,7 +137,7 @@ Response:
   "email": "seller@example.com",
   "plan": "FREE",
   "accessToken": "jwt...",
-  "refreshToken": "jwt..."
+  "refreshToken": "opaque-random-token..."
 }
 ```
 
@@ -160,19 +160,19 @@ Response:
   "email": "seller@example.com",
   "plan": "FREE",
   "accessToken": "jwt...",
-  "refreshToken": "jwt..."
+  "refreshToken": "opaque-random-token..."
 }
 ```
 
 ### POST /auth/refresh
 
-Refresh token으로 새 access token과 refresh token을 발급한다.
+Opaque refresh token으로 새 access token과 refresh token을 발급한다. 성공할 때마다 이전 refresh session을 rotation하며 이전 token은 다시 사용할 수 없다.
 
 Request:
 
 ```json
 {
-  "refreshToken": "jwt..."
+  "refreshToken": "opaque-random-token..."
 }
 ```
 
@@ -184,9 +184,33 @@ Response:
   "email": "seller@example.com",
   "plan": "FREE",
   "accessToken": "jwt...",
-  "refreshToken": "jwt..."
+  "refreshToken": "opaque-random-token..."
 }
 ```
+
+이미 rotation된 token이 다시 제출되면 탈취 재사용으로 간주해 같은 session family 전체를 폐기하고 `401 INVALID_REFRESH_TOKEN`을 반환한다. DB에는 refresh token 원문이 아니라 SHA-256 hash만 저장한다.
+
+### POST /auth/logout
+
+제출한 refresh token의 session family를 폐기한다. 이미 만료·폐기됐거나 존재하지 않는 token도 동일하게 성공 처리해 token 존재 여부를 노출하지 않는다.
+
+Request:
+
+```json
+{
+  "refreshToken": "opaque-random-token..."
+}
+```
+
+### POST /auth/logout-all
+
+Bearer access token으로 인증한 사용자의 모든 refresh session을 폐기한다.
+
+```http
+Authorization: Bearer {accessToken}
+```
+
+비활성화되거나 삭제된 사용자는 login, refresh, 기존 access token을 사용한 보호 API 접근이 모두 거부된다.
 
 ---
 

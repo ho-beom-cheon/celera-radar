@@ -151,6 +151,31 @@ CREATE INDEX idx_users_plan_code ON users(plan_code);
 CREATE INDEX idx_users_role ON users(role);
 ```
 
+### `auth_sessions`
+
+refresh credential은 JWT 대신 256-bit opaque random token을 사용한다. 원문은 응답 시 한 번만 전달하고 DB에는 SHA-256 hash만 저장한다.
+
+| 컬럼 | 타입 | Nullable | 설명 |
+|---|---|---:|---|
+| `id` | `BIGINT` | N | session PK |
+| `user_id` | `BIGINT` | N | `users.id` FK |
+| `family_id` | `UUID` | N | rotation family 식별자 |
+| `token_hash` | `VARCHAR(64)` | N | SHA-256 hex, Unique |
+| `expires_at` | `TIMESTAMPTZ` | N | refresh 만료 시각 |
+| `created_at` | `TIMESTAMPTZ` | N | 발급 시각 |
+| `last_used_at` | `TIMESTAMPTZ` | Y | 마지막 정상 refresh 시각 |
+| `rotated_at` | `TIMESTAMPTZ` | Y | 새 session으로 교체된 시각 |
+| `revoked_at` | `TIMESTAMPTZ` | Y | logout/reuse/inactive 폐기 시각 |
+| `reuse_detected_at` | `TIMESTAMPTZ` | Y | rotation된 token 재사용 감지 시각 |
+| `replaced_by_session_id` | `BIGINT` | Y | 교체된 새 session ID |
+
+- refresh 조회는 `token_hash` unique index와 pessimistic write lock을 사용한다.
+- 정상 refresh는 같은 family에 새 session을 만들고 기존 session을 rotation 처리한다.
+- rotation된 token 재사용 시 family 전체를 폐기한다.
+- 사용자 물리 삭제 시 session은 cascade 삭제하고, 논리 비활성화 시 session을 명시적으로 폐기한다.
+
+인덱스: `uk_auth_sessions_token_hash`, `idx_auth_sessions_user_active`, `idx_auth_sessions_family`.
+
 ---
 
 ## 7.2 `keywords`
@@ -906,6 +931,7 @@ V010__create_naver_store_products.sql
 V011__create_store_product_costs.sql
 V012__create_naver_order_settlement_snapshots.sql
 V013__create_canonical_domain_tables.sql
+V014__create_auth_sessions.sql
 ```
 
 ## 12.2 작성 원칙
@@ -925,6 +951,7 @@ V013__create_canonical_domain_tables.sql
 - Hibernate는 기본적으로 `ddl-auto=validate`만 수행하며 운영 테이블을 생성하거나 변경하지 않는다.
 - `baseline-on-migrate`의 기본값은 `false`다. 기존 DB 이관 시 검증된 runbook과 명시적 환경변수로만 활성화한다.
 - V013은 기존 migration에 누락됐던 `subscription_plan`, `user_subscription`, `category_master`, `risk_category_rule`, `product_candidate`, `candidate_score`를 정의한다.
+- V014는 opaque refresh token의 hash, rotation family, 폐기와 재사용 탐지 이력을 저장하는 `auth_sessions`를 정의한다.
 - PostgreSQL clean migration과 V012 upgrade migration을 Testcontainers 기반 테스트로 검증한다.
 
 ---
