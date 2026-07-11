@@ -7,6 +7,7 @@ import com.sellerradar.common.error.BusinessException;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.wholesale.domain.CsvEncoding;
 import com.sellerradar.wholesale.dto.WholesaleFilePreviewResponse;
+import com.sellerradar.wholesale.upload.XlsxSecurityProperties;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -15,14 +16,16 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.unit.DataSize;
 
 class WholesaleFilePreviewServiceTest {
+	private final XlsxSecurityProperties xlsxProperties = xlsxProperties();
 	private final CsvEncodingDetector encodingDetector = new CsvEncodingDetector();
 	private final WholesaleFilePreviewService previewService = new WholesaleFilePreviewService(
 			new WholesaleFileParser(
 					encodingDetector,
 					new SimpleCsvParser(),
-					new XlsxSpreadsheetParser()
+					new XlsxSpreadsheetParser(new XlsxZipGuard(xlsxProperties), xlsxProperties)
 			)
 	);
 
@@ -108,5 +111,18 @@ class WholesaleFilePreviewServiceTest {
 			workbook.write(output);
 			return output.toByteArray();
 		}
+	}
+
+	private XlsxSecurityProperties xlsxProperties() {
+		return new XlsxSecurityProperties(
+				1000,
+				DataSize.ofMegabytes(50),
+				0.01,
+				10,
+				20000,
+				100,
+				10000,
+				DataSize.ofMegabytes(20)
+		);
 	}
 }

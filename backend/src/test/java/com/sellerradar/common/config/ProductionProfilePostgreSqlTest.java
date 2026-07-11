@@ -49,7 +49,7 @@ class ProductionProfilePostgreSqlTest {
 			assertThat(context.getEnvironment().getProperty("management.endpoints.web.exposure.include"))
 					.isEqualTo("health");
 			assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
-					.isEqualTo("015");
+					.isEqualTo("016");
 
 			assertRefreshReuseRevokesFamily(context);
 		}

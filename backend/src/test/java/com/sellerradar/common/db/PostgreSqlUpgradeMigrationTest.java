@@ -25,9 +25,10 @@ class PostgreSqlUpgradeMigrationTest {
 		latest.migrate();
 
 		assertThat(latest.validateWithResult().validationSuccessful).isTrue();
-		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("015");
+		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("016");
 		assertThat(tableExists("product_candidate")).isTrue();
 		assertThat(tableExists("auth_security_events")).isTrue();
+		assertThat(columnExists("wholesale_uploads", "raw_expires_at")).isTrue();
 		assertThat(foreignKeyExists("fk_alert_candidate")).isTrue();
 	}
 
@@ -52,6 +53,19 @@ class PostgreSqlUpgradeMigrationTest {
 				var statement = connection.prepareStatement(
 						"SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = ?)")) {
 			statement.setString(1, constraintName);
+			try (var result = statement.executeQuery()) {
+				return result.next() && result.getBoolean(1);
+			}
+		}
+	}
+
+	private boolean columnExists(String tableName, String columnName) throws Exception {
+		try (var connection = POSTGRES.createConnection("");
+				var statement = connection.prepareStatement(
+						"SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+								+ "WHERE table_schema = 'public' AND table_name = ? AND column_name = ?)")) {
+			statement.setString(1, tableName);
+			statement.setString(2, columnName);
 			try (var result = statement.executeQuery()) {
 				return result.next() && result.getBoolean(1);
 			}
