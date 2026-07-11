@@ -68,6 +68,7 @@ docker compose -f infra/docker-compose.yml up -d db
 Java 21이 필요합니다.
 `JWT_SECRET`은 32바이트 이상 값으로 환경변수에 설정합니다.
 네이버 API 연동 기능은 `NAVER_PROVIDER_MODE`로 `LEGACY`, `HUB`, `DISABLED`를 선택합니다. 기존 개발자센터 방식은 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, API HUB 방식은 별도 HUB credential과 공식 확인한 기능별 endpoint를 환경변수로 설정합니다. production 기본값은 `DISABLED`입니다.
+SmartStore 화면과 API는 mock 검증 기능이며 production에서는 backend와 frontend feature flag가 모두 기본 비활성화됩니다.
 발급 경로와 적용 위치는 `docs/13_external_api_credentials.md`를 먼저 확인합니다.
 운영 배포 전에는 `docs/16_production_configuration.md`의 prod profile과 secret fail-fast 기준을 확인합니다.
 
