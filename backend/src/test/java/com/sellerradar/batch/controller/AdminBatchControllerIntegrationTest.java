@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sellerradar.auth.jwt.JwtTokenProvider;
-import com.sellerradar.auth.jwt.TokenPair;
 import com.sellerradar.batch.repository.BatchJobHistoryRepository;
 import com.sellerradar.keyword.repository.KeywordRepository;
 import com.sellerradar.user.domain.User;
@@ -104,10 +103,12 @@ class AdminBatchControllerIntegrationTest {
 	}
 
 	private String bearerToken(UserRole role) {
-		User user = User.create(role.name().toLowerCase() + "@example.com", "{bcrypt}hash");
-		ReflectionTestUtils.setField(user, "id", role == UserRole.ADMIN ? 1L : 2L);
-		ReflectionTestUtils.setField(user, "role", role);
-		TokenPair tokenPair = jwtTokenProvider.issueTokenPair(user);
-		return "Bearer " + tokenPair.accessToken();
+		String email = role.name().toLowerCase() + "@example.com";
+		User user = userRepository.findByEmail(email).orElseGet(() -> {
+			User created = User.create(email, "{bcrypt}hash");
+			ReflectionTestUtils.setField(created, "role", role);
+			return userRepository.save(created);
+		});
+		return "Bearer " + jwtTokenProvider.issueAccessToken(user);
 	}
 }
