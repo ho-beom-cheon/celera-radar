@@ -15,6 +15,7 @@ import com.sellerradar.batch.repository.BatchJobHistoryRepository;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.keyword.repository.KeywordRepository;
 import com.sellerradar.trend.client.NaverDataLabTimeUnit;
+import com.sellerradar.trend.service.NaverShoppingCategoryCodeResolver;
 import com.sellerradar.trend.service.TrendSnapshotService;
 import com.sellerradar.user.domain.User;
 import java.time.Clock;
@@ -45,6 +46,7 @@ class DailyTrendBatchServiceTest {
 				keywordRepository,
 				trendSnapshotService,
 				historyRepository,
+				new NaverShoppingCategoryCodeResolver(),
 				FIXED_CLOCK,
 				2
 		);
@@ -75,7 +77,7 @@ class DailyTrendBatchServiceTest {
 		assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(2);
 		verify(trendSnapshotService).collectKeywordTrend(
 				1L,
-				"50000000",
+				"50000008",
 				LocalDate.of(2026, 6, 2),
 				LocalDate.of(2026, 7, 2),
 				NaverDataLabTimeUnit.DATE
@@ -97,7 +99,7 @@ class DailyTrendBatchServiceTest {
 				.thenReturn(List.of(firstKeyword, secondKeyword));
 		when(trendSnapshotService.collectKeywordTrend(
 				2L,
-				"50000000",
+				"50000008",
 				LocalDate.of(2026, 6, 2),
 				LocalDate.of(2026, 7, 2),
 				NaverDataLabTimeUnit.DATE

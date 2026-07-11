@@ -8,6 +8,7 @@ import com.sellerradar.batch.repository.BatchJobHistoryRepository;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.keyword.repository.KeywordRepository;
 import com.sellerradar.trend.client.NaverDataLabTimeUnit;
+import com.sellerradar.trend.service.NaverShoppingCategoryCodeResolver;
 import com.sellerradar.trend.service.TrendSnapshotService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -20,12 +21,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DailyTrendBatchService {
-	private static final String DEFAULT_NAVER_CATEGORY_CODE = "50000000";
 	private static final int TREND_LOOKBACK_DAYS = 30;
 
 	private final KeywordRepository keywordRepository;
 	private final TrendSnapshotService trendSnapshotService;
 	private final BatchJobHistoryRepository historyRepository;
+	private final NaverShoppingCategoryCodeResolver categoryCodeResolver;
 	private final Clock clock;
 	private final int dailyTargetLimit;
 
@@ -34,12 +35,14 @@ public class DailyTrendBatchService {
 			KeywordRepository keywordRepository,
 			TrendSnapshotService trendSnapshotService,
 			BatchJobHistoryRepository historyRepository,
+			NaverShoppingCategoryCodeResolver categoryCodeResolver,
 			@Value("${seller-radar.batch.datalab-daily-target-limit:50}") int dailyTargetLimit
 	) {
 		this(
 				keywordRepository,
 				trendSnapshotService,
 				historyRepository,
+				categoryCodeResolver,
 				Clock.systemDefaultZone(),
 				dailyTargetLimit
 		);
@@ -49,12 +52,14 @@ public class DailyTrendBatchService {
 			KeywordRepository keywordRepository,
 			TrendSnapshotService trendSnapshotService,
 			BatchJobHistoryRepository historyRepository,
+			NaverShoppingCategoryCodeResolver categoryCodeResolver,
 			Clock clock,
 			int dailyTargetLimit
 	) {
 		this.keywordRepository = keywordRepository;
 		this.trendSnapshotService = trendSnapshotService;
 		this.historyRepository = historyRepository;
+		this.categoryCodeResolver = categoryCodeResolver;
 		this.clock = clock;
 		this.dailyTargetLimit = Math.max(dailyTargetLimit, 0);
 	}
@@ -109,10 +114,6 @@ public class DailyTrendBatchService {
 	}
 
 	private String resolveNaverCategoryCode(Keyword keyword) {
-		String category = keyword.getCategory();
-		if (category != null && category.matches("\\d{8}")) {
-			return category;
-		}
-		return DEFAULT_NAVER_CATEGORY_CODE;
+		return categoryCodeResolver.resolve(keyword.getCategory());
 	}
 }
