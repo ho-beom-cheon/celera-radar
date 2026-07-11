@@ -51,6 +51,11 @@ export interface CandidateFilters {
   size?: number;
 }
 
+export interface CandidateRecalculationResponse {
+  recalculatedCount: number;
+  skippedCount: number;
+}
+
 export const gradeLabels: Record<CandidateGrade, string> = {
   RECOMMENDED: '추천 검토',
   REVIEW: '검토',
@@ -110,6 +115,12 @@ export function saveCandidate(candidateId: number) {
 
 export function excludeCandidate(candidateId: number) {
   return apiRequest<CandidateDetail>(`/candidates/${candidateId}/exclude`, {
+    method: 'POST'
+  });
+}
+
+export function recalculateCandidates() {
+  return apiRequest<CandidateRecalculationResponse>('/candidates/recalculate', {
     method: 'POST'
   });
 }

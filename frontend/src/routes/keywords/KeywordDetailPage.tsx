@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   KeywordItem,
+  KeywordTrendAnalysis,
   ShoppingSnapshot,
   analyzeShopping,
   competitionLabels,
   getKeyword,
+  getKeywordAnalysis,
   getLatestShoppingSnapshot,
   statusLabels
 } from '../../api/keywords';
@@ -14,6 +16,7 @@ import {
   ErrorState,
   HelpTooltip,
   LazyKpiBarChart,
+  LazyKpiLineChart,
   LoadingState,
   MetricCard,
   ProductCard,
@@ -28,6 +31,7 @@ interface KeywordDetailPageProps {
 export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
   const [keyword, setKeyword] = useState<KeywordItem | null>(null);
   const [snapshot, setSnapshot] = useState<ShoppingSnapshot | null>(null);
+  const [trend, setTrend] = useState<KeywordTrendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
@@ -51,6 +55,8 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
     try {
       const keywordResponse = await getKeyword(keywordId);
       setKeyword(keywordResponse);
+      const analysisResponse = await getKeywordAnalysis(keywordId);
+      setTrend(analysisResponse.trend);
       try {
         const snapshotResponse = await getLatestShoppingSnapshot(keywordId);
         setSnapshot(snapshotResponse);
@@ -146,6 +152,31 @@ export function KeywordDetailPage({ keywordId }: KeywordDetailPageProps) {
         </section>
       ) : null}
 
+      {!loading && !error ? (
+        trend ? (
+          <section className="trend-analysis-section" aria-label="검색 클릭 트렌드">
+            <div className="summary-grid analysis-summary">
+              <MetricCard label="최신 상대 지수" value={formatRatio(trend.latestRatio)} />
+              <MetricCard label="7일 변화" value={formatDelta(trend.trendDelta7d)} />
+              <MetricCard label="30일 변화" value={formatDelta(trend.trendDelta30d)} />
+              <MetricCard label="추천 반영 점수" value={`${trend.trendScore} / 30`} />
+            </div>
+            <LazyKpiLineChart
+              title="검색 클릭 추이"
+              description={`${trend.periodStart}~${trend.periodEnd} 기준입니다. 최고점을 100으로 환산한 상대값이며 판매량이 아닙니다.`}
+              data={trend.points.map((point) => ({ label: point.period.slice(5), value: point.ratio }))}
+              valueFormatter={formatRatio}
+            />
+            <p className="muted trend-data-note">트렌드 스냅샷 기준일 {trend.snapshotDate} · 후보 재계산 시 이 점수가 반영됩니다.</p>
+          </section>
+        ) : (
+          <section className="panel empty-analysis-panel">
+            <h2>검색 클릭 트렌드 대기</h2>
+            <p>아직 저장된 Shopping Insight 스냅샷이 없습니다. 배치 수집 후 상대 지수와 추천 반영 점수가 표시됩니다.</p>
+          </section>
+        )
+      ) : null}
+
       {snapshot ? (
         <>
           <section className="summary-grid analysis-summary" aria-label="쇼핑 검색 요약">
@@ -215,6 +246,15 @@ function formatCurrency(value: number | null) {
     currency: 'KRW',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function formatRatio(value: number) {
+  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 }).format(value);
+}
+
+function formatDelta(value: number) {
+  const formatted = formatRatio(value);
+  return `${value > 0 ? '+' : ''}${formatted}`;
 }
 
 function priceChartItems(snapshot: ShoppingSnapshot) {

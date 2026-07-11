@@ -400,6 +400,16 @@ h2 {
   font-weight: var(--sr-font-weight-semibold);
 }
 
+.trend-analysis-section {
+  display: grid;
+  gap: var(--sr-space-6);
+}
+
+.trend-data-note {
+  margin: calc(var(--sr-space-3) * -1) var(--sr-space-1) var(--sr-space-0);
+  font-size: var(--sr-font-size-sm);
+}
+
 .donut-chart-layout {
   display: grid;
   grid-template-columns: minmax(180px, 260px) minmax(220px, 1fr);

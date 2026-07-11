@@ -1,9 +1,11 @@
 import { lazy, Suspense } from 'react';
 import type { KpiBarChartProps } from './KpiBarChart';
 import type { KpiDonutChartProps } from './KpiDonutChart';
+import type { KpiLineChartProps } from './KpiLineChart';
 
 const KpiBarChart = lazy(() => import('./KpiBarChart').then((module) => ({ default: module.KpiBarChart })));
 const KpiDonutChart = lazy(() => import('./KpiDonutChart').then((module) => ({ default: module.KpiDonutChart })));
+const KpiLineChart = lazy(() => import('./KpiLineChart').then((module) => ({ default: module.KpiLineChart })));
 
 export function LazyKpiBarChart(props: KpiBarChartProps) {
   return (
@@ -17,6 +19,14 @@ export function LazyKpiDonutChart(props: KpiDonutChartProps) {
   return (
     <Suspense fallback={<ChartLoadingFallback title={props.title} />}>
       <KpiDonutChart {...props} />
+    </Suspense>
+  );
+}
+
+export function LazyKpiLineChart(props: KpiLineChartProps) {
+  return (
+    <Suspense fallback={<ChartLoadingFallback title={props.title} />}>
+      <KpiLineChart {...props} />
     </Suspense>
   );
 }

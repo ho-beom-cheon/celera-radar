@@ -9,6 +9,7 @@ import {
   getCandidate,
   gradeLabels,
   listCandidates,
+  recalculateCandidates,
   riskLabels,
   saveCandidate,
   sourceLabels,
@@ -59,6 +60,7 @@ export function CandidatesPage() {
   const [minScore, setMinScore] = useState('');
   const [minMarginRate, setMinMarginRate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [filterErrors, setFilterErrors] = useState<CandidateFilterErrors>({});
@@ -153,6 +155,30 @@ export function CandidatesPage() {
     }
   }
 
+  async function handleRecalculate() {
+    if (recalculating) {
+      return;
+    }
+    setRecalculating(true);
+    setMessage('');
+    setError('');
+    try {
+      const response = await recalculateCandidates();
+      setDetailsById({});
+      setExpandedCandidateId(null);
+      setMessage(
+        `최신 트렌드로 ${response.recalculatedCount}개 후보를 재계산했습니다.${
+          response.skippedCount > 0 ? ` 키워드가 없는 ${response.skippedCount}개는 건너뛰었습니다.` : ''
+        }`
+      );
+      await loadCandidates();
+    } catch (requestError) {
+      setError(formatApiError(requestError));
+    } finally {
+      setRecalculating(false);
+    }
+  }
+
   async function toggleBreakdown(candidateId: number) {
     setMessage('');
     setError('');
@@ -183,12 +209,22 @@ export function CandidatesPage() {
           <p className="eyebrow">Candidates</p>
           <h1>상품 검토 후보</h1>
         </div>
-        <div className="limit-meter">
-          <span className="metric-label">
-            <span>현재 조건 후보</span>
-            <HelpTooltip contentKey="candidateCount" compact />
-          </span>
-          <strong>{totalElements}개</strong>
+        <div className="detail-actions">
+          <div className="limit-meter">
+            <span className="metric-label">
+              <span>현재 조건 후보</span>
+              <HelpTooltip contentKey="candidateCount" compact />
+            </span>
+            <strong>{totalElements}개</strong>
+          </div>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => void handleRecalculate()}
+            disabled={!hasAccessToken || loading || recalculating || totalElements === 0}
+          >
+            {recalculating ? '점수 갱신 중' : '최신 트렌드로 점수 갱신'}
+          </button>
         </div>
       </section>
 

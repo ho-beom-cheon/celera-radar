@@ -26,8 +26,25 @@ export interface KeywordAnalysis {
   status: AnalysisStatus;
   lastAnalyzedAt: string | null;
   shopping: ShoppingAnalysis | null;
-  trend: unknown | null;
+  trend: KeywordTrendAnalysis | null;
   score: unknown | null;
+}
+
+export interface KeywordTrendPoint {
+  period: string;
+  ratio: number;
+}
+
+export interface KeywordTrendAnalysis {
+  snapshotDate: string;
+  periodStart: string;
+  periodEnd: string;
+  latestRatio: number;
+  trendDelta7d: number;
+  trendDelta30d: number;
+  trendScore: number;
+  points: KeywordTrendPoint[];
+  warnings: string[];
 }
 
 export interface ShoppingAnalysis {
