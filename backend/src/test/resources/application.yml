@@ -19,3 +19,15 @@ seller-radar:
     secret: test-only-jwt-secret-for-seller-radar-auth-tests-32-bytes
     access-token-ttl: PT30M
     refresh-token-ttl: P14D
+  auth:
+    rate-limit:
+      login-account-limit: 1000
+      login-ip-limit: 1000
+      login-window: PT15M
+      signup-account-limit: 1000
+      signup-ip-limit: 1000
+      signup-window: PT1H
+      password-reset-account-limit: 1000
+      password-reset-ip-limit: 1000
+      password-reset-window: PT1H
+      max-tracked-keys: 100000

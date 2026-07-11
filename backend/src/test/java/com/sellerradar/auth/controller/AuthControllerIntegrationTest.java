@@ -14,6 +14,8 @@ import com.sellerradar.auth.dto.RefreshTokenRequest;
 import com.sellerradar.auth.dto.SignupRequest;
 import com.sellerradar.auth.session.AuthSessionRepository;
 import com.sellerradar.auth.session.RefreshTokenCodec;
+import com.sellerradar.auth.ratelimit.AuthRateLimitService;
+import com.sellerradar.auth.securityevent.AuthSecurityEventRepository;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.common.web.RequestContext;
@@ -29,13 +31,22 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-@SpringBootTest(classes = {SellerRadarApplication.class, AuthControllerIntegrationTest.ProtectedController.class})
+@SpringBootTest(
+		classes = {SellerRadarApplication.class, AuthControllerIntegrationTest.ProtectedController.class},
+		properties = {
+				"seller-radar.auth.rate-limit.login-account-limit=2",
+				"seller-radar.auth.rate-limit.login-ip-limit=10",
+				"seller-radar.auth.rate-limit.signup-account-limit=2",
+				"seller-radar.auth.rate-limit.signup-ip-limit=2"
+		}
+)
 @AutoConfigureMockMvc
 class AuthControllerIntegrationTest {
 	private static final String REQUEST_ID = "req_auth_test_001";
@@ -58,10 +69,18 @@ class AuthControllerIntegrationTest {
 	private RefreshTokenCodec refreshTokenCodec;
 
 	@Autowired
+	private AuthRateLimitService authRateLimitService;
+
+	@Autowired
+	private AuthSecurityEventRepository authSecurityEventRepository;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void setUp() {
+		ReflectionTestUtils.invokeMethod(authRateLimitService, "clear");
+		authSecurityEventRepository.deleteAllInBatch();
 		authSessionRepository.deleteAllInBatch();
 		userRepository.deleteAll();
 	}
@@ -144,6 +163,62 @@ class AuthControllerIntegrationTest {
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_CREDENTIALS.name()));
+	}
+
+	@Test
+	void loginRateLimitReturns429RetryAfterAndHashedSecurityEvent() throws Exception {
+		userRepository.save(User.create(EMAIL, passwordEncoder.encode(PASSWORD)));
+
+		for (int attempt = 0; attempt < 2; attempt++) {
+			mockMvc.perform(post("/api/v1/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, "wrong-pass"))))
+					.andExpect(status().isUnauthorized());
+		}
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, "wrong-pass"))))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(header().exists("Retry-After"))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.AUTH_RATE_LIMITED.name()));
+
+		assertThat(authSecurityEventRepository.findAll()).singleElement().satisfies(event -> {
+			assertThat(event.getSubjectHash()).hasSize(64).isNotEqualTo(EMAIL);
+			assertThat(event.getNetworkHash()).hasSize(64).isNotEqualTo("127.0.0.1");
+			assertThat(event.getRetryAfterSeconds()).isPositive();
+		});
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, "wrong-pass"))))
+				.andExpect(status().isTooManyRequests());
+		assertThat(authSecurityEventRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void signupRateLimitAppliesPerRemoteAddress() throws Exception {
+		for (int attempt = 0; attempt < 2; attempt++) {
+			mockMvc.perform(post("/api/v1/auth/signup")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(new SignupRequest(
+									"signup" + attempt + "@example.com",
+									PASSWORD,
+									true
+							))))
+					.andExpect(status().isOk());
+		}
+
+		mockMvc.perform(post("/api/v1/auth/signup")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new SignupRequest(
+								"signup-blocked@example.com",
+								PASSWORD,
+								true
+						))))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(header().exists("Retry-After"))
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.AUTH_RATE_LIMITED.name()));
 	}
 
 	@Test
