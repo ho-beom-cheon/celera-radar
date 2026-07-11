@@ -11,10 +11,13 @@ import com.sellerradar.wholesale.dto.WholesaleFilePreviewResponse;
 import com.sellerradar.wholesale.dto.WholesaleUploadPreviewResponse;
 import com.sellerradar.wholesale.repository.WholesaleFileRepository;
 import com.sellerradar.wholesale.upload.AcceptedUpload;
+import com.sellerradar.wholesale.upload.RawUploadLifecycleProperties;
 import com.sellerradar.wholesale.upload.UploadAdmissionService;
 import com.sellerradar.wholesale.upload.UploadFileType;
 import com.sellerradar.wholesale.upload.UploadQuarantineStorage;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumSet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class WholesaleFileService {
 	private final WholesaleFilePreviewService previewService;
 	private final UploadAdmissionService uploadAdmissionService;
 	private final UploadQuarantineStorage quarantineStorage;
+	private final RawUploadLifecycleProperties rawLifecycleProperties;
 
 	public WholesaleFileService(
 			WholesaleFileRepository wholesaleFileRepository,
@@ -41,7 +45,8 @@ public class WholesaleFileService {
 			WholesaleFileParser fileParser,
 			WholesaleFilePreviewService previewService,
 			UploadAdmissionService uploadAdmissionService,
-			UploadQuarantineStorage quarantineStorage
+			UploadQuarantineStorage quarantineStorage,
+			RawUploadLifecycleProperties rawLifecycleProperties
 	) {
 		this.wholesaleFileRepository = wholesaleFileRepository;
 		this.userRepository = userRepository;
@@ -51,6 +56,7 @@ public class WholesaleFileService {
 		this.previewService = previewService;
 		this.uploadAdmissionService = uploadAdmissionService;
 		this.quarantineStorage = quarantineStorage;
+		this.rawLifecycleProperties = rawLifecycleProperties;
 	}
 
 	@Transactional
@@ -90,6 +96,7 @@ public class WholesaleFileService {
 					rowCount,
 					document.header()
 			);
+			configureRawRetention(uploaded);
 			return WholesaleFileResponse.from(wholesaleFileRepository.save(uploaded));
 		} catch (RuntimeException exception) {
 			quarantineStorage.deleteQuietly(storedPath);
@@ -144,6 +151,7 @@ public class WholesaleFileService {
 					rowCount,
 					document.header()
 			);
+			configureRawRetention(uploaded);
 			WholesaleFile saved = wholesaleFileRepository.save(uploaded);
 			WholesaleFilePreviewResponse preview = previewService.toResponse(accepted.originalFilename(), parsedFile);
 			return WholesaleUploadPreviewResponse.from(saved, preview);
@@ -171,5 +179,11 @@ public class WholesaleFileService {
 				}
 			}
 		});
+	}
+
+	private void configureRawRetention(WholesaleFile upload) {
+		upload.configureRawRetention(
+				OffsetDateTime.now(ZoneOffset.UTC).plus(rawLifecycleProperties.retention())
+		);
 	}
 }

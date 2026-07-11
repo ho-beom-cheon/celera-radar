@@ -54,3 +54,15 @@ seller-radar:
     upload-security:
       quarantine-directory: ${UPLOAD_QUARANTINE_DIR:./data/quarantine}
       max-file-size: ${UPLOAD_MAX_FILE_SIZE:10MB}
+    xlsx-security:
+      max-zip-entries: ${XLSX_MAX_ZIP_ENTRIES:1000}
+      max-uncompressed-size: ${XLSX_MAX_UNCOMPRESSED_SIZE:50MB}
+      min-inflate-ratio: ${XLSX_MIN_INFLATE_RATIO:0.01}
+      max-sheets: ${XLSX_MAX_SHEETS:10}
+      max-rows: ${XLSX_MAX_ROWS:20000}
+      max-columns: ${XLSX_MAX_COLUMNS:100}
+      max-cell-length: ${XLSX_MAX_CELL_LENGTH:10000}
+      max-extracted-text-size: ${XLSX_MAX_EXTRACTED_TEXT_SIZE:20MB}
+    raw-lifecycle:
+      retention: ${UPLOAD_RAW_RETENTION:P7D}
+      cleanup-batch-size: ${UPLOAD_RAW_CLEANUP_BATCH_SIZE:100}

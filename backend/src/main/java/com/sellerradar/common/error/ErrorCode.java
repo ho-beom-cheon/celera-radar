@@ -24,6 +24,7 @@ public enum ErrorCode {
 	DUPLICATED_KEYWORD(HttpStatus.CONFLICT, "이미 등록된 키워드입니다."),
 	CSV_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "CSV 형식이 올바르지 않습니다."),
 	CSV_FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "CSV/XLSX 파일 크기가 허용 범위를 초과했습니다."),
+	UPLOAD_RAW_DELETE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "업로드 원본 파일을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."),
 	CSV_REQUIRED_COLUMN_MISSING(HttpStatus.BAD_REQUEST, "CSV 필수 컬럼이 누락되었습니다."),
 	CSV_ROW_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "현재 요금제에서 처리 가능한 CSV 행 수를 초과했습니다."),
 	EXTERNAL_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "외부 API 호출 한도를 초과했습니다."),

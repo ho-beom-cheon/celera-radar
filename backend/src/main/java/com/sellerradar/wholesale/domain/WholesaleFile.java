@@ -85,6 +85,15 @@ public class WholesaleFile {
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
 
+	@Column(name = "raw_expires_at", nullable = false)
+	private OffsetDateTime rawExpiresAt;
+
+	@Column(name = "raw_deleted_at")
+	private OffsetDateTime rawDeletedAt;
+
+	@Column(name = "raw_delete_failed_at")
+	private OffsetDateTime rawDeleteFailedAt;
+
 	protected WholesaleFile() {
 	}
 
@@ -199,11 +208,27 @@ public class WholesaleFile {
 		this.status = WholesaleFileStatus.FAILED;
 	}
 
+	public void configureRawRetention(OffsetDateTime expiresAt) {
+		this.rawExpiresAt = expiresAt;
+	}
+
+	public void markRawDeleted(OffsetDateTime deletedAt) {
+		this.rawDeletedAt = deletedAt;
+		this.rawDeleteFailedAt = null;
+	}
+
+	public void markRawDeleteFailed(OffsetDateTime failedAt) {
+		this.rawDeleteFailedAt = failedAt;
+	}
+
 	@PrePersist
 	void onCreate() {
 		OffsetDateTime now = OffsetDateTime.now();
 		this.createdAt = now;
 		this.updatedAt = now;
+		if (rawExpiresAt == null) {
+			this.rawExpiresAt = now.plusDays(7);
+		}
 	}
 
 	@PreUpdate
@@ -302,5 +327,17 @@ public class WholesaleFile {
 
 	public OffsetDateTime getUpdatedAt() {
 		return updatedAt;
+	}
+
+	public OffsetDateTime getRawExpiresAt() {
+		return rawExpiresAt;
+	}
+
+	public OffsetDateTime getRawDeletedAt() {
+		return rawDeletedAt;
+	}
+
+	public OffsetDateTime getRawDeleteFailedAt() {
+		return rawDeleteFailedAt;
 	}
 }

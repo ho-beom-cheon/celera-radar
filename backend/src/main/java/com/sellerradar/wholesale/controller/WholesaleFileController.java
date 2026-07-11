@@ -3,6 +3,8 @@ package com.sellerradar.wholesale.controller;
 import com.sellerradar.auth.security.AuthenticatedUser;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.api.PageResponse;
+import com.sellerradar.common.error.BusinessException;
+import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.common.web.RequestContext;
 import com.sellerradar.wholesale.domain.CsvEncoding;
 import com.sellerradar.wholesale.dto.WholesaleColumnMappingRequest;
@@ -10,6 +12,7 @@ import com.sellerradar.wholesale.dto.WholesaleCandidateGenerationResponse;
 import com.sellerradar.wholesale.dto.WholesaleFileResponse;
 import com.sellerradar.wholesale.dto.WholesaleParseResponse;
 import com.sellerradar.wholesale.dto.WholesaleProductRowResponse;
+import com.sellerradar.wholesale.service.RawUploadLifecycleService;
 import com.sellerradar.wholesale.service.WholesaleCandidateGenerationService;
 import com.sellerradar.wholesale.service.WholesaleFileService;
 import com.sellerradar.wholesale.service.WholesaleParsingService;
@@ -19,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,15 +42,18 @@ public class WholesaleFileController {
 	private final WholesaleFileService wholesaleFileService;
 	private final WholesaleParsingService wholesaleParsingService;
 	private final WholesaleCandidateGenerationService candidateGenerationService;
+	private final RawUploadLifecycleService rawUploadLifecycleService;
 
 	public WholesaleFileController(
 			WholesaleFileService wholesaleFileService,
 			WholesaleParsingService wholesaleParsingService,
-			WholesaleCandidateGenerationService candidateGenerationService
+			WholesaleCandidateGenerationService candidateGenerationService,
+			RawUploadLifecycleService rawUploadLifecycleService
 	) {
 		this.wholesaleFileService = wholesaleFileService;
 		this.wholesaleParsingService = wholesaleParsingService;
 		this.candidateGenerationService = candidateGenerationService;
+		this.rawUploadLifecycleService = rawUploadLifecycleService;
 	}
 
 	@PostMapping
@@ -73,6 +80,19 @@ public class WholesaleFileController {
 				wholesaleFileService.get(user.userId(), fileId),
 				RequestContext.requestId(request)
 		);
+	}
+
+	@DeleteMapping("/{fileId}/raw")
+	public ApiResponse<WholesaleFileResponse> deleteRawFile(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable Long fileId,
+			HttpServletRequest request
+	) {
+		WholesaleFileResponse response = rawUploadLifecycleService.deleteForUser(user.userId(), fileId);
+		if (response.rawDeletedAt() == null) {
+			throw new BusinessException(ErrorCode.UPLOAD_RAW_DELETE_FAILED);
+		}
+		return ApiResponse.success(response, RequestContext.requestId(request));
 	}
 
 	@PostMapping("/{fileId}/column-mapping")
