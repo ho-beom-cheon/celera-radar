@@ -111,6 +111,18 @@ management:
 - 설정 여부는 인증된 capability 조회 API로 확인하며 credential 원문을 로그나 응답에 노출하지 않는다.
 - 설정 변경 후 snapshot cache와 `api_call_log`가 기존 원칙대로 동작하는지 staging에서 확인한다.
 
+### 4.5 SmartStore mock feature
+
+| 환경변수 | 기본값 | 운영 기준 |
+|---|---|---|
+| `SMARTSTORE_MOCK_ENABLED` | 일반 `true`, prod `false` | 실제 Commerce API 전환 전 `false` 유지 |
+| `VITE_SMARTSTORE_MOCK_ENABLED` | Vite dev `true`, production build `false` | production build에서 `false` 유지 |
+
+- backend flag가 비활성화되면 SmartStore mock controller가 등록되지 않는다.
+- frontend flag가 비활성화되면 `내 상품 마진` 메뉴를 숨기고 `/store/margins` 직접 경로를 Not Found로 처리한다.
+- 두 flag는 독립 설정이므로 production 배포 검증에서 모두 비활성인지 확인한다.
+- 실제 Commerce API credential/OAuth, 실패 정책, 운영 검증이 완료되기 전 mock flag를 사용자 기능처럼 활성화하지 않는다.
+
 ## 5. 배포 절차
 
 1. 배포 플랫폼의 secret manager에 환경별 credential을 등록한다.
@@ -118,7 +130,8 @@ management:
 3. `SPRING_PROFILES_ACTIVE=prod`와 필수 환경변수를 runtime에 주입한다.
 4. 배포 전 백업과 현재 Flyway version을 확인한다.
 5. 애플리케이션을 기동하고 `/actuator/health`를 확인한다.
-6. 기동 실패 시 설정 키와 원인만 확인하고 secret 값을 로그나 이슈에 복사하지 않는다.
+6. SmartStore mock backend API와 frontend navigation이 비활성인지 확인한다.
+7. 기동 실패 시 설정 키와 원인만 확인하고 secret 값을 로그나 이슈에 복사하지 않는다.
 
 ## 6. 검증 명령
 

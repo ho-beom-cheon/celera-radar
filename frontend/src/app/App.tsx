@@ -12,13 +12,14 @@ import { WholesalePage } from '../routes/wholesale/WholesalePage';
 import { WholesaleUploadPage } from '../routes/wholesale/WholesaleUploadPage';
 import { EmptyState, ErrorState, LoadingState, MetricCard } from '../components/ui';
 import { authRequiredMessage, formatApiError } from '../lib/apiError';
+import { smartStoreMockEnabled } from '../lib/featureFlags';
 
 const navigationItems = [
   { label: '대시보드', href: '/' },
   { label: '키워드 레이더', href: '/keywords' },
   { label: '상품 후보', href: '/candidates' },
   { label: '도매 업로드', href: '/wholesale/uploads' },
-  { label: '내 상품 마진', href: '/store/margins' },
+  ...(smartStoreMockEnabled ? [{ label: '내 상품 마진', href: '/store/margins' }] : []),
   { label: '마진 계산기', href: '/margin' },
   { label: '알림', href: '/alerts' }
 ];
@@ -142,7 +143,7 @@ function resolveRoute(path: string): RouteView {
   if (path === '/wholesale') {
     return { content: <WholesalePage />, activeNavHref: '/wholesale/uploads' };
   }
-  if (path === '/store/margins') {
+  if (smartStoreMockEnabled && path === '/store/margins') {
     return { content: <StoreMarginsPage />, activeNavHref: '/store/margins' };
   }
   if (path === '/margin') {

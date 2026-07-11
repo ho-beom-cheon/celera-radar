@@ -589,6 +589,16 @@ capability descriptor는 credential/endpoint 값을 노출하지 않고 `SHOPPIN
 12. credentialed CORS는 명시적 origin 목록만 허용하며 wildcard를 fail-fast로 거부한다. production에는 localhost 기본 origin을 두지 않는다.
 13. 사용자·외부 provider URL은 저장과 DOM 렌더링 양쪽에서 absolute `http`/`https` scheme allowlist를 적용한다.
 14. 외부 provider endpoint는 absolute `http`/`https` URL만 허용하고 user-info가 포함된 URL을 거부한다.
+15. mock adapter 기반 SmartStore controller는 feature flag 뒤에 두고 production에서 기본 비활성화한다.
+
+## 12.1 SmartStore mock feature 경계
+
+| 계층 | 활성 조건 | 비활성 동작 |
+|---|---|---|
+| Backend API | `SMARTSTORE_MOCK_ENABLED=true` | controller 미등록, `404 RESOURCE_NOT_FOUND` |
+| Frontend navigation/route | `VITE_SMARTSTORE_MOCK_ENABLED=true` 또는 Vite dev mode | 메뉴 숨김, 직접 경로 Not Found |
+
+일반 backend profile은 기존 로컬 검증 호환을 위해 mock feature가 기본 활성화되지만 production profile은 기본 비활성화한다. 프론트 production build는 환경변수를 명시하지 않으면 비활성화하며, 개발 서버는 기존 mock 화면 검증을 위해 활성화한다. 이 flag는 실제 Commerce API 연동 완료를 의미하지 않는다.
 
 ---
 

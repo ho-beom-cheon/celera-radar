@@ -862,6 +862,8 @@ Response:
 
 P9 기준 SmartStore API는 실제 네이버 커머스API 호출 없이 mockable adapter를 통해 상품 동기화 흐름과 저장 구조를 먼저 검증한다. 이 API는 스마트스토어 상품 자동 등록을 수행하지 않는다.
 
+현재 endpoint는 SmartStore mock feature가 활성화된 개발·검증 환경에서만 등록한다. production 기본값에서는 `/api/v1/smartstore/**` handler가 등록되지 않으며 인증된 요청에도 `404 RESOURCE_NOT_FOUND`를 반환한다. 실제 Commerce API 연동 준비가 끝나기 전에는 운영에서 이 flag를 활성화하지 않는다.
+
 ### POST /smartstore/connections/{connectionId}/products/sync
 
 연결된 스마트스토어의 상품 목록/판매가 동기화를 수동으로 실행한다. `connectionId`가 인증 사용자 소유가 아니면 `SMARTSTORE_CONNECTION_NOT_FOUND`로 응답한다.

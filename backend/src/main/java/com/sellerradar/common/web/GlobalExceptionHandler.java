@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -98,6 +99,18 @@ public class GlobalExceptionHandler {
 		return errorResponse(
 				ErrorCode.CSV_FILE_SIZE_EXCEEDED.status(),
 				ApiError.of(ErrorCode.CSV_FILE_SIZE_EXCEEDED, ErrorCode.CSV_FILE_SIZE_EXCEEDED.defaultMessage(), "file"),
+				request
+		);
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(
+			NoResourceFoundException exception,
+			HttpServletRequest request
+	) {
+		return errorResponse(
+				ErrorCode.RESOURCE_NOT_FOUND.status(),
+				ApiError.of(ErrorCode.RESOURCE_NOT_FOUND),
 				request
 		);
 	}
