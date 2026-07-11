@@ -348,6 +348,34 @@ class WholesaleFileControllerIntegrationTest {
 	}
 
 	@Test
+	void confirmUploadDropsExternalUrlsOutsideHttpAllowlist() throws Exception {
+		AuthResponse auth = signup("wholesale-url-policy@example.com");
+		Long uploadId = previewUpload(auth, """
+				productName,supplyPrice,imageUrl,productUrl
+				unsafe item,1000,file:///tmp/image.jpg,javascript:alert(1)
+				""");
+
+		mockMvc.perform(post("/api/v1/wholesale-uploads/{uploadId}/confirm", uploadId)
+						.header("Authorization", bearer(auth))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new WholesaleUploadConfirmRequest(
+								new WholesaleUploadConfirmRequest.Mapping(
+										"productName",
+										"supplyPrice",
+										null,
+										"imageUrl",
+										"productUrl",
+										null
+								)
+						))))
+				.andExpect(status().isOk());
+
+		WholesaleProduct product = wholesaleProductRepository.findAll().getFirst();
+		assertThat(product.getImageUrl()).isNull();
+		assertThat(product.getProductUrl()).isNull();
+	}
+
+	@Test
 	void previewUploadRejectsUnsupportedExtension() throws Exception {
 		AuthResponse auth = signup("wholesale-preview-extension@example.com");
 
