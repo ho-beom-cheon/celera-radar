@@ -39,7 +39,7 @@ class PostgreSqlCleanMigrationTest {
 
 	@Test
 	void migratesEmptyPostgreSqlAndValidatesHibernateSchema() throws Exception {
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("013");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("014");
 		try (var connection = dataSource.getConnection();
 				var statement = connection.prepareStatement("SELECT to_regclass('public.candidate_score')" );
 				var result = statement.executeQuery()) {

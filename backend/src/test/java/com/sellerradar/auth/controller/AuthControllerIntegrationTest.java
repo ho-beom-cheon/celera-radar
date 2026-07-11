@@ -12,6 +12,8 @@ import com.sellerradar.auth.dto.AuthResponse;
 import com.sellerradar.auth.dto.LoginRequest;
 import com.sellerradar.auth.dto.RefreshTokenRequest;
 import com.sellerradar.auth.dto.SignupRequest;
+import com.sellerradar.auth.session.AuthSessionRepository;
+import com.sellerradar.auth.session.RefreshTokenCodec;
 import com.sellerradar.common.api.ApiResponse;
 import com.sellerradar.common.error.ErrorCode;
 import com.sellerradar.common.web.RequestContext;
@@ -50,10 +52,17 @@ class AuthControllerIntegrationTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private AuthSessionRepository authSessionRepository;
+
+	@Autowired
+	private RefreshTokenCodec refreshTokenCodec;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void setUp() {
+		authSessionRepository.deleteAllInBatch();
 		userRepository.deleteAll();
 	}
 
@@ -80,6 +89,11 @@ class AuthControllerIntegrationTest {
 		assertThat(savedUser.getPlanCode()).isEqualTo(Plan.FREE);
 		assertThat(savedUser.getPasswordHash()).isNotEqualTo(PASSWORD);
 		assertThat(passwordEncoder.matches(PASSWORD, savedUser.getPasswordHash())).isTrue();
+		assertThat(data.get("refreshToken").asText()).doesNotContain(".");
+		assertThat(authSessionRepository.findAll()).singleElement().satisfies(session -> {
+			assertThat(session.getTokenHash()).isEqualTo(refreshTokenCodec.hash(data.get("refreshToken").asText()));
+			assertThat(session.getTokenHash()).doesNotContain(data.get("refreshToken").asText());
+		});
 	}
 
 	@Test
@@ -136,7 +150,7 @@ class AuthControllerIntegrationTest {
 	void refreshIssuesNewTokenPairForValidRefreshToken() throws Exception {
 		AuthResponse authResponse = signupAndReadAuthResponse();
 
-		mockMvc.perform(post("/api/v1/auth/refresh")
+		MvcResult result = mockMvc.perform(post("/api/v1/auth/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(new RefreshTokenRequest(authResponse.refreshToken()))))
 				.andExpect(status().isOk())
@@ -144,7 +158,80 @@ class AuthControllerIntegrationTest {
 				.andExpect(jsonPath("$.data.userId").value(authResponse.userId()))
 				.andExpect(jsonPath("$.data.email").value(EMAIL))
 				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-				.andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
+				.andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+				.andReturn();
+
+		AuthResponse rotated = authResponse(dataNode(result));
+		assertThat(rotated.refreshToken()).isNotEqualTo(authResponse.refreshToken());
+		assertThat(authSessionRepository.findAll()).hasSize(2);
+		assertThat(authSessionRepository.findByTokenHash(refreshTokenCodec.hash(authResponse.refreshToken())))
+				.get()
+				.extracting(session -> session.getRotatedAt())
+				.isNotNull();
+	}
+
+	@Test
+	void reusedRefreshTokenRevokesTheWholeFamily() throws Exception {
+		AuthResponse initial = signupAndReadAuthResponse();
+		AuthResponse rotated = refreshAndReadAuthResponse(initial.refreshToken());
+
+		refreshExpectUnauthorized(initial.refreshToken());
+		refreshExpectUnauthorized(rotated.refreshToken());
+
+		assertThat(authSessionRepository.findAll())
+				.allSatisfy(session -> assertThat(session.getRevokedAt()).isNotNull());
+		assertThat(authSessionRepository.findByTokenHash(refreshTokenCodec.hash(initial.refreshToken())))
+				.get()
+				.extracting(session -> session.getReuseDetectedAt())
+				.isNotNull();
+	}
+
+	@Test
+	void logoutRevokesTheCurrentRefreshFamily() throws Exception {
+		AuthResponse auth = signupAndReadAuthResponse();
+
+		mockMvc.perform(post("/api/v1/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RefreshTokenRequest(auth.refreshToken()))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+
+		refreshExpectUnauthorized(auth.refreshToken());
+	}
+
+	@Test
+	void logoutAllRevokesEveryRefreshSessionForAuthenticatedUser() throws Exception {
+		AuthResponse first = signupAndReadAuthResponse();
+		AuthResponse second = loginAndReadAuthResponse();
+
+		mockMvc.perform(post("/api/v1/auth/logout-all")
+						.header("Authorization", "Bearer " + first.accessToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+
+		refreshExpectUnauthorized(first.refreshToken());
+		refreshExpectUnauthorized(second.refreshToken());
+	}
+
+	@Test
+	void inactiveUserCannotLoginRefreshOrUseExistingAccessToken() throws Exception {
+		AuthResponse auth = signupAndReadAuthResponse();
+		User user = userRepository.findById(auth.userId()).orElseThrow();
+		user.delete();
+		userRepository.saveAndFlush(user);
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, PASSWORD))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_CREDENTIALS.name()));
+
+		refreshExpectUnauthorized(auth.refreshToken());
+
+		mockMvc.perform(get("/test/security/protected")
+						.header("Authorization", "Bearer " + auth.accessToken()))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.AUTH_REQUIRED.name()));
 	}
 
 	@Test
@@ -181,7 +268,36 @@ class AuthControllerIntegrationTest {
 						.content(objectMapper.writeValueAsString(new SignupRequest(EMAIL, PASSWORD, true))))
 				.andExpect(status().isOk())
 				.andReturn();
-		JsonNode data = dataNode(result);
+		return authResponse(dataNode(result));
+	}
+
+	private AuthResponse loginAndReadAuthResponse() throws Exception {
+		MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, PASSWORD))))
+				.andExpect(status().isOk())
+				.andReturn();
+		return authResponse(dataNode(result));
+	}
+
+	private AuthResponse refreshAndReadAuthResponse(String refreshToken) throws Exception {
+		MvcResult result = mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken))))
+				.andExpect(status().isOk())
+				.andReturn();
+		return authResponse(dataNode(result));
+	}
+
+	private void refreshExpectUnauthorized(String refreshToken) throws Exception {
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_REFRESH_TOKEN.name()));
+	}
+
+	private AuthResponse authResponse(JsonNode data) {
 		return new AuthResponse(
 				data.get("userId").asLong(),
 				data.get("email").asText(),

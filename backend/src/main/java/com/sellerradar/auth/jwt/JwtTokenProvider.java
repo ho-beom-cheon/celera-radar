@@ -42,33 +42,24 @@ public class JwtTokenProvider {
 		this.clock = clock;
 	}
 
-	public TokenPair issueTokenPair(User user) {
-		return new TokenPair(
-				issueToken(user, TokenType.ACCESS),
-				issueToken(user, TokenType.REFRESH)
-		);
+	public String issueAccessToken(User user) {
+		return issueToken(user);
 	}
 
 	public JwtClaims parseAccessToken(String token) {
-		return parseToken(token, TokenType.ACCESS);
+		return parseToken(token);
 	}
 
-	public JwtClaims parseRefreshToken(String token) {
-		return parseToken(token, TokenType.REFRESH);
-	}
-
-	private String issueToken(User user, TokenType tokenType) {
+	private String issueToken(User user) {
 		Instant now = Instant.now(clock);
-		Instant expiresAt = now.plus(tokenType == TokenType.ACCESS
-				? properties.accessTokenTtl()
-				: properties.refreshTokenTtl());
+		Instant expiresAt = now.plus(properties.accessTokenTtl());
 		Map<String, Object> header = Map.of("alg", "HS256", "typ", "JWT");
 		Map<String, Object> claims = new LinkedHashMap<>();
 		claims.put("sub", user.getId().toString());
 		claims.put("email", user.getEmail());
 		claims.put("role", user.getRole().name());
 		claims.put("plan", user.getPlanCode().name());
-		claims.put("type", tokenType.name());
+		claims.put("type", TokenType.ACCESS.name());
 		claims.put("iat", now.getEpochSecond());
 		claims.put("exp", expiresAt.getEpochSecond());
 
@@ -76,40 +67,40 @@ public class JwtTokenProvider {
 		return unsignedToken + "." + sign(unsignedToken);
 	}
 
-	private JwtClaims parseToken(String token, TokenType expectedType) {
+	private JwtClaims parseToken(String token) {
 		String[] parts = token == null ? new String[0] : token.split("\\.");
 		if (parts.length != 3) {
-			throw invalidToken(expectedType);
+			throw invalidToken();
 		}
 		String unsignedToken = parts[0] + "." + parts[1];
 		if (!MessageDigest.isEqual(sign(unsignedToken).getBytes(StandardCharsets.UTF_8),
 				parts[2].getBytes(StandardCharsets.UTF_8))) {
-			throw invalidToken(expectedType);
+			throw invalidToken();
 		}
-		Map<String, Object> claims = decodeClaims(parts[1], expectedType);
-		TokenType tokenType = enumClaim(claims, "type", TokenType.class, expectedType);
-		if (tokenType != expectedType) {
-			throw invalidToken(expectedType);
+		Map<String, Object> claims = decodeClaims(parts[1]);
+		TokenType tokenType = enumClaim(claims, "type", TokenType.class);
+		if (tokenType != TokenType.ACCESS) {
+			throw invalidToken();
 		}
-		long expiresAt = longClaim(claims, "exp", expectedType);
+		long expiresAt = longClaim(claims, "exp");
 		if (Instant.now(clock).getEpochSecond() >= expiresAt) {
-			throw invalidToken(expectedType);
+			throw invalidToken();
 		}
 		return new JwtClaims(
-				Long.valueOf(stringClaim(claims, "sub", expectedType)),
-				stringClaim(claims, "email", expectedType),
-				enumClaim(claims, "role", UserRole.class, expectedType),
-				enumClaim(claims, "plan", Plan.class, expectedType),
+				Long.valueOf(stringClaim(claims, "sub")),
+				stringClaim(claims, "email"),
+				enumClaim(claims, "role", UserRole.class),
+				enumClaim(claims, "plan", Plan.class),
 				tokenType
 		);
 	}
 
-	private Map<String, Object> decodeClaims(String payload, TokenType expectedType) {
+	private Map<String, Object> decodeClaims(String payload) {
 		try {
 			byte[] decoded = Base64.getUrlDecoder().decode(payload);
 			return objectMapper.readValue(decoded, CLAIMS_TYPE);
 		} catch (IllegalArgumentException | JacksonException exception) {
-			throw invalidToken(expectedType);
+			throw invalidToken();
 		}
 	}
 
@@ -146,39 +137,35 @@ public class JwtTokenProvider {
 		return key;
 	}
 
-	private String stringClaim(Map<String, Object> claims, String name, TokenType expectedType) {
+	private String stringClaim(Map<String, Object> claims, String name) {
 		Object value = claims.get(name);
 		if (value instanceof String stringValue && !stringValue.isBlank()) {
 			return stringValue;
 		}
-		throw invalidToken(expectedType);
+		throw invalidToken();
 	}
 
-	private long longClaim(Map<String, Object> claims, String name, TokenType expectedType) {
+	private long longClaim(Map<String, Object> claims, String name) {
 		Object value = claims.get(name);
 		if (value instanceof Number numberValue) {
 			return numberValue.longValue();
 		}
-		throw invalidToken(expectedType);
+		throw invalidToken();
 	}
 
 	private <T extends Enum<T>> T enumClaim(
 			Map<String, Object> claims,
 			String name,
-			Class<T> enumType,
-			TokenType expectedType
+			Class<T> enumType
 	) {
 		try {
-			return Enum.valueOf(enumType, stringClaim(claims, name, expectedType));
+			return Enum.valueOf(enumType, stringClaim(claims, name));
 		} catch (IllegalArgumentException exception) {
-			throw invalidToken(expectedType);
+			throw invalidToken();
 		}
 	}
 
-	private BusinessException invalidToken(TokenType expectedType) {
-		ErrorCode errorCode = expectedType == TokenType.REFRESH
-				? ErrorCode.INVALID_REFRESH_TOKEN
-				: ErrorCode.AUTH_REQUIRED;
-		return new BusinessException(errorCode);
+	private BusinessException invalidToken() {
+		return new BusinessException(ErrorCode.AUTH_REQUIRED);
 	}
 }
