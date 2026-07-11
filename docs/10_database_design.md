@@ -49,9 +49,9 @@
 | P3 | 가격/경쟁 분석 | `keyword_price_analyses` |
 | P4 | 데이터랩 트렌드 분석 | `trend_snapshots`, `trend_analyses` |
 | P5 | 도매 CSV/XLSX 업로드 | `wholesale_uploads`, `wholesale_products`, `wholesale_column_mappings` |
-| P6 | 마진/상품 검토 점수 | `product_match_candidates`, `margin_analyses`, `product_review_scores`, `risk_category_rules` |
-| P7 | 알림/배치 | `alert_rules`, `alert_events`, `batch_job_histories` |
-| P8 | Web SaaS 하드닝 | `user_settings`, `subscription_plans`, `user_subscriptions`, `audit_logs` |
+| P6 | 마진/상품 검토 점수 | `product_candidate`, `candidate_score`, `category_master`, `risk_category_rule` |
+| P7 | 알림/배치 | `alert_rule`, `alert`, `batch_job_history` |
+| P8 | Web SaaS 하드닝 | `subscription_plan`, `user_subscription`; `user_settings`, `audit_logs`는 후속 |
 | P9 | 스마트스토어 API 1차 연동 | `naver_store_connections`, `naver_store_products`, `naver_store_product_sync_histories` |
 | P10 | 스마트스토어 내 상품 마진 감시 | `store_product_costs`, `store_margin_analyses` |
 | P11 | 주문/정산/수수료 연동 | `naver_order_snapshots`, `naver_settlement_snapshots`, `naver_commission_snapshots` |
@@ -479,97 +479,115 @@ Unique: `(keyword_id, analysis_date)`.
 
 ---
 
-## 8.6 `product_match_candidates`
+## 8.6 `product_candidate`
 
-도매 상품과 키워드/쇼핑 상품 후보의 매칭 결과다.
+키워드 또는 도매 CSV에서 생성한 데이터 기반 상품 검토 후보다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | `BIGINT` | PK |
 | `user_id` | `BIGINT` | FK |
-| `keyword_id` | `BIGINT` | FK |
-| `wholesale_product_id` | `BIGINT` | FK |
-| `shopping_snapshot_id` | `BIGINT` | FK nullable |
-| `matched_keyword` | `VARCHAR(200)` | 매칭 키워드 |
-| `match_score` | `NUMERIC(5,2)` | 0~100 유사도 |
-| `match_method` | `VARCHAR(50)` | `KEYWORD`, `TRIGRAM`, `MANUAL` |
-| `status` | `VARCHAR(30)` | `PENDING`, `MATCHED`, `REJECTED`, `CONFIRMED` |
+| `keyword_id` | `BIGINT` | FK nullable |
+| `wholesale_product_id` | `BIGINT` | 도매 상품 식별자 nullable |
+| `source_type` | `VARCHAR(20)` | `KEYWORD`, `CSV`, `API` |
+| `name` | `VARCHAR(255)` | 후보 상품명 |
+| `category_code` | `VARCHAR(50)` | 내부 카테고리 코드 |
+| `expected_sale_price` | `INT` | 예상 판매가 |
+| `supply_price` | `INT` | 공급가 nullable |
+| `shipping_fee` | `INT` | 배송비 nullable |
+| `expected_margin_rate` | `NUMERIC(6,2)` | 예상 마진율 |
+| `grade` | `VARCHAR(20)` | `EXCLUDED`, `HOLD`, `REVIEW`, `RECOMMENDED` |
+| `status` | `VARCHAR(20)` | `ACTIVE`, `SAVED`, `EXCLUDED` |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
+| `updated_at` | `TIMESTAMPTZ` | 수정일 |
 
-Unique: `(keyword_id, wholesale_product_id)`.
+인덱스: `(user_id, status, created_at DESC)`, `(keyword_id)`, `(wholesale_product_id)`.
 
 ---
 
-## 8.7 `margin_analyses`
+## 8.7 `candidate_score`
 
-후보 상품별 예상 마진 계산 결과다.
+상품 검토 점수와 근거다. “판매 성공 점수”라는 표현은 사용하지 않는다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | `BIGINT` | PK |
 | `candidate_id` | `BIGINT` | FK |
-| `analysis_date` | `DATE` | 기준일 |
-| `expected_sale_price` | `NUMERIC(14,2)` | 예상 판매가 |
-| `supply_price` | `NUMERIC(14,2)` | 공급가 |
-| `shipping_fee` | `NUMERIC(14,2)` | 배송비 |
-| `platform_fee_rate` | `NUMERIC(6,4)` | 플랫폼 수수료율 |
-| `platform_fee_amount` | `NUMERIC(14,2)` | 플랫폼 수수료액 |
-| `packaging_fee` | `NUMERIC(14,2)` | 포장비 |
-| `ad_cost` | `NUMERIC(14,2)` | 예상 광고비 |
-| `coupon_cost` | `NUMERIC(14,2)` | 예상 쿠폰비 |
-| `total_cost` | `NUMERIC(14,2)` | 총비용 |
-| `expected_profit` | `NUMERIC(14,2)` | 예상 이익 |
-| `expected_margin_rate` | `NUMERIC(8,4)` | 예상 마진율 |
-| `target_margin_rate` | `NUMERIC(8,4)` | 목표 마진율 |
-| `margin_status` | `VARCHAR(30)` | 상태 |
-| `calculation_detail` | `JSONB` | 계산 근거 |
+| `trend_score` | `INT` | 트렌드 점수 |
+| `competition_score` | `INT` | 경쟁 점수 |
+| `margin_score` | `INT` | 마진 점수 |
+| `price_band_score` | `INT` | 가격대 점수 |
+| `supply_score` | `INT` | 공급 점수 |
+| `risk_penalty` | `INT` | 위험 감점 |
+| `overall_score` | `INT` | 최종 검토 점수 |
+| `grade` | `VARCHAR(20)` | `EXCLUDED`, `HOLD`, `REVIEW`, `RECOMMENDED` |
+| `risk_level` | `VARCHAR(20)` | `LOW`, `CAUTION`, `EXCLUDED` |
+| `reasons` | `TEXT` | 점수 근거 |
+| `warnings` | `TEXT` | 위험 안내 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
 
-Unique: `(candidate_id, analysis_date)`.
+Unique: `(candidate_id)`.
 
 ---
 
-## 8.8 `product_review_scores`
+## 8.8 `category_master`
 
-상품 검토 점수 결과다. “판매 성공 점수”라는 표현은 사용하지 않는다.
+후보 분류에 사용하는 내부 카테고리 기준정보다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
-| `id` | `BIGINT` | PK |
-| `candidate_id` | `BIGINT` | FK |
-| `analysis_date` | `DATE` | 기준일 |
-| `trend_score` | `NUMERIC(5,2)` | 트렌드 점수 |
-| `price_score` | `NUMERIC(5,2)` | 가격대 점수 |
-| `margin_score` | `NUMERIC(5,2)` | 마진 점수 |
-| `competition_score` | `NUMERIC(5,2)` | 경쟁 점수 |
-| `risk_penalty` | `NUMERIC(5,2)` | 위험 감점 |
-| `total_score` | `NUMERIC(5,2)` | 최종 검토 점수 |
-| `grade` | `VARCHAR(30)` | `EXCLUDED`, `HOLD`, `REVIEW`, `RECOMMENDED` |
-| `score_reason` | `JSONB` | 점수 근거 |
+| `code` | `VARCHAR(50)` | PK, 내부 카테고리 코드 |
+| `display_name` | `VARCHAR(100)` | 화면 표시명 |
+| `sort_order` | `INT` | 표시 순서 |
+| `active` | `BOOLEAN` | 활성 여부 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
+| `updated_at` | `TIMESTAMPTZ` | 수정일 |
 
-Unique: `(candidate_id, analysis_date)`.
-
----
-
-## 8.9 `risk_category_rules`
+## 8.9 `risk_category_rule`
 
 위험 카테고리 룰이다. 식품, 화장품, 의료기기, 전기/배터리, 어린이제품 등은 초기 추천에서 제외하거나 강한 감점을 준다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | `BIGINT` | PK |
-| `category_keyword` | `VARCHAR(200)` | 위험 카테고리 키워드 |
-| `risk_level` | `VARCHAR(30)` | `LOW`, `MEDIUM`, `HIGH`, `BLOCKED` |
-| `is_recommendable` | `BOOLEAN` | 추천 가능 여부 |
-| `penalty_score` | `NUMERIC(5,2)` | 감점 |
-| `reason` | `TEXT` | 사유 |
+| `risk_keyword` | `VARCHAR(100)` | Unique, 위험 키워드 |
+| `handling_type` | `VARCHAR(20)` | `EXCLUDE`, `CAUTION` |
+| `reason` | `VARCHAR(255)` | 사유 |
+| `sort_order` | `INT` | 적용 순서 |
 | `active` | `BOOLEAN` | 활성 여부 |
 | `created_at` | `TIMESTAMPTZ` | 생성일 |
+| `updated_at` | `TIMESTAMPTZ` | 수정일 |
+
+## 8.10 `subscription_plan` / `user_subscription`
+
+요금제 기준정보와 사용자별 현재 구독 상태다.
+
+### `subscription_plan`
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `code` | `VARCHAR(20)` | PK, `FREE`, `BASIC`, `PRO` |
+| `display_name` | `VARCHAR(50)` | 표시명 |
+| `keyword_limit` | `INT` | 키워드 한도 |
+| `csv_row_limit` | `INT` | CSV row 한도 |
+| `candidate_limit` | `INT` | 후보 한도 |
+
+### `user_subscription`
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | `BIGINT` | PK |
+| `user_id` | `BIGINT` | FK, Unique |
+| `plan_code` | `VARCHAR(20)` | FK |
+| `status` | `VARCHAR(20)` | `ACTIVE`, `EXPIRED`, `CANCELED` |
+| `started_at` | `TIMESTAMPTZ` | 시작일 |
+| `expires_at` | `TIMESTAMPTZ` | 만료일 nullable |
+| `created_at` | `TIMESTAMPTZ` | 생성일 |
+| `updated_at` | `TIMESTAMPTZ` | 수정일 |
 
 ---
 
-## 8.10 `alert_rule` / `alert`
+## 8.11 `alert_rule` / `alert`
 
 알림 조건과 알림 저장 구조를 분리한다. 현재 애플리케이션 구현은 singular 테이블명 `alert_rule`, `alert`를 기준으로 한다.
 
@@ -887,7 +905,7 @@ V009__create_naver_store_tables.sql
 V010__create_naver_store_products.sql
 V011__create_store_product_costs.sql
 V012__create_naver_order_settlement_snapshots.sql
-V013__create_toss_tables.sql
+V013__create_canonical_domain_tables.sql
 ```
 
 ## 12.2 작성 원칙
@@ -900,6 +918,14 @@ V013__create_toss_tables.sql
 5. 인덱스명은 idx_, unique는 uk_, FK는 fk_ prefix 사용
 6. CHECK 제약은 ck_ prefix 사용
 ```
+
+## 12.3 운영 스키마 단일 기준
+
+- Flyway migration을 운영 스키마의 단일 기준으로 사용한다.
+- Hibernate는 기본적으로 `ddl-auto=validate`만 수행하며 운영 테이블을 생성하거나 변경하지 않는다.
+- `baseline-on-migrate`의 기본값은 `false`다. 기존 DB 이관 시 검증된 runbook과 명시적 환경변수로만 활성화한다.
+- V013은 기존 migration에 누락됐던 `subscription_plan`, `user_subscription`, `category_master`, `risk_category_rule`, `product_candidate`, `candidate_score`를 정의한다.
+- PostgreSQL clean migration과 V012 upgrade migration을 Testcontainers 기반 테스트로 검증한다.
 
 ---
 

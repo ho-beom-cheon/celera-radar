@@ -9,13 +9,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "naver_commission_snapshots")
@@ -44,7 +45,7 @@ public class NaverCommissionSnapshot {
 	@Column(name = "commission_amount", nullable = false, precision = 14, scale = 2)
 	private BigDecimal commissionAmount;
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "raw_payload", nullable = false)
 	private String rawPayload;
 

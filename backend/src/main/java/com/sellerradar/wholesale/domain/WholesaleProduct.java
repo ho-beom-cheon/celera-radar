@@ -10,11 +10,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "wholesale_products")
@@ -40,29 +41,25 @@ public class WholesaleProduct {
 	@Column(name = "external_product_id", length = 200)
 	private String externalProductId;
 
-	@Lob
-	@Column(name = "product_name")
+	@Column(name = "product_name", columnDefinition = "TEXT")
 	private String productName;
 
-	@Lob
-	@Column(name = "normalized_product_name")
+	@Column(name = "normalized_product_name", columnDefinition = "TEXT")
 	private String normalizedName;
 
-	@Column(name = "supply_price")
+	@Column(name = "supply_price", columnDefinition = "NUMERIC(14,2)")
 	private Integer supplyPrice;
 
-	@Column(name = "shipping_fee")
+	@Column(name = "shipping_fee", columnDefinition = "NUMERIC(14,2)")
 	private Integer shippingFee;
 
 	@Column(name = "category", length = 200)
 	private String sourceCategory;
 
-	@Lob
-	@Column(name = "image_url")
+	@Column(name = "image_url", columnDefinition = "TEXT")
 	private String imageUrl;
 
-	@Lob
-	@Column(name = "product_url")
+	@Column(name = "product_url", columnDefinition = "TEXT")
 	private String productUrl;
 
 	@Column(length = 200)
@@ -80,18 +77,17 @@ public class WholesaleProduct {
 	@Column(name = "is_sold_out", nullable = false)
 	private boolean soldOut;
 
-	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String memo;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "parse_status", nullable = false, length = 20)
 	private WholesaleProductParseStatus parseStatus;
 
-	@Lob
-	@Column(name = "error_message")
+	@Column(name = "error_message", columnDefinition = "TEXT")
 	private String errorMessage;
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "raw_row")
 	private String rawRow;
 
