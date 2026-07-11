@@ -52,8 +52,10 @@ class ProductionProfilePostgreSqlTest {
 					.isEqualTo("true");
 			assertThat(context.getEnvironment().getProperty("seller-radar.web-security.allowed-origins"))
 					.isEmpty();
-			assertThat(context.getEnvironment().getProperty("seller-radar.external.naver.mode"))
-					.isEqualTo("DISABLED");
+		assertThat(context.getEnvironment().getProperty("seller-radar.external.naver.mode"))
+				.isEqualTo("DISABLED");
+		assertThat(context.getEnvironment().getProperty("seller-radar.features.smartstore-mock-enabled"))
+				.isEqualTo("false");
 			assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
 					.isEqualTo("016");
 

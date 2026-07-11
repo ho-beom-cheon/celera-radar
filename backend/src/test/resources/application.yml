@@ -19,6 +19,8 @@ spring:
       max-request-size: 10MB
 
 seller-radar:
+  features:
+    smartstore-mock-enabled: true
   external:
     naver:
       mode: LEGACY
