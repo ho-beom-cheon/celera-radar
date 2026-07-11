@@ -13,6 +13,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 seller-radar:
   jwt:
@@ -31,3 +35,7 @@ seller-radar:
       password-reset-ip-limit: 1000
       password-reset-window: PT1H
       max-tracked-keys: 100000
+  wholesale:
+    upload-security:
+      quarantine-directory: ./build/test-quarantine
+      max-file-size: 10MB
