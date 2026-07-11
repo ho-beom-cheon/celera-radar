@@ -6,7 +6,7 @@ import com.sellerradar.common.external.config.NaverApiHubProperties;
 import com.sellerradar.common.external.config.NaverApiProperties;
 import com.sellerradar.common.external.domain.ExternalApiProvider;
 import com.sellerradar.common.external.service.ApiQuotaService;
-import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -48,7 +48,7 @@ public class NaverApiHubDataLabClient {
 				NaverDataLabClient.KEYWORD_TREND_API_NAME,
 				naverProperties.datalabDailyQuota()
 		);
-		return restClient.post()
+		NaverDataLabKeywordTrendResponse response = restClient.post()
 				.uri(hubProperties.shoppingInsightEndpoint())
 				.contentType(MediaType.APPLICATION_JSON)
 				.header("X-NCP-APIGW-API-KEY-ID", hubProperties.clientId())
@@ -56,26 +56,25 @@ public class NaverApiHubDataLabClient {
 				.body(toPayload(request))
 				.retrieve()
 				.onStatus(status -> status.value() == HttpStatus.TOO_MANY_REQUESTS.value(),
-						(requestSpec, response) -> {
+						(requestSpec, httpResponse) -> {
 							throw new BusinessException(ErrorCode.EXTERNAL_API_RATE_LIMIT);
 						})
 				.onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-						(requestSpec, response) -> {
+						(requestSpec, httpResponse) -> {
 							throw new BusinessException(ErrorCode.EXTERNAL_API_UNAVAILABLE);
 						})
 				.body(NaverDataLabKeywordTrendResponse.class);
+		return Optional.ofNullable(response)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EXTERNAL_API_UNAVAILABLE));
 	}
 
-	private NaverDataLabKeywordTrendPayload toPayload(NaverDataLabKeywordTrendRequest request) {
-		return new NaverDataLabKeywordTrendPayload(
+	private NaverApiHubKeywordTrendPayload toPayload(NaverDataLabKeywordTrendRequest request) {
+		return new NaverApiHubKeywordTrendPayload(
 				request.startDate().toString(),
 				request.endDate().toString(),
 				request.timeUnit().value(),
 				request.category(),
-				request.keywordGroups(),
-				"",
-				"",
-				List.of()
+				request.keywordGroups()
 		);
 	}
 

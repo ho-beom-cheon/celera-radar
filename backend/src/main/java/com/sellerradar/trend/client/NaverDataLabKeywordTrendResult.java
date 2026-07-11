@@ -7,4 +7,8 @@ public record NaverDataLabKeywordTrendResult(
 		List<String> keyword,
 		List<NaverDataLabTrendPoint> data
 ) {
+	public NaverDataLabKeywordTrendResult {
+		keyword = keyword == null ? List.of() : List.copyOf(keyword);
+		data = data == null ? List.of() : List.copyOf(data);
+	}
 }
