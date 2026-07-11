@@ -3,6 +3,7 @@ package com.sellerradar.candidate.domain;
 import com.sellerradar.category.domain.CategoryCode;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.scoring.CandidateGrade;
+import com.sellerradar.scoring.ScoringBreakdown;
 import com.sellerradar.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -21,6 +22,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "product_candidate")
@@ -138,6 +140,23 @@ public class ProductCandidate {
 		score.attachTo(this);
 		this.score = score;
 		this.grade = score.getGrade();
+	}
+
+	public void updateScore(
+			ScoringBreakdown breakdown,
+			int overallScore,
+			CandidateGrade grade,
+			RiskLevel riskLevel,
+			List<String> reasons,
+			List<String> warnings
+	) {
+		if (score == null) {
+			assignScore(CandidateScore.create(breakdown, overallScore, grade, riskLevel, reasons, warnings));
+			return;
+		}
+		score.update(breakdown, overallScore, grade, riskLevel, reasons, warnings);
+		this.grade = grade;
+		this.updatedAt = OffsetDateTime.now();
 	}
 
 	public void linkWholesaleProduct(Long wholesaleProductId) {

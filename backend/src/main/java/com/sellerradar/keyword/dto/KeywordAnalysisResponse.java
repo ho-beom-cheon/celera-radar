@@ -1,6 +1,7 @@
 package com.sellerradar.keyword.dto;
 
 import com.sellerradar.keyword.domain.AnalysisStatus;
+import com.sellerradar.trend.dto.TrendAnalysisResponse;
 import java.time.OffsetDateTime;
 
 public record KeywordAnalysisResponse(
@@ -9,7 +10,7 @@ public record KeywordAnalysisResponse(
 		AnalysisStatus status,
 		OffsetDateTime lastAnalyzedAt,
 		ShoppingAnalysisResponse shopping,
-		Object trend,
+		TrendAnalysisResponse trend,
 		Object score
 ) {
 }

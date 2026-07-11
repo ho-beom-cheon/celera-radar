@@ -214,6 +214,47 @@ class TrendSnapshotServiceTest {
 		assertThat(logCaptor.getValue().getStatus()).isEqualTo(ApiCallStatus.SUCCESS);
 	}
 
+	@Test
+	void calculateSavedTrendScoreUsesOnlyLatestSnapshotWindow() {
+		LocalDate latestSnapshotDate = LocalDate.of(2026, 7, 1);
+		TrendSnapshot latestMarker = snapshot(latestSnapshotDate, LocalDate.of(2026, 6, 1), "20.0000");
+		List<TrendSnapshot> latestWindow = List.of(
+				snapshot(latestSnapshotDate, LocalDate.of(2026, 6, 1), "20.0000"),
+				snapshot(latestSnapshotDate, LocalDate.of(2026, 6, 24), "50.0000"),
+				snapshot(latestSnapshotDate, LocalDate.of(2026, 7, 1), "90.0000")
+		);
+		when(trendSnapshotRepository.findFirstByKeyword_IdAndTimeUnitOrderBySnapshotDateDesc(KEYWORD_ID, TrendTimeUnit.DATE))
+				.thenReturn(Optional.of(latestMarker));
+		when(trendSnapshotRepository.findByKeyword_IdAndSnapshotDateAndTimeUnitOrderByDataPeriodAsc(
+				KEYWORD_ID,
+				latestSnapshotDate,
+				TrendTimeUnit.DATE
+		)).thenReturn(latestWindow);
+
+		TrendScoreResult score = service.calculateSavedTrendScore(KEYWORD_ID, TrendTimeUnit.DATE);
+
+		assertThat(score.trendScore()).isEqualTo(17);
+		assertThat(service.getLatestAnalysis(KEYWORD_ID, TrendTimeUnit.DATE)).get()
+				.satisfies(analysis -> {
+					assertThat(analysis.snapshotDate()).isEqualTo(latestSnapshotDate);
+					assertThat(analysis.latestRatio()).isEqualByComparingTo("90.0000");
+					assertThat(analysis.points()).hasSize(3);
+				});
+	}
+
+	private TrendSnapshot snapshot(LocalDate snapshotDate, LocalDate dataPeriod, String ratio) {
+		return TrendSnapshot.create(
+				keyword,
+				snapshotDate,
+				LocalDate.of(2026, 6, 1),
+				snapshotDate,
+				dataPeriod,
+				TrendTimeUnit.DATE,
+				new BigDecimal(ratio),
+				null
+		);
+	}
+
 	private NaverDataLabKeywordTrendResponse keywordTrendResponse() {
 		return new NaverDataLabKeywordTrendResponse(
 				"2026-06-01",

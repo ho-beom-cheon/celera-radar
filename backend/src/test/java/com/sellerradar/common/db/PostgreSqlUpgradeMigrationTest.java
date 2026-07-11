@@ -25,11 +25,12 @@ class PostgreSqlUpgradeMigrationTest {
 		latest.migrate();
 
 		assertThat(latest.validateWithResult().validationSuccessful).isTrue();
-		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("016");
+		assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("017");
 		assertThat(tableExists("product_candidate")).isTrue();
 		assertThat(tableExists("auth_security_events")).isTrue();
 		assertThat(columnExists("wholesale_uploads", "raw_expires_at")).isTrue();
 		assertThat(foreignKeyExists("fk_alert_candidate")).isTrue();
+		assertThat(columnExists("trend_snapshots", "period")).isFalse();
 	}
 
 	private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {
