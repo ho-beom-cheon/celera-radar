@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
   application:
     name: seller-radar
   datasource:
@@ -46,7 +50,7 @@ seller-radar:
     client-id: ${NAVER_API_HUB_CLIENT_ID:}
     client-secret: ${NAVER_API_HUB_CLIENT_SECRET:}
     shopping-search-endpoint: ${NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT:}
-    shopping-insight-endpoint: ${NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT:}
+    shopping-insight-endpoint: ${NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT:https://naverapihub.apigw.ntruss.com/shopping/v1/category/keywords}
   batch:
     datalab-daily-target-limit: ${DATALAB_DAILY_TARGET_LIMIT:50}
   jwt:

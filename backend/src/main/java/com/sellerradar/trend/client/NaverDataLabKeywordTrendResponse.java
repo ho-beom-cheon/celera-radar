@@ -8,4 +8,7 @@ public record NaverDataLabKeywordTrendResponse(
 		String timeUnit,
 		List<NaverDataLabKeywordTrendResult> results
 ) {
+	public NaverDataLabKeywordTrendResponse {
+		results = results == null ? List.of() : List.copyOf(results);
+	}
 }

@@ -1030,9 +1030,9 @@ X-Naver-Client-Secret: {clientSecret}
 ### 요청 예시
 
 ```http
-POST https://openapi.naver.com/v1/datalab/shopping/category/keywords
-X-Naver-Client-Id: {clientId}
-X-Naver-Client-Secret: {clientSecret}
+POST https://naverapihub.apigw.ntruss.com/shopping/v1/category/keywords
+X-NCP-APIGW-API-KEY-ID: {clientId}
+X-NCP-APIGW-API-KEY: {clientSecret}
 Content-Type: application/json
 ```
 
@@ -1047,21 +1047,19 @@ Content-Type: application/json
       "name": "차량용 수납함",
       "param": ["차량용 수납함"]
     }
-  ],
-  "device": "",
-  "gender": "",
-  "ages": []
+  ]
 }
 ```
 
 ### 호출 한도 설계
 
-- 공식 한도: 하루 1,000회
+- 애플리케이션 보호 상한: 하루 1,000회(환경변수로 더 낮게 조정 가능)
 - api_call_log 기준으로 당일 호출 수를 계산한다.
 - v0.2 운영 기준: HIGH 우선순위 키워드 300~500개 일 1회
 - LOW 우선순위 키워드는 주 1~2회 순환 분석
 - 사용자 키워드는 등록 즉시 분석하지 않고 다음 배치에 반영
-- provider mode와 인증 header 정책은 쇼핑 검색과 같고, HUB mode에서는 `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT`를 명시해야 한다.
+- API HUB Shopping Insight 공식 endpoint는 애플리케이션 기본값으로 제공하며 환경변수로 재정의할 수 있다.
+- `results` 또는 `data`가 비어 있으면 호출 성공·수집 0건으로 기록하고 임의 점수를 생성하지 않는다.
 
 ---
 

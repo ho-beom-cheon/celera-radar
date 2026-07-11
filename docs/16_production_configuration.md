@@ -104,12 +104,14 @@ management:
 | `NAVER_API_HUB_CLIENT_ID` | 빈 값 | secret manager 주입 |
 | `NAVER_API_HUB_CLIENT_SECRET` | 빈 값 | secret manager 주입 |
 | `NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT` | 빈 값 | 공식 확인 전 비활성 유지 |
-| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | 빈 값 | 공식 전체 HTTP(S) endpoint만 허용 |
+| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | 공식 키워드 트렌드 endpoint | 공식 전체 HTTP(S) endpoint만 허용 |
 
 - `LEGACY`는 기존 개발 호환 mode이며 신규 production 기본값으로 사용하지 않는다.
 - endpoint는 host가 있는 absolute HTTP(S) URL이어야 하고 user-info URL은 거부한다.
 - 설정 여부는 인증된 capability 조회 API로 확인하며 credential 원문을 로그나 응답에 노출하지 않는다.
 - 설정 변경 후 snapshot cache와 `api_call_log`가 기존 원칙대로 동작하는지 staging에서 확인한다.
+- 로컬 `.env` 자동 로드는 개발 편의 기능이다. production에서는 파일을 이미지에 포함하지 않고 secret manager/runtime environment variable을 사용한다.
+- HTTP 200의 빈 데이터는 정상 0건으로 기록한다. 빈 데이터가 반복되면 API HUB Usage Statistics와 서비스 공지를 확인한 뒤 운영 활성화를 결정한다.
 
 ### 4.5 SmartStore mock feature
 

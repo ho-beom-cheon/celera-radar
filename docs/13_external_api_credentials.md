@@ -1,6 +1,6 @@
 # 13. External API credential preparation guide
 
-- 기준일: 2026-07-04
+- 기준일: 2026-07-12
 - 범위: 실제 외부 API 연동 전 credential 발급, 보관, 로컬 적용 위치 정리
 - 제외: 실제 API 호출 로직 변경, secret 값 커밋, migration 변경
 
@@ -17,7 +17,7 @@
 | `NAVER_API_HUB_CLIENT_ID` | API HUB mode 전용 | `X-NCP-APIGW-API-KEY-ID` 값 |
 | `NAVER_API_HUB_CLIENT_SECRET` | API HUB mode 전용 | `X-NCP-APIGW-API-KEY` 값 |
 | `NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT` | API HUB 쇼핑 검색 capability | 공식 확인한 전체 HTTP(S) endpoint |
-| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | API HUB 쇼핑인사이트 capability | 공식 확인한 전체 HTTP(S) endpoint |
+| `NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT` | API HUB 쇼핑인사이트 capability | 기본값은 공식 키워드 트렌드 endpoint, 필요 시 재정의 |
 
 샘플 값 위치:
 
@@ -43,7 +43,7 @@ backend/src/main/resources/application.yml
 
 따라서 새 운영 연동은 NAVER API HUB 기준으로 검토한다. 기존 개발자센터 key는 2026-07-31 이전 발급분에 한해 유예 기간 동안 사용할 수 있지만, 2027-06-30 이후에는 차단될 수 있다.
 
-현재 코드는 provider port와 capability router를 통해 `LEGACY`, `HUB`, `DISABLED` mode를 분리한다. HUB adapter는 전용 credential과 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` header를 사용한다. 기능별 endpoint가 명시되지 않으면 해당 capability는 비활성 상태이며 외부 network를 호출하지 않는다.
+현재 코드는 provider port와 capability router를 통해 `LEGACY`, `HUB`, `DISABLED` mode를 분리한다. HUB adapter는 전용 credential과 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` header를 사용한다. Shopping Insight 공식 endpoint는 기본값으로 제공하고 Shopping Search는 endpoint가 확인될 때까지 비활성 상태를 유지한다.
 
 ## 3. 네이버 Search / Shopping Insight 준비
 
@@ -51,12 +51,26 @@ backend/src/main/resources/application.yml
 
 1. NAVER Cloud Platform 계정을 준비한다.
 2. NAVER API HUB 서비스를 신청한다.
-3. Search API, Search Trend API, Shopping Insight API 사용 가능 여부와 요금제를 확인한다.
+3. Application에서 `쇼핑인사이트` API를 선택한다.
 4. API HUB 발급 key와 호출 방식 문서를 별도 보안 저장소에 기록한다.
 5. API HUB key를 기존 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 매핑하지 않는다.
-6. 공식 문서에서 확인한 기능별 전체 endpoint만 전용 환경변수에 주입한다. 쇼핑 검색 endpoint가 확인되지 않았다면 해당 변수는 비워 둔다.
+6. 프로젝트 루트 `.env`에 `NAVER_PROVIDER_MODE=HUB`와 API HUB 전용 credential을 입력한다. 쇼핑 검색 endpoint는 비워 둔다.
 
-### 3.2 기존 개발자센터 key가 있는 경우
+### 3.2 로컬 `.env` 적용
+
+Spring Boot는 실행 위치에 따라 프로젝트 루트의 `.env` 또는 상위 경로의 `.env`를 선택적으로 읽는다. 실제 파일은 `.gitignore`에 포함되며 저장소에 커밋하지 않는다.
+
+```dotenv
+NAVER_PROVIDER_MODE=HUB
+NAVER_API_HUB_CLIENT_ID=발급값
+NAVER_API_HUB_CLIENT_SECRET=발급값
+NAVER_API_HUB_SHOPPING_INSIGHT_ENDPOINT=https://naverapihub.apigw.ntruss.com/shopping/v1/category/keywords
+NAVER_API_HUB_SHOPPING_SEARCH_ENDPOINT=
+```
+
+2026-07-12 실제 credential로 인증과 HTTP 200 응답을 확인했다. 당시 공식 예제와 일반 키워드 모두 `results[].data`가 빈 배열이었으므로, 애플리케이션은 이를 성공·수집 0건으로 처리하고 데이터가 있다고 추정하지 않는다.
+
+### 3.3 기존 개발자센터 key가 있는 경우
 
 기존 개발자센터 key를 유예 기간 동안 사용하려면 다음을 확인한다.
 
@@ -133,12 +147,12 @@ Commerce API 실제 연동 작업을 시작할 때 별도 이슈에서 다음을
 - [x] 신규 운영은 NAVER API HUB 우선, 기존 개발 호환은 LEGACY mode로 분리
 - [x] provider mode와 capability 기반 활성화 구현
 - [ ] 공식 NAVER API HUB 쇼핑 검색 endpoint 확인 후 환경별 주입
-- [ ] 공식 NAVER API HUB 쇼핑인사이트 endpoint 확인 후 환경별 주입
+- [x] 공식 NAVER API HUB 쇼핑인사이트 endpoint 확인 및 adapter 계약 반영
 - [ ] 운영 계정 소유자를 개인 계정이 아닌 조직/단체 계정으로 정리
 - [ ] 로컬, staging, production key를 분리
 - [ ] 호출 quota와 비용 상한 확인
-- [ ] 실패/429/403 응답을 `api_call_logs`에 남기는 기준 확인
-- [ ] 외부 API client 테스트는 실제 호출 없이 mock으로 작성
+- [x] 실패/429/403 응답을 `api_call_logs`에 남기는 기준 확인
+- [x] 외부 API client 테스트는 실제 호출 없이 mock으로 작성
 - [ ] 프론트엔드에서 네이버 API를 직접 호출하지 않는지 확인
 
 ## 7. 공식 참고 링크
