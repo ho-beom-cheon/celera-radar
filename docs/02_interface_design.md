@@ -1136,6 +1136,8 @@ Content-Type: application/json
 3. CSV/XLSX 원본은 기본 7일 후 자동 삭제하며 사용자가 즉시 삭제할 수 있다.
 4. 사용자 업로드 파일 URL은 외부에 공개하지 않는다.
 5. 로그에는 API Secret, JWT, 개인정보를 남기지 않는다.
+6. API와 정적 프론트 응답은 CSP, nosniff, frame deny, strict referrer, restrictive permissions policy, COOP 헤더를 적용한다.
+7. 동적 상품·이미지 URL은 absolute `http`/`https`만 허용한다. `javascript`, `data`, `file`, protocol-relative, user-info URL은 저장·렌더링하지 않는다.
 
 ---
 

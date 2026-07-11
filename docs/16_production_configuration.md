@@ -79,6 +79,23 @@ management:
 - XLSX parser hard limit 기본값은 ZIP entry 1,000개, 압축 해제 50 MB, inflate ratio 0.01, sheet 10개, row 20,000개, column 100개, cell 10,000자, 추출 text 20 MB다.
 - local volume을 공유하지 않는 다중 인스턴스 배포 전에는 object storage로 전환하거나 cleanup 작업이 object 소유 인스턴스에 라우팅되도록 보장한다.
 
+### 4.3 CSP, 보안 헤더, CORS
+
+| 환경변수 | 기본값 | 운영 기준 |
+|---|---|---|
+| `CSP_ENFORCE` | 일반 프로필 `false`, prod `true` | beta 관찰 후 production enforce |
+| `CSP_REPORT_URI` | 빈 값 | HTTPS report collector를 운영할 때만 설정 |
+| `CORS_ALLOWED_ORIGINS` | 일반 프로필 localhost, prod 빈 값 | production Web origin을 쉼표로 구분해 명시 |
+| `VITE_API_BASE_URL` | 미설정 시 앱 기본값은 local API | production build에서 실제 HTTPS API base URL 필수 |
+| `VITE_CSP_REPORT_URI` | 빈 값 | 정적 프론트 CSP report collector |
+
+- API는 `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, restrictive `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`을 반환한다.
+- prod API와 정적 프론트는 enforce CSP와 HSTS를 반환한다. 일반 API와 Vite dev server는 Report-Only CSP를 사용한다.
+- frontend build는 배포용 `dist/_headers`를 생성한다. `_headers`를 지원하지 않는 CDN·reverse proxy에서는 같은 값을 해당 플랫폼 설정으로 옮겨야 한다.
+- `VITE_API_BASE_URL`이 없거나 유효한 HTTP(S) URL이 아니면 정적 CSP의 `connect-src`는 `'self'`만 허용해 외부 연결을 fail-closed로 차단한다.
+- credentialed CORS에 `*`를 설정하면 애플리케이션이 기동을 거부한다. production origin은 `https://` 정확한 origin 단위로 지정한다.
+- 외부 상품 링크와 이미지는 backend 저장 경계와 frontend 렌더링 경계에서 `http`/`https`만 허용하며 user-info URL을 거부한다.
+
 ## 5. 배포 절차
 
 1. 배포 플랫폼의 secret manager에 환경별 credential을 등록한다.
