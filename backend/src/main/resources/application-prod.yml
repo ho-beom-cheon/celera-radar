@@ -29,6 +29,9 @@ management:
       show-details: never
 
 seller-radar:
+  external:
+    naver:
+      mode: ${NAVER_PROVIDER_MODE:DISABLED}
   web-security:
     csp-enforce: ${CSP_ENFORCE:true}
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}

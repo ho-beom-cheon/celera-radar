@@ -8,7 +8,6 @@ import com.sellerradar.common.external.repository.ApiCallLogRepository;
 import com.sellerradar.keyword.domain.Keyword;
 import com.sellerradar.keyword.domain.KeywordStatus;
 import com.sellerradar.keyword.repository.KeywordRepository;
-import com.sellerradar.shopping.client.NaverShoppingClient;
 import com.sellerradar.shopping.client.NaverShoppingSearchItem;
 import com.sellerradar.shopping.client.NaverShoppingSearchRequest;
 import com.sellerradar.shopping.client.NaverShoppingSearchResponse;
@@ -16,6 +15,7 @@ import com.sellerradar.shopping.client.NaverShoppingSort;
 import com.sellerradar.shopping.domain.ShoppingPriceSnapshot;
 import com.sellerradar.shopping.domain.ShoppingTopItem;
 import com.sellerradar.shopping.repository.ShoppingPriceSnapshotRepository;
+import com.sellerradar.shopping.port.ShoppingSearchProvider;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -37,7 +37,7 @@ public class ShoppingSearchSnapshotService {
 	private final KeywordRepository keywordRepository;
 	private final ShoppingPriceSnapshotRepository snapshotRepository;
 	private final ApiCallLogRepository apiCallLogRepository;
-	private final NaverShoppingClient naverShoppingClient;
+	private final ShoppingSearchProvider shoppingSearchProvider;
 	private final CompetitionAnalyzer competitionAnalyzer;
 	private final ObjectMapper objectMapper;
 	private final Clock clock;
@@ -47,7 +47,7 @@ public class ShoppingSearchSnapshotService {
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			ApiCallLogRepository apiCallLogRepository,
-			NaverShoppingClient naverShoppingClient,
+			ShoppingSearchProvider shoppingSearchProvider,
 			CompetitionAnalyzer competitionAnalyzer,
 			ObjectMapper objectMapper
 	) {
@@ -55,7 +55,7 @@ public class ShoppingSearchSnapshotService {
 				keywordRepository,
 				snapshotRepository,
 				apiCallLogRepository,
-				naverShoppingClient,
+				shoppingSearchProvider,
 				competitionAnalyzer,
 				objectMapper,
 				Clock.systemDefaultZone()
@@ -66,7 +66,7 @@ public class ShoppingSearchSnapshotService {
 			KeywordRepository keywordRepository,
 			ShoppingPriceSnapshotRepository snapshotRepository,
 			ApiCallLogRepository apiCallLogRepository,
-			NaverShoppingClient naverShoppingClient,
+			ShoppingSearchProvider shoppingSearchProvider,
 			CompetitionAnalyzer competitionAnalyzer,
 			ObjectMapper objectMapper,
 			Clock clock
@@ -74,7 +74,7 @@ public class ShoppingSearchSnapshotService {
 		this.keywordRepository = keywordRepository;
 		this.snapshotRepository = snapshotRepository;
 		this.apiCallLogRepository = apiCallLogRepository;
-		this.naverShoppingClient = naverShoppingClient;
+		this.shoppingSearchProvider = shoppingSearchProvider;
 		this.competitionAnalyzer = competitionAnalyzer;
 		this.objectMapper = objectMapper;
 		this.clock = clock;
@@ -126,7 +126,7 @@ public class ShoppingSearchSnapshotService {
 
 	private NaverShoppingSearchResponse searchNaver(Keyword keyword, LocalDate baseDate) {
 		try {
-			NaverShoppingSearchResponse response = naverShoppingClient.search(new NaverShoppingSearchRequest(
+			NaverShoppingSearchResponse response = shoppingSearchProvider.search(new NaverShoppingSearchRequest(
 					keyword.getKeyword(),
 					DEFAULT_DISPLAY,
 					DEFAULT_START,

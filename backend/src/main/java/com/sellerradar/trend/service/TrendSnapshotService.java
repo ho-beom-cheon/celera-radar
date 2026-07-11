@@ -16,6 +16,7 @@ import com.sellerradar.trend.client.NaverDataLabTrendPoint;
 import com.sellerradar.trend.domain.TrendSnapshot;
 import com.sellerradar.trend.domain.TrendTimeUnit;
 import com.sellerradar.trend.repository.TrendSnapshotRepository;
+import com.sellerradar.trend.port.ShoppingInsightProvider;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -27,20 +28,20 @@ public class TrendSnapshotService {
 	private final KeywordRepository keywordRepository;
 	private final TrendSnapshotRepository trendSnapshotRepository;
 	private final ApiCallLogRepository apiCallLogRepository;
-	private final NaverDataLabClient naverDataLabClient;
+	private final ShoppingInsightProvider shoppingInsightProvider;
 	private final TrendScoreCalculator trendScoreCalculator;
 
 	public TrendSnapshotService(
 			KeywordRepository keywordRepository,
 			TrendSnapshotRepository trendSnapshotRepository,
 			ApiCallLogRepository apiCallLogRepository,
-			NaverDataLabClient naverDataLabClient,
+			ShoppingInsightProvider shoppingInsightProvider,
 			TrendScoreCalculator trendScoreCalculator
 	) {
 		this.keywordRepository = keywordRepository;
 		this.trendSnapshotRepository = trendSnapshotRepository;
 		this.apiCallLogRepository = apiCallLogRepository;
-		this.naverDataLabClient = naverDataLabClient;
+		this.shoppingInsightProvider = shoppingInsightProvider;
 		this.trendScoreCalculator = trendScoreCalculator;
 	}
 
@@ -90,7 +91,7 @@ public class TrendSnapshotService {
 			NaverDataLabTimeUnit timeUnit
 	) {
 		try {
-			NaverDataLabKeywordTrendResponse response = naverDataLabClient.searchKeywordTrend(
+			NaverDataLabKeywordTrendResponse response = shoppingInsightProvider.searchKeywordTrend(
 					new NaverDataLabKeywordTrendRequest(
 							startDate,
 							endDate,
